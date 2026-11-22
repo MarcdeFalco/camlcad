@@ -17,7 +17,7 @@ et `let%param` sont disponibles.
 - **Curseurs** : un `let%param` avec `[@range lo, hi]` devient un curseur ; le
   déplacer réévalue sans recompiler (overrides du Reader, cache `Eval` conservé).
   « écrire dans le code » remplace le littéral par défaut à sa position.
-- **Arbre** : cliquer une feature surligne sa ligne et la montre en orange ;
+- **Arbre** : cliquer une feature (dans l'arbre ou sur la pièce en 3D) surligne sa ligne et la montre en orange ;
   déplacer le curseur du code sélectionne la feature correspondante.
 - **Erreurs** de syntaxe/typage soulignées dans le code ; erreurs de `Doc`
   (paramètre hors bornes…) localisées aussi.
