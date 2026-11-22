@@ -20,6 +20,8 @@
     - [let%param] : [~loc] couvre l'expression de la valeur par défaut, pour que
       l'éditeur puisse la remplacer en validant un curseur. Attributs
       facultatifs sur cette expression : [[@range lo, hi]] et [[@unit "…"]].
+    - [let%sketch p = e in k] : [e : Sketch.region Sketch.t] est résolue par
+      [Sketch.to_doc ~loc] ; un échec du solveur est localisé sur la liaison.
     - Plusieurs liaisons reliées par [and] sont séquencées dans l'ordre.
 
     Les positions suivent la convention de [__POS__] (voir [Cad.Loc]). *)
