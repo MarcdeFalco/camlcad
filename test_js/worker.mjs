@@ -18,7 +18,7 @@ const show = (label, m) => {
   if (m.ok) {
     const j = JSON.parse(m.journal);
     console.log(`${label} : ${m.triangles.length / 3 > 0} ; params ${j.params.map((p) => `${p.name}=${p.value}`).join(' ')} ; features ${j.features.map((f) => `${f.name}@${f.loc.line}`).join(' ')}`);
-  } else console.log(`${label} : erreur ${JSON.stringify({ ...m.error, message: m.error.message.trim().split('\n').at(-1) })}`);
+  } else console.log(`${label} : erreur ${JSON.stringify({ ...m.error, message: m.error.message.trim().split('\n').at(-1).replace(/\s+/g, ' ').trim() })}`);
 };
 for (const ex of ['support', 'charniere', 'engrenage']) {
   const code = fs.readFileSync(path.join(dir, ex + '.ml'), 'utf8');
