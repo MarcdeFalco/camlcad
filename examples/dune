@@ -3,5 +3,5 @@
 (library
  (name cad_examples)
  (public_name camlcad.examples)
- (libraries geom cad cad_parts)
+ (libraries geom cad cad_parts cad_mech)
  (preprocess (pps ppx_cad)))
