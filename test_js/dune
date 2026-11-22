@@ -29,3 +29,12 @@
   (progn
    (with-stdout-to examples.output (run node run.mjs examples.bc.js))
    (diff examples.expected examples.output))))
+
+; Worker de l'éditeur web (toplevel complet : build long, ~40 Mo en profil dev).
+(rule
+ (alias runtest-js)
+ (deps worker.mjs %{dep:../web/toplevel.bc.js} (glob_files ../examples/*.ml) (source_tree node_modules))
+ (action
+  (progn
+   (with-stdout-to worker.output (run node worker.mjs ../web/toplevel.bc.js ../examples))
+   (diff worker.expected worker.output))))

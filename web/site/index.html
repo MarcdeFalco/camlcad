@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>camlcad</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+  "codemirror": "https://esm.sh/codemirror@6.0.1",
+  "@codemirror/": "https://esm.sh/@codemirror/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <strong>camlcad</strong>
+  <select id="example"></select>
+  <span id="status">chargement du toplevel…</span>
+  <span class="spacer"></span>
+  <button id="export-stl" disabled>STL</button>
+</header>
+<main>
+  <section id="code"></section>
+  <section id="view"></section>
+  <aside>
+    <h2>Paramètres</h2>
+    <div id="params"></div>
+    <h2>Features</h2>
+    <ol id="tree"></ol>
+    <pre id="error" hidden></pre>
+  </aside>
+</main>
+<script type="module" src="main.js"></script>
+</body>
+</html>
