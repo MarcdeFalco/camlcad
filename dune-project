@@ -10,5 +10,7 @@
  (depends
   (ocaml (>= 4.14))
   dune
+  js_of_ocaml
+  js_of_ocaml-compiler
   (ppx_expect :with-test)
   (qcheck-core :with-test)))

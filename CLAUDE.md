@@ -6,6 +6,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 ## Commandes
 - `dune build @check 2>&1 | head -50` : typage rapide (toujours filtrer la sortie).
 - `dune test` : tests d'expectation (ppx_expect) et propriétés (QCheck).
+- `npm ci --prefix test_js && dune build @test_js/runtest-js` : lois du noyau manifold-3d sous Node.
 - `dune promote` : uniquement si la nouvelle sortie est *voulue* ; le dire dans la PR.
 
 ## Règles
@@ -24,8 +25,9 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/core` (`Cad`) : Loc, Mesh, Kernel (signature), Profile, Shape, Eval, Doc.
 - `src/export` (`Cad_export`) : Stl, Threemf.
 - `test/` : contrats exécutables ; `Fake_kernel` sert à tester `Eval` sans noyau réel.
-- À venir : `src/kernel_manifold_native` (phase 1), `ppx/` (phase 2), `web/` (phase 3).
+- `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + exemple.
+- À venir : `ppx/` (phase 2), `web/` (phase 3), noyau natif (quand opam sera accessible).
 
 ## Environnement cloud
 Pas d'accès à opam.ocaml.org : OCaml 4.14 + dune depuis apt (`ocaml-nox ocaml-dune
-libppx-expect-ocaml-dev libqcheck-ocaml-dev`). La CI GitHub utilise opam (4.14 et 5.2).
+libppx-expect-ocaml-dev libqcheck-ocaml-dev js-of-ocaml libjs-of-ocaml-dev`), Node 22 et npm disponibles. La CI GitHub utilise opam (4.14 et 5.2).

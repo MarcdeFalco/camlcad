@@ -1,0 +1,4 @@
+(library
+ (name kernel_manifold_js)
+ (public_name camlcad.kernel-manifold-js)
+ (libraries geom cad js_of_ocaml))

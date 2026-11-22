@@ -1,0 +1,5 @@
+{
+  "name": "camlcad-test-js",
+  "private": true,
+  "dependencies": { "manifold-3d": "3.2.1" }
+}
