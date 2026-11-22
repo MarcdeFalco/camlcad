@@ -1,0 +1,19 @@
+type t = { x : float; y : float; z : float }
+
+let v x y z = { x; y; z }
+let zero = v 0. 0. 0.
+let ex = v 1. 0. 0.
+let ey = v 0. 1. 0.
+let ez = v 0. 0. 1.
+let add _ _ = Todo.todo "V3.add"
+let sub _ _ = Todo.todo "V3.sub"
+let neg _ = Todo.todo "V3.neg"
+let scale _ _ = Todo.todo "V3.scale"
+let dot _ _ = Todo.todo "V3.dot"
+let cross _ _ = Todo.todo "V3.cross"
+let norm _ = Todo.todo "V3.norm"
+let normalize _ = Todo.todo "V3.normalize"
+let dist _ _ = Todo.todo "V3.dist"
+let of_v2 ?z:_ _ = Todo.todo "V3.of_v2"
+let equal ?eps:_ _ _ = Todo.todo "V3.equal"
+let pp ppf p = Format.fprintf ppf "(%g, %g, %g)" p.x p.y p.z

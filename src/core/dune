@@ -1,0 +1,6 @@
+(library
+ (name cad)
+ (public_name camlcad.core)
+ (libraries geom)
+ (private_modules todo)
+ (modules_without_implementation kernel))
