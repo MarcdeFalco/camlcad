@@ -14,7 +14,7 @@ let%expect_test "mémoïsation : un sous-terme partagé est évalué une fois" =
   [%expect {|
     U(sphere,T(sphere))
     appels=3
-    appels=3 hits=1 |}]
+    appels=3 hits=2 |}]
 
 let%expect_test "segments : tolérance de corde" =
   let q = Eval.default_quality in

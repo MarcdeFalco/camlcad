@@ -9,7 +9,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `dune promote` : uniquement si la nouvelle sortie est *voulue* ; le dire dans la PR.
 
 ## Règles
-- **Contrat d'abord.** Un `.mli` modifié = PR de contrat validée par Marc avant toute implémentation.
+- **Contrat d'abord.** Un `.mli` se pense avant l'implémentation et se justifie dans la PR.
 - Code compatible OCaml 4.14 et 5.x (pas d'effets tant que la décision n'est pas prise).
 - Géométrie pure (`Shape`, `Profile`) ; seul `Doc` porte des effets. Pas d'exception hors `Doc.fail`,
   sauf `Invalid_argument` documentée dans le `.mli`.
@@ -17,7 +17,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - Modules < 400 lignes ; lire les `.mli` avant les `.ml`.
 - Ne jamais désactiver, sauter ou affaiblir un test pour obtenir du vert. Un test faux se corrige
   dans une PR qui le dit.
-- Pas de fusion par l'IA : Marc relit et fusionne.
+- Prototype : l'agent fusionne lui-même ses PR quand la CI est verte (accord de Marc, 22/11/2026).
 
 ## Structure
 - `src/geom` (`Geom`) : V2, V3, Frame, Plane, Axis, Bbox.

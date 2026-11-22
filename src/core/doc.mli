@@ -62,4 +62,5 @@ type error = { message : string; loc : Loc.t; journal : journal }
 (** [journal] : ce qui a été construit avant l'échec (l'arbre partiel). *)
 
 val run : ?overrides:(string * float) list -> 'a t -> ('a * journal, error) result
-(** Un override qui ne correspond à aucun paramètre déclaré est une erreur. *)
+(** Un override qui ne correspond à aucun paramètre déclaré est une erreur,
+    détectée après l'exécution complète : son [journal] est alors complet. *)

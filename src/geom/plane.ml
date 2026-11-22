@@ -1,7 +1,7 @@
 type t = Frame.t
 
 let xy = Frame.world
-let yz = Frame.world (* TODO phase 1 : axes (y, z, x) *)
-let zx = Frame.world (* TODO phase 1 : axes (z, x, y) *)
-let offset _ _ = Todo.todo "Plane.offset"
+let yz = Frame.make ~origin:V3.zero ~x:V3.ey ~z:V3.ex
+let zx = Frame.make ~origin:V3.zero ~x:V3.ez ~z:V3.ey
 let normal = Frame.z_axis
+let offset d p = Frame.translate (V3.scale d (normal p)) p

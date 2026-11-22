@@ -45,5 +45,5 @@ let%expect_test "erreurs" =
         Doc.return ()));
   [%expect {|
     erreur : longueur : 500 hors de [10, 100] (après 0 features)
-    erreur : paramètre inconnu : largeur (après 0 features)
+    erreur : paramètre inconnu : largeur (après 3 features)
     erreur : feature en double : a (après 1 features) |}]

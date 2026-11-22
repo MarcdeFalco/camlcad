@@ -25,7 +25,8 @@ module Make (K : Kernel.S) : sig
   val mesh : t -> Shape.t -> Mesh.t
 
   val stats : t -> int * int
-  (** [(appels au noyau, hits du cache)], pour les tests et le bench. *)
+  (** [(nœuds calculés, hits du cache)]. Un sous-terme partagé compte un hit à
+      chaque réutilisation, y compris pendant la première évaluation. *)
 
   val clear : t -> unit
 end
