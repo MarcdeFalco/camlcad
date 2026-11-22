@@ -13,5 +13,6 @@
   (ppxlib (>= 0.26))
   js_of_ocaml
   js_of_ocaml-compiler
+  js_of_ocaml-toplevel
   (ppx_expect :with-test)
   (qcheck-core :with-test)))
