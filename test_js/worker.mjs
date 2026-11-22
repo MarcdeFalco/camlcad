@@ -59,3 +59,11 @@ show('ppx', await ask({ kind: 'eval', id: 7, code: 'open Cad\nlet model =\n  let
   await pick('face de l\'aile', [30, 0, 25]);
   await pick('dans le vide', [500, 500, 500]);
 }
+{
+  const code = fs.readFileSync(path.join(dir, 'engrenages.ml'), 'utf8');
+  await ask({ kind: 'eval', id: 13, code });
+  await ask({ kind: 'pose', id: 14, overrides: [['roue1', 10]] });
+  const m = await ask({ kind: 'export3mf', id: 15 });
+  const txt = Buffer.from(m.data).toString('latin1');
+  console.log('3MF engrenages :', txt.startsWith('PK'), (txt.match(/<object /g) || []).length, 'objets,', (txt.match(/<item /g) || []).length, 'items');
+}

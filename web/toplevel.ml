@@ -6,6 +6,7 @@
            {kind:"feature", id, fid}          (maillage d'une feature du dernier journal)
            {kind:"pose", id, overrides}       (mécanisme : pilotes → pose résolue)
            {kind:"pick", id, point:[x,y,z]}   (feature sous un point de la surface)
+           {kind:"export3mf", id}             (dernier résultat ; mécanisme : pièces à la pose courante)
    sortie  {kind:"ready", ms}
            {kind:"result", id, ok, journal, error, vertices, triangles, timings}
            {kind:"feature", id, fid, vertices, triangles}
@@ -13,6 +14,7 @@
              coords:[{name, lo, hi, unit}], matrices (16 par pièce), interferences, pose}
            {kind:"pose", id, ok, matrices, interferences, pose, error}
            {kind:"pick", id, fid}             (fid = -1 si aucune)
+           {kind:"export3mf", id, data}       (Uint8Array, paquet 3MF)
    [journal] est la chaîne JSON de [Cad.Journal_json] ; [error] vaut null ou
    {message, line, col, end_line, end_col} (lignes à partir de 1). *)
 
@@ -36,6 +38,7 @@ let () =
       { Ocaml_common.Ast_mapper.default_mapper with structure })
 
 let cache = E.create ()
+let last_shape : Cad.Shape.t option ref = ref None
 let last_journal : Cad.Doc.journal option ref = ref None
 
 let mesh_msg (m : Cad.Mesh.t) kvs =
@@ -152,6 +155,7 @@ let run id overrides t_compile =
           reply id ~ok:false ~journal:json ~error:(Js.Unsafe.inject (error_obj e.message loc)) Cad.Mesh.empty
       | Ok (a, j) -> (
           last_journal := Some j;
+          last_shape := None;
           try mech_reply id json [ ("compile", t_compile); ("run", now () -. t1); ("mesh", 0.) ] a
           with exn ->
             reply id ~ok:false ~journal:json
@@ -171,6 +175,7 @@ let run id overrides t_compile =
             ~timings:[ ("compile", t_compile); ("run", t2 -. t1) ] Cad.Mesh.empty
       | Ok (shape, j) -> (
           last_journal := Some j;
+          last_shape := Some shape;
           match E.mesh cache shape with
           | mesh ->
               let t3 = now () in
@@ -229,6 +234,24 @@ let feature id fid =
           in
           post o transfer)
 
+(* Export 3MF : le solide courant, ou les pièces du mécanisme à la pose
+   courante (une pièce = un objet, avec sa couleur : impression en place). *)
+let export3mf id =
+  let objs =
+    match (!last_shape, !last_asm) with
+    | Some s, _ -> [ Cad_export.Threemf.obj ~color:(79, 134, 198) "piece" (E.mesh cache s) ]
+    | None, Some a ->
+        List.map
+          (fun ((p : Cad_mech.Part.t), f) -> Cad_export.Threemf.obj ?color:p.color ~transform:f p.name (E.mesh cache p.shape))
+          (A.placements a !last_pose)
+    | None, None -> []
+  in
+  let bytes = Cad_export.Threemf.to_string objs in
+  let n = String.length bytes in
+  let u = Js.Unsafe.new_obj (Js.Unsafe.get Js.Unsafe.global "Uint8Array") [| num (float n) |] in
+  String.iteri (fun i c -> Js.Unsafe.set u i (Char.code c)) bytes;
+  post (obj [ ("kind", str "export3mf"); ("id", id); ("data", Js.Unsafe.inject u) ]) (jsarr [ Js.Unsafe.get u "buffer" ])
+
 (* Sélection : la feature dont la surface passe le plus près du point (à moins
    de 0,5 mm) ; à
    égalité (surface commune), la plus élémentaire (moins de dépendances). *)
@@ -258,6 +281,7 @@ let () =
          | "eval" -> eval id (Js.to_string (Js.Unsafe.get d "code")) (overrides_of d)
          | "params" -> run id (overrides_of d) 0.
          | "pose" -> pose id (overrides_of d)
+         | "export3mf" -> export3mf id
          | "pick" ->
              let c i = Js.float_of_number (Js.Unsafe.get (Js.Unsafe.get d "point") i) in
              pick id (Geom.V3.v (c 0) (c 1) (c 2))

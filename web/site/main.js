@@ -35,6 +35,7 @@ worker.onmessage = ({ data: m }) => {
     return;
   }
   if (m.kind === 'feature') { showFeatureMesh(m); return; }
+  if (m.kind === 'export3mf') { download(new Blob([m.data], { type: 'model/3mf' }), '3mf'); return; }
   if (m.kind === 'pick') { if (m.fid >= 0) selectFeature(m.fid, true); return; }
   if (m.kind === 'pose') { poseInflight = false; onPose(m); if (poseNext) { const p = poseNext; poseNext = null; sendPose(p); } return; }
   inflight = false;
@@ -166,6 +167,7 @@ function onResult(m) {
     clearMech();
     lastMesh = m;
     $('export-stl').disabled = false;
+    $('export-3mf').disabled = false;
     if (part) { scene.remove(part); part.geometry.dispose(); }
     part = new THREE.Mesh(geometry(m), material);
     scene.add(part);
@@ -252,6 +254,7 @@ function showMech(m) {
   clearMech();
   if (part) { scene.remove(part); part.geometry.dispose(); part = null; }
   $('export-stl').disabled = true;
+  $('export-3mf').disabled = false;
   const meshes = m.parts.map((p) => {
     const c = p.color ? new THREE.Color(p.color[0] / 255, p.color[1] / 255, p.color[2] / 255) : new THREE.Color(0x4f86c6);
     const o = new THREE.Mesh(geometry(p), new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, flatShading: true }));
@@ -322,10 +325,14 @@ $('export-stl').onclick = () => {
     const o = 84 + 50 * i;
     for (let k = 0; k < 3; k++) for (let c = 0; c < 3; c++) dv.setFloat32(o + 12 + 12 * k + 4 * c, v[3 * t[3 * i + k] + c], true);
   }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([buf], { type: 'model/stl' }));
-  a.download = `${$('example').value || 'piece'}.stl`; a.click();
+  download(new Blob([buf], { type: 'model/stl' }), 'stl');
 };
+function download(blob, ext) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${$('example').value || 'piece'}.${ext}`; a.click();
+}
+$('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, overrides: [] });
 
 // ---------- Exemples ----------
 for (const e of EXAMPLES) $('example').append(new Option(e, e));

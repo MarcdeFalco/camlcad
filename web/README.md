@@ -24,7 +24,8 @@ et `let%param` sont disponibles.
 - **Mécanismes** : une pièce par couleur ; un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.
-- **Export STL** du résultat courant (solides).
+- **Export** STL (solide) et 3MF (solide, ou pièces d'un mécanisme placées à la pose
+  courante avec leurs couleurs, pour l'impression en place).
 
 Fichiers : `toplevel.ml` (worker, protocole en tête), `hook/` (rendez-vous
 `model`), `site/` (HTML, `main.js` avec three.js et CodeMirror par CDN,
