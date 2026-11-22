@@ -2,4 +2,4 @@
  (name camlcad_tests)
  (inline_tests (deps (glob_files ../examples/*.ml)))
  (preprocess (pps ppx_expect ppx_cad))
- (libraries geom cad cad_export cad_parts cad_examples qcheck-core))
+ (libraries geom cad cad_export cad_parts cad_mech cad_examples qcheck-core))

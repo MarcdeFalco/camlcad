@@ -1,0 +1,4 @@
+(library
+ (name cad_mech)
+ (public_name camlcad.mech)
+ (libraries geom cad))
