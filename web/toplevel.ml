@@ -5,12 +5,14 @@
            {kind:"params", id, overrides}     (réévalue le dernier modèle, sans recompiler)
            {kind:"feature", id, fid}          (maillage d'une feature du dernier journal)
            {kind:"pose", id, overrides}       (mécanisme : pilotes → pose résolue)
+           {kind:"pick", id, point:[x,y,z]}   (feature sous un point de la surface)
    sortie  {kind:"ready", ms}
            {kind:"result", id, ok, journal, error, vertices, triangles, timings}
            {kind:"feature", id, fid, vertices, triangles}
            mécanisme : {kind:"result", mode:"mech", parts:[{name, color, vertices, triangles}],
              coords:[{name, lo, hi, unit}], matrices (16 par pièce), interferences, pose}
            {kind:"pose", id, ok, matrices, interferences, pose, error}
+           {kind:"pick", id, fid}             (fid = -1 si aucune)
    [journal] est la chaîne JSON de [Cad.Journal_json] ; [error] vaut null ou
    {message, line, col, end_line, end_col} (lignes à partir de 1). *)
 
@@ -227,6 +229,25 @@ let feature id fid =
           in
           post o transfer)
 
+(* Sélection : la feature dont la surface passe le plus près du point (à moins
+   de 0,5 mm) ; à
+   égalité (surface commune), la plus élémentaire (moins de dépendances). *)
+let pick id (p : Geom.V3.t) =
+  let fid =
+    match !last_journal with
+    | None -> -1
+    | Some j ->
+        let key (f : Cad.Doc.feature_info) =
+          let d = Cad.Mesh.distance (E.mesh cache f.f_shape) p in
+          (Float.round (d *. 100.), List.length f.f_deps, f.f_id)
+        in
+        List.fold_left
+          (fun best f -> match best with Some (k, _) when k <= key f -> best | _ -> Some (key f, f.f_id))
+          None j.features
+        |> Option.fold ~none:(-1) ~some:(fun ((d, _, _), fid) -> if d > 50. then -1 else fid)
+  in
+  post (obj [ ("kind", str "pick"); ("id", id); ("fid", num (float fid)) ]) (jsarr [])
+
 let () =
   Top.initialize ();
   Js.Unsafe.set Js.Unsafe.global "onmessage"
@@ -237,6 +258,9 @@ let () =
          | "eval" -> eval id (Js.to_string (Js.Unsafe.get d "code")) (overrides_of d)
          | "params" -> run id (overrides_of d) 0.
          | "pose" -> pose id (overrides_of d)
+         | "pick" ->
+             let c i = Js.float_of_number (Js.Unsafe.get (Js.Unsafe.get d "point") i) in
+             pick id (Geom.V3.v (c 0) (c 1) (c 2))
          | "feature" -> feature id (int_of_float (Js.float_of_number (Js.Unsafe.get d "fid")))
          | k -> prerr_endline ("message inconnu : " ^ k)));
   post (obj [ ("kind", str "ready"); ("ms", num (now () -. t0)) ]) (Js.Unsafe.inject (Js.array [||]))

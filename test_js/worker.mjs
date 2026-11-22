@@ -47,3 +47,15 @@ show('ppx', await ask({ kind: 'eval', id: 7, code: 'open Cad\nlet model =\n  let
   const bad = await ask({ kind: 'params', id: 10, overrides: [['jeu', -0.5]] });
   console.log('jeu négatif :', bad.ok, bad.interferences.join(' | '));
 }
+{
+  const code = fs.readFileSync(path.join(dir, 'support.ml'), 'utf8');
+  await ask({ kind: 'eval', id: 11, code });
+  const pick = async (label, point) => {
+    const m = await ask({ kind: 'pick', id: 12, point });
+    console.log(`clic ${label} : feature ${m.fid}`);
+  };
+  await pick('dessus de la semelle', [30, 20, 4]);
+  await pick('paroi d\'un trou', [12.5, 12.5, 2]);
+  await pick('face de l\'aile', [30, 0, 25]);
+  await pick('dans le vide', [500, 500, 500]);
+}

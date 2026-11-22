@@ -35,6 +35,7 @@ worker.onmessage = ({ data: m }) => {
     return;
   }
   if (m.kind === 'feature') { showFeatureMesh(m); return; }
+  if (m.kind === 'pick') { if (m.fid >= 0) selectFeature(m.fid, true); return; }
   if (m.kind === 'pose') { poseInflight = false; onPose(m); if (poseNext) { const p = poseNext; poseNext = null; sendPose(p); } return; }
   inflight = false;
   onResult(m);
@@ -114,11 +115,26 @@ function resize() {
 new ResizeObserver(resize).observe($('view'));
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 
+// Clic (sans glisser) sur la pièce : sélection de la feature correspondante.
+const raycaster = new THREE.Raycaster();
+let down = null;
+renderer.domElement.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || !part || !journal) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  raycaster.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  const hit = raycaster.intersectObject(part)[0];
+  if (hit) worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
+  else selectFeature(null, false);
+});
+
 function fit(g) {
   g.computeBoundingSphere();
   const { center, radius } = g.boundingSphere;
   controls.target.copy(center);
-  camera.position.copy(center).add(new THREE.Vector3(1, -1.5, 1.1).normalize().multiplyScalar(radius * 3.2));
+  const half = THREE.MathUtils.degToRad(camera.fov / 2);
+  const dist = (1.15 * radius) / Math.sin(half) / Math.min(1, camera.aspect);
+  camera.position.copy(center).add(new THREE.Vector3(1, -1.5, 1.1).normalize().multiplyScalar(dist));
 }
 
 // ---------- Résultats ----------

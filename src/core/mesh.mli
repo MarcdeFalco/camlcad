@@ -26,3 +26,7 @@ val is_closed : t -> bool
 
 val euler_characteristic : t -> int
 (** V - E + F. Pour une surface fermée connexe : 2 - 2 × genre. *)
+
+val distance : t -> Geom.V3.t -> float
+(** Distance d'un point à la surface (au triangle le plus proche) ;
+    [infinity] pour un maillage vide. Sert à la sélection dans la vue 3D. *)

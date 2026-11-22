@@ -16,3 +16,7 @@ pose manivelle=0 : coulisseau=65.000 interférences=0
 pose manivelle=90 : coulisseau=47.697 interférences=0
 pose manivelle=180 : coulisseau=35.000 interférences=0
 jeu négatif : true manivelle / bielle : 90.1 mm³ | coulisseau / bielle : 40.5 mm³
+clic dessus de la semelle : feature 0
+clic paroi d'un trou : feature 2
+clic face de l'aile : feature 1
+clic dans le vide : feature -1
