@@ -1,0 +1,5 @@
+_build/
+*.install
+_opam/
+*.stl
+*.3mf
