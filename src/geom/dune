@@ -1,0 +1,3 @@
+(library
+ (name geom)
+ (public_name camlcad.geom))

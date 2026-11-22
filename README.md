@@ -15,5 +15,6 @@ let support =
   Doc.feature ~name:"piece" Shape.(base - trou)
 ```
 
-État : **phase 0**, contrats (`.mli`) et tests de contrat ; aucune implémentation.
+État : **phase 1 en cours**. Géométrie, termes hash-consés, interprète mémoïsé, monade `Doc`,
+export STL/3MF implémentés ; le noyau Manifold natif reste à brancher.
 Feuille de route : voir la note de conception liée dans `CLAUDE.md`.

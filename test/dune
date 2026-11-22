@@ -1,0 +1,5 @@
+(library
+ (name camlcad_tests)
+ (inline_tests)
+ (preprocess (pps ppx_expect))
+ (libraries geom cad cad_export qcheck-core))

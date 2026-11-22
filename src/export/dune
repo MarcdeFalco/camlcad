@@ -1,0 +1,4 @@
+(library
+ (name cad_export)
+ (public_name camlcad.export)
+ (libraries geom cad))
