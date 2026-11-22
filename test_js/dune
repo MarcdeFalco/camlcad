@@ -1,0 +1,23 @@
+; Tests du noyau manifold-3d sous Node. Prérequis : npm ci dans test_js/.
+; Lancement : dune build @runtest-js (hors de dune test, qui reste pur OCaml).
+
+(executables
+ (names laws support)
+ (modes js)
+ (libraries geom cad cad_export kernel_manifold_js))
+
+(rule
+ (alias runtest-js)
+ (deps run.mjs laws.bc.js (source_tree node_modules))
+ (action
+  (progn
+   (with-stdout-to laws.output (run node run.mjs laws.bc.js))
+   (diff laws.expected laws.output))))
+
+(rule
+ (alias runtest-js)
+ (deps run.mjs support.bc.js (source_tree node_modules))
+ (action
+  (progn
+   (with-stdout-to support.output (run node run.mjs support.bc.js))
+   (diff support.expected support.output))))

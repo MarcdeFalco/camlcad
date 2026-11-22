@@ -9,6 +9,8 @@ bug-reports: "https://github.com/MarcdeFalco/camlcad/issues"
 depends: [
   "ocaml" {>= "4.14"}
   "dune" {>= "3.14"}
+  "js_of_ocaml"
+  "js_of_ocaml-compiler"
   "ppx_expect" {with-test}
   "qcheck-core" {with-test}
   "odoc" {with-doc}

@@ -1,0 +1,14 @@
+cube 10 : volume 1000                            ok
+cube centré : bbox symétrique                  ok
+cylindre : volume à 1 % de pi r^2 h             ok
+union : inclusion-exclusion                      ok
+a - a : vide                                     ok
+a - b + a * b = a                                ok
+tore : genre 1                                   ok
+tore : volume à 1 % de 2 pi^2 R r^2             ok
+extrusion d'un cadre : genre 1, volume 1500      ok
+rotation : volume conservé                      ok
+miroir : bbox réfléchie                        ok
+maillage : fermé, Euler = 2                     ok
+maillage : volume = volume noyau                 ok
+STL : aller-retour fermé                        ok
