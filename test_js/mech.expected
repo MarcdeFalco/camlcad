@@ -1,2 +1,5 @@
 bielle (jeu 0.5) : 25 poses, 0 interférences
 bielle (jeu -0.5) : 25 poses, 50 interférences (ex. 0° manivelle/bielle 30.1 mm3)
+engrenages 12/20, jeu 0.15 : 0 poses en interférence sur 16
+engrenages 13/31, jeu 0.15 : 0 poses en interférence sur 16
+engrenages 12/20, jeu -0.3 : 16 poses en interférence sur 16

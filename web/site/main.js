@@ -9,7 +9,7 @@ import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 
 const $ = (id) => document.getElementById(id);
-const EXAMPLES = ['support', 'engrenage', 'charniere', 'patte', 'bielle'];
+const EXAMPLES = ['support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
 
 // ---------- Worker ----------
 const worker = new Worker('worker.js', { type: 'module' });
