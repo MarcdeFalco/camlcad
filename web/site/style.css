@@ -28,3 +28,5 @@ aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; grid-template-rows: 40vh 50vh auto; height:auto; }
 }
+#inter { color:var(--err); font-size:12px; }
+#motion h2 button { font-size:11px; padding:0 6px; margin-left:6px; }

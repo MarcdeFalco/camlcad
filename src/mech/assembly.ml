@@ -45,6 +45,7 @@ let make ?(loops = []) ?(couplings = []) ~(ground : Part.t) joints =
   { ground; tree; loops; couplings }
 
 let parts a = a.ground :: List.map (fun (j : Joint.t) -> fst j.child) a.tree
+let joints a = a.tree
 let coordinates a = List.filter_map (fun (j : Joint.t) -> if j.kind = Fixed then None else Some j.name) a.tree
 
 let value pose (j : Joint.t) = match List.assoc_opt j.name pose with Some q -> q | None -> j.init

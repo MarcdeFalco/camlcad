@@ -20,6 +20,9 @@ val make : ?loops:Joint.t list -> ?couplings:coupling list -> ground:Part.t -> J
 val parts : t -> Part.t list
 (** [ground] d'abord, puis dans l'ordre de l'arbre. *)
 
+val joints : t -> Joint.t list
+(** Liaisons de l'arbre, dans l'ordre de parcours depuis la pièce fixe. *)
+
 val coordinates : t -> string list
 (** Noms des liaisons non encastrées de l'arbre. *)
 

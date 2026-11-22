@@ -10,7 +10,8 @@ cd _build/default/web/site && python3 -m http.server 8000
 # puis http://localhost:8000
 ```
 
-Le code de l'éditeur doit définir `model : Cad.Shape.t Cad.Doc.t` ; `let%feat`
+Le code de l'éditeur doit définir `model : Cad.Shape.t Cad.Doc.t` (ou
+`Cad_mech.Assembly.t Cad.Doc.t` pour un mécanisme) ; `let%feat`
 et `let%param` sont disponibles.
 
 - **Curseurs** : un `let%param` avec `[@range lo, hi]` devient un curseur ; le
@@ -20,7 +21,10 @@ et `let%param` sont disponibles.
   déplacer le curseur du code sélectionne la feature correspondante.
 - **Erreurs** de syntaxe/typage soulignées dans le code ; erreurs de `Doc`
   (paramètre hors bornes…) localisées aussi.
-- **Export STL** du résultat courant.
+- **Mécanismes** : une pièce par couleur ; un curseur par coordonnée (celui
+  qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
+  comprises) ; ▶ anime la première ; interférences listées à chaque pose.
+- **Export STL** du résultat courant (solides).
 
 Fichiers : `toplevel.ml` (worker, protocole en tête), `hook/` (rendez-vous
 `model`), `site/` (HTML, `main.js` avec three.js et CodeMirror par CDN,

@@ -34,3 +34,16 @@ show('erreur de typage', await ask({ kind: 'eval', id: 5, code: 'open Cad\nlet m
 show('exception', await ask({ kind: 'eval', id: 5, code: 'let model = failwith "boum"\n' }));
 show('sans model', await ask({ kind: 'eval', id: 6, code: 'let x = 1\n' }));
 show('ppx', await ask({ kind: 'eval', id: 7, code: 'open Cad\nlet model =\n  let%param r = 5. in\n  let%feat boule = Shape.sphere ~r in\n  Doc.return boule\n' }));
+
+{
+  const code = fs.readFileSync(path.join(dir, 'bielle.ml'), 'utf8');
+  const m = await ask({ kind: 'eval', id: 8, code });
+  console.log('bielle :', m.ok, m.mode, m.parts.map((p) => p.name).join(','), m.coords.map((c) => `${c.name}[${c.lo},${c.hi}]${c.unit}`).join(' '), m.matrices.length, m.interferences.length);
+  for (const q of [0, 90, 180]) {
+    const p = await ask({ kind: 'pose', id: 9, overrides: [['manivelle', q]] });
+    const x = p.pose.find(([n]) => n === 'coulisseau')[1];
+    console.log(`pose manivelle=${q} : coulisseau=${x.toFixed(3)} interférences=${p.interferences.length}`);
+  }
+  const bad = await ask({ kind: 'params', id: 10, overrides: [['jeu', -0.5]] });
+  console.log('jeu négatif :', bad.ok, bad.interferences.join(' | '));
+}
