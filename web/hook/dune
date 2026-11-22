@@ -1,0 +1,3 @@
+(library
+ (name cad_web_hook)
+ (libraries cad))

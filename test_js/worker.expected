@@ -1,0 +1,13 @@
+ready ready
+support : true ; params longueur=60 largeur=25 epaisseur=4 hauteur=30 diametre=5 ; features semelle@11 aile@12 trous_semelle@16 trou_aile@17 support@23
+charniere : true ; params longueur=40 largeur=15 epaisseur=2 rayon=4 jeu=0.4 noeuds=5 ; features axe@24 aile_a@25 aile_b@30 charniere@35
+engrenage : true ; params module_=1.5 dents=24 epaisseur=6 alesage=5 jeu=0.1 ; features roue@12 alesage@15 clavette@16 engrenage@19
+curseur dents=30 : true ; params module_=1.5 dents=30 epaisseur=6 alesage=5 jeu=0.1 ; features roue@12 alesage@15 clavette@16 engrenage@19
+hors bornes : erreur {"message":"dents : 300 hors de [8, 120]","line":7,"col":20,"end_line":7,"end_col":23}
+inconnu : erreur {"message":"paramètre inconnu : dent","line":0,"col":0,"end_line":0,"end_col":0}
+feature 0 : feature 0 true
+model mal typé : erreur {"message":"       Type int is not compatible with type Cad.Shape.t","line":0,"col":0,"end_line":0,"end_col":0}
+erreur de typage : erreur {"message":"         float","line":3,"col":30,"end_line":3,"end_col":33}
+exception : erreur {"message":"Exception: Failure \"boum\".","line":0,"col":0,"end_line":0,"end_col":0}
+sans model : erreur {"message":"Hint:   Did you mean mod or modf?","line":0,"col":0,"end_line":0,"end_col":0}
+ppx : true ; params r=5 ; features boule@4

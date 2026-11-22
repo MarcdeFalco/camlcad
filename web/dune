@@ -1,0 +1,13 @@
+; Spike de la phase 3 : toplevel OCaml (avec le ppx) dans un Web Worker.
+; Site statique assemblé dans _build/default/web/site (voir web/README.md).
+
+(executable
+ (name toplevel)
+ (modes js)
+ (modules toplevel)
+ (libraries js_of_ocaml js_of_ocaml-toplevel ppxlib ppx_cad geom cad cad_parts
+  cad_examples kernel_manifold_js cad_web_hook)
+ (link_flags (-linkall))
+ (js_of_ocaml
+  (flags (:standard --toplevel))))
+

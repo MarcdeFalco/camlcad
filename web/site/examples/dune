@@ -1,0 +1,1 @@
+(copy_files (files ../../../examples/{support,engrenage,charniere}.ml))

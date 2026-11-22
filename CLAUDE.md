@@ -6,7 +6,8 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 ## Commandes
 - `dune build @check 2>&1 | head -50` : typage rapide (toujours filtrer la sortie).
 - `dune test` : tests d'expectation (ppx_expect) et propriétés (QCheck).
-- `npm ci --prefix test_js && dune build @test_js/runtest-js` : lois du noyau manifold-3d sous Node.
+- `npm ci --prefix test_js && dune build @test_js/runtest-js` : lois du noyau manifold-3d et worker web sous Node.
+- `dune build --profile release @web/site` : site statique de l'éditeur dans `_build/default/web/site`.
 - `dune promote` : uniquement si la nouvelle sortie est *voulue* ; le dire dans la PR.
 
 ## Règles
@@ -31,7 +32,8 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `ppx/` (`ppx_cad`) : `let%feat` et `let%param` ; positions au format `__POS__` (voir `Loc`).
 - `examples/` (`Cad_examples`) : pièces de référence (support, engrenage, charnière), `all`.
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
-- À venir : `web/` (phase 3), noyau natif.
+- `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
+- À venir : noyau natif, esquisses contraintes (phase 5), mécanismes (phase 6).
 
 ## Environnement local (Mac de Marc)
 OCaml 5.4 (opam `default`), Node 22. OManifold n'est pas sur opam : il faut le compiler depuis
