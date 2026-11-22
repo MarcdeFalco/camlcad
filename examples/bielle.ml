@@ -41,3 +41,10 @@ let make ?(r = 15.) ?(l = 50.) ?(jeu = 0.5) () =
 let x_theorique ?(r = 15.) ?(l = 50.) deg =
   let t = deg *. Float.pi /. 180. in
   (r *. cos t) +. sqrt ((l *. l) -. (r *. r *. sin t *. sin t))
+
+(* Pour l'éditeur web : un mécanisme paramétré. *)
+let model : Assembly.t Doc.t =
+  let%param rayon = 15. [@range 5., 30.] [@unit "mm"] in
+  let%param longueur = 50. [@range 35., 100.] [@unit "mm"] in
+  let%param jeu = 0.5 [@range -1., 2.] [@unit "mm"] in
+  Doc.return (make ~r:rayon ~l:longueur ~jeu ())

@@ -11,3 +11,8 @@ erreur de typage : erreur {"message":"float","line":3,"col":30,"end_line":3,"end
 exception : erreur {"message":"Exception: Failure \"boum\".","line":0,"col":0,"end_line":0,"end_col":0}
 sans model : erreur {"message":"Hint: Did you mean mod or modf?","line":0,"col":0,"end_line":0,"end_col":0}
 ppx : true ; params r=5 ; features boule@4
+bielle : true mech bati,manivelle,coulisseau,bielle manivelle[-180,180]° coulisseau[15,115]mm bielle[-180,180]° 64 0
+pose manivelle=0 : coulisseau=65.000 interférences=0
+pose manivelle=90 : coulisseau=47.697 interférences=0
+pose manivelle=180 : coulisseau=35.000 interférences=0
+jeu négatif : true manivelle / bielle : 90.1 mm³ | coulisseau / bielle : 40.5 mm³

@@ -9,7 +9,7 @@ import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 
 const $ = (id) => document.getElementById(id);
-const EXAMPLES = ['support', 'engrenage', 'charniere', 'patte'];
+const EXAMPLES = ['support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
 
 // ---------- Worker ----------
 const worker = new Worker('worker.js', { type: 'module' });
@@ -35,6 +35,7 @@ worker.onmessage = ({ data: m }) => {
     return;
   }
   if (m.kind === 'feature') { showFeatureMesh(m); return; }
+  if (m.kind === 'pose') { poseInflight = false; onPose(m); if (poseNext) { const p = poseNext; poseNext = null; sendPose(p); } return; }
   inflight = false;
   onResult(m);
   if (pending) { const p = pending; pending = null; send(p); }
@@ -123,8 +124,9 @@ function fit(g) {
 // ---------- Résultats ----------
 function onResult(m) {
   const t = m.timings || {};
+  const ntri = m.mode === 'mech' ? m.parts.reduce((n, p) => n + p.triangles.length / 3, 0) : m.triangles.length / 3;
   $('status').textContent = m.ok
-    ? `${m.triangles.length / 3} triangles · compil ${(t.compile ?? 0).toFixed(0)} ms · évaluation ${(t.run + t.mesh).toFixed(0)} ms`
+    ? `${m.mode === 'mech' ? m.parts.length + ' pièces · ' : ''}${ntri} triangles · compil ${(t.compile ?? 0).toFixed(0)} ms · évaluation ${((t.run ?? 0) + (t.mesh ?? 0)).toFixed(0)} ms`
     : 'erreur';
   const diags = [];
   if (m.error) {
@@ -142,7 +144,10 @@ function onResult(m) {
   } else $('error').hidden = true;
   view.dispatch(setDiagnostics(view.state, diags));
   if (m.journal !== 'null') { journal = JSON.parse(m.journal); renderParams(); renderTree(); }
+  $('motion').hidden = m.mode !== 'mech';
+  if (m.ok && m.mode === 'mech') { showMech(m); return; }
   if (m.ok) {
+    clearMech();
     lastMesh = m;
     $('export-stl').disabled = false;
     if (part) { scene.remove(part); part.geometry.dispose(); }
@@ -219,6 +224,78 @@ function showFeatureMesh(m) {
   highlight.renderOrder = 1;
   scene.add(highlight);
 }
+
+// ---------- Mécanismes : une pièce par maillage, placée par sa matrice ----------
+let mech = null, poseInflight = false, poseNext = null, drivers = new Map(), anim = null;
+function clearMech() {
+  if (!mech) return;
+  for (const o of mech.meshes) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
+  mech = null; stopAnim();
+}
+function showMech(m) {
+  clearMech();
+  if (part) { scene.remove(part); part.geometry.dispose(); part = null; }
+  $('export-stl').disabled = true;
+  const meshes = m.parts.map((p) => {
+    const c = p.color ? new THREE.Color(p.color[0] / 255, p.color[1] / 255, p.color[2] / 255) : new THREE.Color(0x4f86c6);
+    const o = new THREE.Mesh(geometry(p), new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, flatShading: true }));
+    o.matrixAutoUpdate = false; scene.add(o); return o;
+  });
+  mech = { meshes, coords: m.coords };
+  const known = new Set(m.coords.map((c) => c.name));
+  for (const k of [...drivers.keys()]) if (!known.has(k)) drivers.delete(k);
+  onPose(m);
+  renderCoords(m);
+  if (!fitted) { const b = new THREE.Box3(); meshes.forEach((o) => b.expandByObject(o)); const g = new THREE.BufferGeometry(); g.boundingSphere = b.getBoundingSphere(new THREE.Sphere()); fit(g); fitted = true; }
+}
+function onPose(m) {
+  if (!mech) return;
+  if (!m.ok) { $('inter').textContent = m.error; return; }
+  mech.meshes.forEach((o, i) => { o.matrix.fromArray(m.matrices.slice(16 * i, 16 * i + 16)); o.matrixWorldNeedsUpdate = true; });
+  mech.pose = new Map(m.pose);
+  $('inter').textContent = m.interferences.length ? 'Interférences : ' + m.interferences.join(', ') : '';
+  for (const el of document.querySelectorAll('#coords .param')) {
+    const v = mech.pose.get(el.dataset.name);
+    if (v != null && !drivers.has(el.dataset.name)) { el.querySelector('input').value = v; el.querySelector('output').textContent = fmt(v); }
+  }
+}
+function sendPose(d) {
+  if (poseInflight) { poseNext = d; return; }
+  poseInflight = true;
+  worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] });
+}
+function renderCoords(m) {
+  const box = $('coords'); box.replaceChildren();
+  for (const c of m.coords) {
+    const div = document.createElement('div'); div.className = 'param'; div.dataset.name = c.name;
+    const v = mech.pose.get(c.name) ?? 0;
+    div.innerHTML = `<label><span>${c.name}${drivers.has(c.name) ? ' (pilote)' : ''}</span><span><output>${fmt(v)}</output> ${c.unit}</span></label>
+      <input type="range" min="${c.lo}" max="${c.hi}" step="${(c.hi - c.lo) / 360}" value="${v}">`;
+    const input = div.querySelector('input');
+    input.oninput = () => {
+      stopAnim();
+      // un seul pilote à la fois : les autres coordonnées sont résolues
+      drivers = new Map([[c.name, Number(input.value)]]);
+      div.querySelector('output').textContent = fmt(Number(input.value));
+      sendPose(drivers);
+    };
+    box.append(div);
+  }
+}
+function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = null; $('animate').textContent = '▶'; } }
+$('animate').onclick = () => {
+  if (anim) { stopAnim(); return; }
+  if (!mech || !mech.coords.length) return;
+  const c = mech.coords[0], t0 = performance.now();
+  $('animate').textContent = '⏸';
+  const step = (t) => {
+    const q = c.lo + ((((t - t0) / 4000) % 1) * (c.hi - c.lo));
+    drivers = new Map([[c.name, q]]);
+    if (!poseInflight) sendPose(drivers);
+    anim = requestAnimationFrame(step);
+  };
+  anim = requestAnimationFrame(step);
+};
 
 // ---------- Export STL binaire ----------
 $('export-stl').onclick = () => {

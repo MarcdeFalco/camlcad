@@ -6,7 +6,7 @@
  (modes js)
  (modules toplevel)
  (libraries js_of_ocaml js_of_ocaml-toplevel ppxlib ppx_cad geom cad cad_parts
-  cad_examples kernel_manifold_js cad_web_hook)
+  cad_examples cad_mech kernel_manifold_js cad_web_hook)
  (link_flags (-linkall))
  (js_of_ocaml
   (flags (:standard --toplevel))))
