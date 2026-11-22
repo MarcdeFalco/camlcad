@@ -72,4 +72,13 @@ let%expect_test "arbres des pièces de référence" =
       feat 1 aile_a         deps=[0]  l.25  «let%feat aile_a =»
       feat 2 aile_b         deps=[]  l.30  «let%feat aile_b =»
       feat 3 charniere      deps=[0,1,2]  l.35  «let%feat charniere = Shape.(aile_a + aile_b)»
+    == patte
+      param largeur    = 50     l.24  «50.»
+      param hauteur    = 20     l.25  «20.»
+      param pente      = 60     l.26  «60.»
+      param diametre   = 6      l.27  «6.»
+      param epaisseur  = 5      l.28  «5.»
+      feat 0 patte          deps=[]  l.30  «let%feat patte = Shape.extrude ~h:epaisseur p»
+      feat 1 lamage         deps=[]  l.31  «let%feat lamage =»
+      feat 2 piece          deps=[0,1]  l.34  «let%feat piece = Shape.(patte - lamage)»
     |}]

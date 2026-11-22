@@ -27,13 +27,14 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/export` (`Cad_export`) : Stl, Threemf.
 - `test/` : contrats exécutables ; `Fake_kernel` sert à tester `Eval` sans noyau réel.
 - `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + géométrie des exemples.
+- `src/core/sketch`, `nlsolve` : esquisses contraintes (monade, poignées typées), Gauss-Newton à pas de norme minimale.
 - `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
 - `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante).
-- `ppx/` (`ppx_cad`) : `let%feat` et `let%param` ; positions au format `__POS__` (voir `Loc`).
-- `examples/` (`Cad_examples`) : pièces de référence (support, engrenage, charnière), `all`.
+- `ppx/` (`ppx_cad`) : `let%feat`, `let%param`, `let%sketch` ; positions au format `__POS__` (voir `Loc`).
+- `examples/` (`Cad_examples`) : pièces de référence (support, engrenage, charnière, patte esquissée), `all`.
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
-- À venir : noyau natif, esquisses contraintes (phase 5), mécanismes (phase 6).
+- À venir : noyau natif, édition graphique des esquisses (phase 5), mécanismes (phase 6).
 
 ## Environnement local (Mac de Marc)
 OCaml 5.4 (opam `default`), Node 22. OManifold n'est pas sur opam : il faut le compiler depuis

@@ -54,6 +54,10 @@ let param_binding (vb : value_binding) k =
          [%e default])
       (fun [%p vb.pvb_pat] -> [%e k])]
 
+let sketch_binding (vb : value_binding) k =
+  let loc = vb.pvb_loc in
+  [%expr Cad.Doc.bind (Cad.Sketch.to_doc ~loc:[%e loc_expr loc] [%e vb.pvb_expr]) (fun [%p vb.pvb_pat] -> [%e k])]
+
 let expand one ~ctxt:_ expr =
   match expr.pexp_desc with
   | Pexp_let (Nonrecursive, vbs, body) -> List.fold_right one vbs body
@@ -69,4 +73,5 @@ let () =
   Driver.register_transformation "camlcad"
     ~rules:
       [ Context_free.Rule.extension (ext "feat" feat_binding);
-        Context_free.Rule.extension (ext "param" param_binding) ]
+        Context_free.Rule.extension (ext "param" param_binding);
+        Context_free.Rule.extension (ext "sketch" sketch_binding) ]

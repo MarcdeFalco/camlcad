@@ -1,5 +1,7 @@
 module Support = Support
 module Engrenage = Engrenage
 module Charniere = Charniere
+module Patte = Patte
 
-let all = [ ("support", Support.model); ("engrenage", Engrenage.model); ("charniere", Charniere.model) ]
+let all = [ ("support", Support.model); ("engrenage", Engrenage.model); ("charniere", Charniere.model);
+    ("patte", Patte.model) ]
