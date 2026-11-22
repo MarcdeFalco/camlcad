@@ -1,0 +1,7 @@
+; Pièces de référence (phase 2) : écrites avec le ppx, testées dans test/ (journal)
+; et test_js/ (géométrie avec manifold-3d).
+(library
+ (name cad_examples)
+ (public_name camlcad.examples)
+ (libraries geom cad cad_parts)
+ (preprocess (pps ppx_cad)))

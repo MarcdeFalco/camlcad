@@ -10,6 +10,7 @@
  (depends
   (ocaml (>= 4.14))
   dune
+  (ppxlib (>= 0.26))
   js_of_ocaml
   js_of_ocaml-compiler
   (ppx_expect :with-test)
