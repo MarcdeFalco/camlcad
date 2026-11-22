@@ -1,0 +1,4 @@
+(library
+ (name cad_parts)
+ (public_name camlcad.parts)
+ (libraries geom cad))

@@ -1,0 +1,4 @@
+support : volume 12006 mm3, fermé true, genre 3, boîte 60.0 x 25.0 x 30.0
+engrenage : volume 5810 mm3, fermé true, genre 1, boîte 39.0 x 39.0 x 6.0
+charniere : volume 3804 mm3, fermé true, genre 3, boîte 40.0 x 30.0 x 8.0
+  interférence aile_a * aile_b : 0.000 mm3

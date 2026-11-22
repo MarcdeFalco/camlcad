@@ -25,8 +25,18 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/core` (`Cad`) : Loc, Mesh, Kernel (signature), Profile, Shape, Eval, Doc.
 - `src/export` (`Cad_export`) : Stl, Threemf.
 - `test/` : contrats exécutables ; `Fake_kernel` sert à tester `Eval` sans noyau réel.
-- `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + exemple.
-- À venir : `ppx/` (phase 2), `web/` (phase 3), noyau natif (quand opam sera accessible).
+- `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + géométrie des exemples.
+- `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
+- `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante).
+- `ppx/` (`ppx_cad`) : `let%feat` et `let%param` ; positions au format `__POS__` (voir `Loc`).
+- `examples/` (`Cad_examples`) : pièces de référence (support, engrenage, charnière), `all`.
+- `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
+- À venir : `web/` (phase 3), noyau natif.
+
+## Environnement local (Mac de Marc)
+OCaml 5.4 (opam `default`), Node 22. OManifold n'est pas sur opam : il faut le compiler depuis
+GitHub (sous-module manifold, cmake, `brew install assimp libomp`), pas encore fait.
+Le sandbox interdit d'écrire dans `.git` : les commandes git qui écrivent passent hors sandbox.
 
 ## Environnement cloud
 Pas d'accès à opam.ocaml.org : OCaml 4.14 + dune depuis apt (`ocaml-nox ocaml-dune

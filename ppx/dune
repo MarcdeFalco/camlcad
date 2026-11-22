@@ -1,0 +1,7 @@
+(library
+ (name ppx_cad)
+ (public_name camlcad.ppx)
+ (kind ppx_rewriter)
+ (libraries ppxlib)
+ (preprocess (pps ppxlib.metaquot))
+ (ppx_runtime_libraries camlcad.core))

@@ -1,0 +1,5 @@
+(executable
+ (name cad_tree)
+ (public_name cad-tree)
+ (package camlcad)
+ (libraries cad cad_examples))

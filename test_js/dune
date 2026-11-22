@@ -2,9 +2,9 @@
 ; Lancement : dune build @runtest-js (hors de dune test, qui reste pur OCaml).
 
 (executables
- (names laws support)
+ (names laws support examples)
  (modes js)
- (libraries geom cad cad_export kernel_manifold_js))
+ (libraries geom cad cad_export cad_examples kernel_manifold_js))
 
 (rule
  (alias runtest-js)
@@ -21,3 +21,11 @@
   (progn
    (with-stdout-to support.output (run node run.mjs support.bc.js))
    (diff support.expected support.output))))
+
+(rule
+ (alias runtest-js)
+ (deps run.mjs examples.bc.js (source_tree node_modules))
+ (action
+  (progn
+   (with-stdout-to examples.output (run node run.mjs examples.bc.js))
+   (diff examples.expected examples.output))))
