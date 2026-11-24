@@ -1,0 +1,20 @@
+; Noyau natif. Nécessite Manifold compilé par scripts/build-manifold.sh.
+(library
+ (name kernel_manifold_native)
+ (public_name camlcad.kernel-manifold-native)
+ (libraries geom cad)
+ (modules kernel_manifold_native)
+ (foreign_stubs
+  (language c)
+  (names manifold_stubs)
+  (flags (:standard (:include c_flags.sexp))))
+ (c_library_flags (:include c_library_flags.sexp)))
+
+(executable
+ (name discover)
+ (modules discover))
+
+(rule
+ (targets c_flags.sexp c_library_flags.sexp)
+ (deps (env_var MANIFOLD_PREFIX))
+ (action (run ./discover.exe)))

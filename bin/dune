@@ -2,4 +2,12 @@
  (name cad_tree)
  (public_name cad-tree)
  (package camlcad)
+ (modules cad_tree)
  (libraries cad cad_examples))
+
+(executable
+ (name cad)
+ (public_name cad)
+ (package camlcad)
+ (modules cad)
+ (libraries unix cad cad_export cad_mech cad_examples kernel_manifold_native))

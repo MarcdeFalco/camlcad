@@ -7,6 +7,8 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `dune build @check 2>&1 | head -50` : typage rapide (toujours filtrer la sortie).
 - `dune test` : tests d'expectation (ppx_expect) et propriétés (QCheck).
 - `npm ci --prefix test_js && dune build @test_js/runtest-js` : lois du noyau manifold-3d et worker web sous Node.
+- `scripts/build-manifold.sh` puis `dune build @test_native/runtest-native` : noyau natif, mêmes `.expected` que `test_js/`.
+- `dune exec cad -- PIÈCE [-D nom=valeur] [--stl F] [--3mf F] [--json]` : CLI natif.
 - `dune build --profile release @web/site` : site statique de l'éditeur dans `_build/default/web/site`.
 - `dune promote` : uniquement si la nouvelle sortie est *voulue* ; le dire dans la PR.
 
@@ -26,6 +28,8 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/core` (`Cad`) : Loc, Mesh, Kernel (signature), Profile, Shape, Eval, Doc.
 - `src/export` (`Cad_export`) : Stl, Threemf.
 - `test/` : contrats exécutables ; `Fake_kernel` sert à tester `Eval` sans noyau réel.
+- `src/kernel_manifold_native` : Manifold v3.2.1 (même version que le JS) par sa C API, stubs maison ; sans `_manifold/` la bibliothèque compile mais `available () = false`.
+- `test/suites` (`Kernel_suites`) : lois, géométrie des exemples, mécanismes, en foncteurs sur le noyau.
 - `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + géométrie des exemples.
 - `src/core/sketch`, `nlsolve` : esquisses contraintes (monade, poignées typées), Gauss-Newton à pas de norme minimale.
 - `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
@@ -33,13 +37,14 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/mech` (`Cad_mech`) : `Part` (solide + ports), `Joint` (encastrement, pivot, glissière), `Assembly` (arbre + boucles + couplages résolus par `Nlsolve`, balayage, interférences).
 - `ppx/` (`ppx_cad`) : `let%feat`, `let%param`, `let%sketch` ; positions au format `__POS__` (voir `Loc`).
 - `examples/` (`Cad_examples`) : pièces de référence (support, engrenage, charnière, patte esquissée, bielle-manivelle), `all`.
+- `bin/cad` : CLI natif (résumé, export STL/3MF, mécanismes à la pose de repos).
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
-- À venir : noyau natif, édition graphique des esquisses (phase 5), mécanismes (phase 6).
+- À venir : édition graphique des esquisses (phase 5), mécanismes (phase 6).
 
 ## Environnement local (Mac de Marc)
-OCaml 5.4 (opam `default`), Node 22. OManifold n'est pas sur opam : il faut le compiler depuis
-GitHub (sous-module manifold, cmake, `brew install assimp libomp`), pas encore fait.
+OCaml 5.4 (opam `default`), Node 22. Manifold compilé dans `_manifold/` par `scripts/build-manifold.sh`
+(cmake, ~5 min ; OManifold n'est pas utilisé : vieux Manifold vendu, incompatible cmake 4).
 Le sandbox interdit d'écrire dans `.git` : les commandes git qui écrivent passent hors sandbox.
 
 ## Environnement cloud

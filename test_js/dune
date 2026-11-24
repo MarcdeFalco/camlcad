@@ -4,7 +4,7 @@
 (executables
  (names laws support examples mech)
  (modes js)
- (libraries geom cad cad_export cad_examples cad_mech kernel_manifold_js))
+ (libraries geom cad cad_export cad_examples cad_mech kernel_suites kernel_manifold_js))
 
 (rule
  (alias runtest-js)

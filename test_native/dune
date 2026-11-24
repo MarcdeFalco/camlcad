@@ -1,0 +1,28 @@
+; Mêmes suites que test_js/, contre le noyau natif, comparées aux mêmes
+; fichiers .expected : les deux noyaux doivent donner des résultats identiques.
+; Lancement : dune build @test_native/runtest-native (Manifold requis).
+
+(executables
+ (names laws examples mech)
+ (libraries kernel_suites kernel_manifold_native))
+
+(rule
+ (alias runtest-native)
+ (action
+  (progn
+   (with-stdout-to laws.output (run ./laws.exe))
+   (diff %{dep:../test_js/laws.expected} laws.output))))
+
+(rule
+ (alias runtest-native)
+ (action
+  (progn
+   (with-stdout-to examples.output (run ./examples.exe))
+   (diff %{dep:../test_js/examples.expected} examples.output))))
+
+(rule
+ (alias runtest-native)
+ (action
+  (progn
+   (with-stdout-to mech.output (run ./mech.exe))
+   (diff %{dep:../test_js/mech.expected} mech.output))))
