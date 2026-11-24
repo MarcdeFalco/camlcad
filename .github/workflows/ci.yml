@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: _manifold
+          key: manifold-${{ runner.os }}-${{ hashFiles('scripts/build-manifold.sh') }}
+      - run: ./scripts/build-manifold.sh
       - uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
@@ -23,3 +28,4 @@ jobs:
           node-version: 22
       - run: npm ci --prefix test_js
       - run: opam exec -- dune build @test_js/runtest-js
+      - run: opam exec -- dune build @test_native/runtest-native

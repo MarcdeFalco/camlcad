@@ -1,0 +1,5 @@
+; Suites communes aux noyaux (JS et natif) : appliquer le foncteur exécute la
+; suite et imprime son rapport, comparé au même fichier .expected.
+(library
+ (name kernel_suites)
+ (libraries geom cad cad_export cad_examples cad_mech))
