@@ -27,6 +27,19 @@
   <section id="code"></section>
   <section id="view"></section>
   <aside>
+    <h2>Esquisse</h2>
+    <div id="sketch-start">
+      <button data-plane="XY">Plan XY</button> <button data-plane="ZX">Plan XZ</button> <button data-plane="YZ">Plan YZ</button>
+      <button id="sketch-on-face" disabled title="Cliquez d'abord une face plane de la pièce">Sur la face</button>
+      <div id="face-info" class="hint"></div>
+    </div>
+    <div id="sketch-panel" hidden>
+      <div class="tools"><button data-tool="poly">Contour</button> <button data-tool="circle">Cercle</button> <button data-tool="select">Sélection</button></div>
+      <div id="sketch-status" class="hint"></div>
+      <div id="sketch-constraints" class="tools"></div>
+      <ol id="sketch-list"></ol>
+      <div class="tools"><button id="sketch-ok-add">Extruder (+)</button> <button id="sketch-ok-cut">Enlever (−)</button> <button id="sketch-cancel">Annuler</button></div>
+    </div>
     <h2>Paramètres</h2>
     <div id="params"></div>
     <div id="motion" hidden>

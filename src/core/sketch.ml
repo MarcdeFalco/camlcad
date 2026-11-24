@@ -6,7 +6,13 @@ type circle = { c : point; r : coord }
 (* Une contrainte : liste de résidus évalués sur le vecteur des inconnues. *)
 type constr = float array -> float list
 
-type state = { vars_rev : float list; nvars : int; points_rev : point list; constrs_rev : constr list }
+type state = {
+  vars_rev : float list;
+  nvars : int;
+  points_rev : point list;
+  circles_rev : circle list;
+  constrs_rev : constr list;
+}
 type 'a t = state -> 'a * state
 
 let return x s = (x, s)
@@ -32,7 +38,8 @@ let line a b s = ({ a; b }, s)
 
 let circle ?(fixed_radius = false) c r s =
   let r, s = if fixed_radius then (Const r, s) else new_var r s in
-  ({ c; r }, s)
+  let k = { c; r } in
+  (k, { s with circles_rev = k :: s.circles_rev })
 
 let start_ l = l.a
 let end_ l = l.b
@@ -109,12 +116,18 @@ let rec profile v = function
   | Union (a, b) -> Profile.union (profile v a) (profile v b)
   | Diff (a, b) -> Profile.difference (profile v a) (profile v b)
 
-type solved = { profile : Profile.t; dof : int; redundant : int; points : Geom.V2.t array }
+type solved = {
+  profile : Profile.t;
+  dof : int;
+  redundant : int;
+  points : Geom.V2.t array;
+  radii : float array;
+}
 
 let pos s p = s.points.(p.id)
 
 let solve (m : region t) =
-  let region, st = m { vars_rev = []; nvars = 0; points_rev = []; constrs_rev = [] } in
+  let region, st = m { vars_rev = []; nvars = 0; points_rev = []; circles_rev = []; constrs_rev = [] } in
   let x0 = Array.of_list (List.rev st.vars_rev) in
   let cs = List.rev st.constrs_rev in
   let f v = Array.of_list (List.concat_map (fun c -> c v) cs) in
@@ -126,6 +139,7 @@ let solve (m : region t) =
          rep.iterations)
   else
     let points = Array.of_list (List.rev_map (fun p -> Geom.V2.v (px x p) (py x p)) st.points_rev) in
-    Ok { profile = profile x region; dof = Int.sub st.nvars rep.rank; redundant = Int.sub neq rep.rank; points }
+    let radii = Array.of_list (List.rev_map (fun c -> get x c.r) st.circles_rev) in
+    Ok { profile = profile x region; dof = Int.sub st.nvars rep.rank; redundant = Int.sub neq rep.rank; points; radii }
 
 let to_doc ?loc m = match solve m with Ok s -> Doc.return s.profile | Error e -> Doc.fail ?loc e

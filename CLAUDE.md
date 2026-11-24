@@ -32,6 +32,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `test/suites` (`Kernel_suites`) : lois, géométrie des exemples, mécanismes, en foncteurs sur le noyau.
 - `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + géométrie des exemples.
 - `src/core/sketch`, `nlsolve` : esquisses contraintes (monade, poignées typées), Gauss-Newton à pas de norme minimale.
+- `src/core/sketch_desc` : esquisse décrite par l'éditeur (indices, contraintes nommées) → résolution et code `let%sketch`.
 - `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
 - `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante).
 - `src/mech` (`Cad_mech`) : `Part` (solide + ports), `Joint` (encastrement, pivot, glissière), `Assembly` (arbre + boucles + couplages résolus par `Nlsolve`, balayage, interférences).
@@ -40,7 +41,8 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `bin/cad` : CLI natif (résumé, export STL/3MF, mécanismes à la pose de repos).
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
-- À venir : édition graphique des esquisses (phase 5), mécanismes (phase 6).
+- `web/site/sketch.js` : choix de face plane, éditeur d'esquisse sur un plan.
+- À venir : réédition graphique d'une esquisse existante, plan de face paramétrique, arcs.
 
 ## Environnement local (Mac de Marc)
 OCaml 5.4 (opam `default`), Node 22. Manifold compilé dans `_manifold/` par `scripts/build-manifold.sh`

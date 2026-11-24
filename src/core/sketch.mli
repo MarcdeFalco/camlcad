@@ -102,6 +102,7 @@ type solved = {
   dof : int;  (** degrés de liberté restants : inconnues - rang de la jacobienne *)
   redundant : int;  (** équations redondantes (compatibles) : équations - rang *)
   points : Geom.V2.t array;  (** positions résolues, dans l'ordre de création *)
+  radii : float array;  (** rayons résolus des cercles, dans l'ordre de création *)
 }
 
 val solve : region t -> (solved, string) result

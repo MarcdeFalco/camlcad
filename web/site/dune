@@ -5,5 +5,5 @@
 
 (rule
  (alias site)
- (deps index.html style.css main.js worker.js toplevel.js (glob_files examples/*.ml))
+ (deps index.html style.css main.js sketch.js worker.js toplevel.js (glob_files examples/*.ml))
  (action (progn)))
