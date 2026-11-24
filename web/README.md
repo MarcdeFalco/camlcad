@@ -21,6 +21,16 @@ et `let%param` sont disponibles.
   déplacer le curseur du code sélectionne la feature correspondante.
 - **Erreurs** de syntaxe/typage soulignées dans le code ; erreurs de `Doc`
   (paramètre hors bornes…) localisées aussi.
+- **Esquisse** : « Plan XY/XZ/YZ », ou cliquer une face plane de la pièce
+  (surlignée en vert) puis « Sur la face ». Outils : contour (cliquer le
+  premier point pour fermer), cercle (centre puis rayon), sélection (Maj pour
+  plusieurs) ; les contraintes proposées dépendent de la sélection (horizontale,
+  longueur, parallèles, tangente, rayon…) et sont résolues par le solveur OCaml
+  à chaque ajout (degrés de liberté affichés). « Extruder (+) » ou « Enlever
+  (−) » insère dans le code un plan, un paramètre de profondeur, le
+  `let%sketch` généré et la feature, combinée au résultat du `Doc.return`.
+  Limites : le plan d'une face est écrit en littéral (il ne suit pas les
+  paramètres) ; une esquisse insérée se modifie dans le code, pas encore à la souris.
 - **Mécanismes** : une pièce par couleur ; un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.

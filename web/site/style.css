@@ -30,3 +30,9 @@ aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color
 }
 #inter { color:var(--err); font-size:12px; }
 #motion h2 button { font-size:11px; padding:0 6px; margin-left:6px; }
+.hint { color:var(--muted); font-size:12px; margin:4px 0; }
+.tools { display:flex; flex-wrap:wrap; gap:4px; margin:6px 0; }
+.tools button { font-size:12px; }
+.tools button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+#sketch-list { font-size:12px; padding-left:18px; margin:4px 0; }
+#sketch-list button { font-size:10px; padding:0 4px; }

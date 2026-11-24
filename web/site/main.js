@@ -7,9 +7,10 @@ import { oCaml } from '@codemirror/legacy-modes/mode/mllike';
 import { setDiagnostics } from '@codemirror/lint';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
+import { SketchEditor, planarFace, basePlanes, frameCode } from './sketch.js';
 
 const $ = (id) => document.getElementById(id);
-const EXAMPLES = ['support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
+const EXAMPLES = ['nouveau', 'support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
 
 // ---------- Worker ----------
 const worker = new Worker('worker.js', { type: 'module' });
@@ -35,6 +36,7 @@ worker.onmessage = ({ data: m }) => {
     return;
   }
   if (m.kind === 'feature') { showFeatureMesh(m); return; }
+  if (m.kind === 'sketch') { sketch.onSolved(m); return; }
   if (m.kind === 'export3mf') { download(new Blob([m.data], { type: 'model/3mf' }), '3mf'); return; }
   if (m.kind === 'pick') { if (m.fid >= 0) selectFeature(m.fid, true); return; }
   if (m.kind === 'pose') { poseInflight = false; onPose(m); if (poseNext) { const p = poseNext; poseNext = null; sendPose(p); } return; }
@@ -121,17 +123,68 @@ const raycaster = new THREE.Raycaster();
 let down = null;
 renderer.domElement.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', (e) => {
-  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || !part || !journal) return;
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
+  if (sketch.active) { sketch.click(e); return; }
+  if (!part || !journal) return;
   const r = renderer.domElement.getBoundingClientRect();
   raycaster.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
   const hit = raycaster.intersectObject(part)[0];
-  if (hit) worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
-  else selectFeature(null, false);
+  if (hit) {
+    worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
+    showFace(planarFace(lastMesh, hit.faceIndex));
+  } else { selectFeature(null, false); showFace(null); }
 });
+window.addEventListener('keydown', (e) => { if (sketch.active) sketch.key(e); });
+
+// ---------- Face choisie et esquisse ----------
+let face = null, faceMesh = null, sketchCount = 0;
+function showFace(f) {
+  face = f;
+  if (faceMesh) { scene.remove(faceMesh); faceMesh.geometry.dispose(); faceMesh = null; }
+  $('sketch-on-face').disabled = !f;
+  $('face-info').textContent = f ? `Face plane ${fmt(f.area)} mm², normale (${f.frame.z.toArray().map(fmt).join(', ')})` : '';
+  if (!f) return;
+  const V = lastMesh.vertices, T = lastMesh.triangles, pos = [];
+  for (const t of f.tris) for (let k = 0; k < 3; k++) { const i = T[3 * t + k]; pos.push(V[3 * i], V[3 * i + 1], V[3 * i + 2]); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  faceMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x2ecc71, transparent: true, opacity: 0.6, depthTest: false, side: THREE.DoubleSide }));
+  faceMesh.renderOrder = 2; scene.add(faceMesh);
+}
+const sketch = new SketchEditor({
+  scene, camera, controls, renderer,
+  solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
+  insert: insertFeature,
+  done: () => { showFace(null); },
+});
+window.camlcadSketch = sketch; // inspection (tests)
+for (const b of document.querySelectorAll('[data-plane]'))
+  b.onclick = () => { showFace(null); sketch.start(basePlanes[b.dataset.plane].frame, basePlanes[b.dataset.plane].code); };
+$('sketch-on-face').onclick = () => { const f = face; showFace(null); sketch.start(f.frame, frameCode(f.frame)); };
+for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => { sketch.tool = b.dataset.tool; sketch.chain = null; sketch.pending = null; sketch.redraw(); };
+// Numéro libre : un de plus que le plus grand « esquisseN » du code.
+const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/esquisse(\d+)/g)].map((m) => Number(m[1])));
+$('sketch-ok-add').onclick = () => sketch.validate('add', (sketchCount = nextIndex()));
+$('sketch-ok-cut').onclick = () => sketch.validate('cut', (sketchCount = nextIndex()));
+$('sketch-cancel').onclick = () => sketch.stop();
+
+// Insère la feature avant le dernier « Doc.return X » et combine : X + f ou X - f.
+function insertFeature(code, feat, mode) {
+  const doc = view.state.doc.toString();
+  const re = /^([ \t]*)Doc\.return\s+(.+?)\s*$/gm;
+  let m, last = null;
+  while ((m = re.exec(doc))) last = m;
+  if (!last) { alert('Pas de « Doc.return … » où insérer la feature.'); return; }
+  const prev = last[2];
+  const res = `resultat${sketchCount}`;
+  const ins = code + `  let%feat ${res} = Shape.(${prev} ${mode === 'add' ? '+' : '-'} ${feat}) in\n`;
+  const from = last.index, to = last.index + last[0].length;
+  view.dispatch({ changes: { from, to, insert: ins + `${last[1]}Doc.return ${res}` } });
+}
 
 function fit(g) {
   g.computeBoundingSphere();
-  const { center, radius } = g.boundingSphere;
+  const { center } = g.boundingSphere;
+  const radius = Number.isFinite(g.boundingSphere.radius) && g.boundingSphere.radius > 1e-6 ? g.boundingSphere.radius : 50;
   controls.target.copy(center);
   const half = THREE.MathUtils.degToRad(camera.fov / 2);
   const dist = (1.15 * radius) / Math.sin(half) / Math.min(1, camera.aspect);
@@ -336,12 +389,14 @@ $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, o
 
 // ---------- Exemples ----------
 for (const e of EXAMPLES) $('example').append(new Option(e, e));
+const BLANK = 'open Cad\n\n(* Choisissez un plan dans « Esquisse » pour commencer. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';
 async function loadExample(name) {
-  const code = await (await fetch(`examples/${name}.ml`)).text();
+  if (sketch.active) sketch.stop();
+  const code = name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text();
   if (journal) selectFeature(null, false);
   overrides = new Map(); fitted = false; journal = null;
   $('example').value = name;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
 }
 $('example').onchange = () => loadExample($('example').value);
-loadExample(EXAMPLES[1]);
+loadExample('engrenage');

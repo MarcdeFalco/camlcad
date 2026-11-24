@@ -21,3 +21,6 @@ clic paroi d'un trou : feature 2
 clic face de l'aile : feature 1
 clic dans le vide : feature -1
 3MF engrenages : true 3 objets, 3 items
+esquisse : true dof 0 points 0.00,0.00 40.00,0.00 40.00,20.00 0.00,20.00 20.00,10.00 rayon 4.00
+esquisse incompatible : false esquisse : contraintes incompatibles
+code inséré : true extrusion1@34 resultat1@35

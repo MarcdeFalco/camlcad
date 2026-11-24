@@ -67,3 +67,26 @@ show('ppx', await ask({ kind: 'eval', id: 7, code: 'open Cad\nlet model =\n  let
   const txt = Buffer.from(m.data).toString('latin1');
   console.log('3MF engrenages :', txt.startsWith('PK'), (txt.match(/<object /g) || []).length, 'objets,', (txt.match(/<item /g) || []).length, 'items');
 }
+{
+  // Esquisse décrite par l'éditeur : résolution, puis code inséré et recompilé.
+  const sketch = {
+    points: [[0, 0, true], [38, 1, false], [41, 22, false], [1, 19, false], [20, 12, false]],
+    lines: [[0, 1], [1, 2], [2, 3], [3, 0]], circles: [[4, 3]],
+    constraints: [
+      { kind: 'horizontal', refs: [0] }, { kind: 'vertical', refs: [1] }, { kind: 'horizontal', refs: [2] },
+      { kind: 'vertical', refs: [3] }, { kind: 'length', refs: [0], value: 40 }, { kind: 'length', refs: [1], value: 20 },
+      { kind: 'hdistance', refs: [0, 4], value: 20 }, { kind: 'vdistance', refs: [0, 4], value: 10 },
+      { kind: 'radius', refs: [0], value: 4 }],
+    loops: [[0, 1, 2, 3]],
+  };
+  const s = await ask({ kind: 'sketch', id: 16, sketch });
+  console.log('esquisse :', s.ok, 'dof', s.dof, 'points', s.points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' '), 'rayon', s.radii[0].toFixed(2));
+  const bad = await ask({ kind: 'sketch', id: 17, sketch: { ...sketch, constraints: [...sketch.constraints, { kind: 'length', refs: [0], value: 10 }] } });
+  console.log('esquisse incompatible :', bad.ok, bad.error.split(' (')[0]);
+  const code = `open Cad\nlet model : Shape.t Doc.t =\n  let plan1 = Geom.Frame.make ~origin:(Geom.V3.v 0. 0. 4.) ~x:(Geom.V3.v 1. 0. 0.) ~z:(Geom.V3.v 0. 0. 1.) in\n` +
+    `  let%param profondeur1 = 5. [@range 0.5, 100.] [@unit "mm"] in\n  let%sketch esquisse1 =\n${s.code}  in\n` +
+    `  let%feat extrusion1 = Shape.(extrude ~h:profondeur1 esquisse1 |> place plan1) in\n` +
+    `  let%feat resultat1 = Shape.(Shape.empty + extrusion1) in\n  Doc.return resultat1\n`;
+  const m = await ask({ kind: 'eval', id: 18, code });
+  console.log('code inséré :', m.ok, m.ok ? JSON.parse(m.journal).features.map((f) => `${f.name}@${f.loc.line}`).join(' ') : JSON.stringify(m.error));
+}

@@ -7,6 +7,9 @@
            {kind:"pose", id, overrides}       (mécanisme : pilotes → pose résolue)
            {kind:"pick", id, point:[x,y,z]}   (feature sous un point de la surface)
            {kind:"export3mf", id}             (dernier résultat ; mécanisme : pièces à la pose courante)
+           {kind:"sketch", id, sketch}         (résout une esquisse décrite comme Cad.Sketch_desc.t :
+             {points:[[x,y,fixe]], lines:[[i,j]], circles:[[c,r]],
+              constraints:[{kind, refs:[...], value?}], loops:[[i...]]})
    sortie  {kind:"ready", ms}
            {kind:"result", id, ok, journal, error, vertices, triangles, timings}
            {kind:"feature", id, fid, vertices, triangles}
@@ -15,6 +18,7 @@
            {kind:"pose", id, ok, matrices, interferences, pose, error}
            {kind:"pick", id, fid}             (fid = -1 si aucune)
            {kind:"export3mf", id, data}       (Uint8Array, paquet 3MF)
+           {kind:"sketch", id, ok, points:[[x,y]], radii, dof, redundant, code, error}
    [journal] est la chaîne JSON de [Cad.Journal_json] ; [error] vaut null ou
    {message, line, col, end_line, end_col} (lignes à partir de 1). *)
 
@@ -252,6 +256,44 @@ let export3mf id =
   String.iteri (fun i c -> Js.Unsafe.set u i (Char.code c)) bytes;
   post (obj [ ("kind", str "export3mf"); ("id", id); ("data", Js.Unsafe.inject u) ]) (jsarr [ Js.Unsafe.get u "buffer" ])
 
+(* ---------- Esquisses ---------- *)
+let sketch id (o : Js.Unsafe.any) =
+  let arr k : Js.Unsafe.any array = Js.to_array (Js.Unsafe.get o k) in
+  let fl (v : Js.Unsafe.any) = Js.float_of_number (Js.Unsafe.coerce v) in
+  let it (v : Js.Unsafe.any) = int_of_float (fl v) in
+  let get (a : Js.Unsafe.any) i : Js.Unsafe.any = Js.Unsafe.get a i in
+  let desc : Cad.Sketch_desc.t =
+    { points = Array.map (fun p -> (fl (get p 0), fl (get p 1), Js.to_bool (Js.Unsafe.coerce (get p 2)))) (arr "points");
+      lines = Array.map (fun l -> (it (get l 0), it (get l 1))) (arr "lines");
+      circles = Array.map (fun c -> (it (get c 0), fl (get c 1))) (arr "circles");
+      constraints =
+        Array.to_list
+          (Array.map
+             (fun c ->
+               let v : Js.Unsafe.any Js.Optdef.t = Js.Unsafe.get c "value" in
+               { Cad.Sketch_desc.kind = Js.to_string (Js.Unsafe.get c "kind");
+                 refs = Array.to_list (Array.map it (Js.to_array (Js.Unsafe.get c "refs")));
+                 value = Js.Optdef.to_option (Js.Optdef.map v (fun x -> x)) |> Option.map fl })
+             (arr "constraints"));
+      loops = Array.to_list (Array.map (fun l -> Array.to_list (Array.map it (Js.to_array (Js.Unsafe.coerce l)))) (arr "loops")) }
+  in
+  let kvs =
+    match Cad.Sketch_desc.solve desc with
+    | Error e -> [ ("ok", Js.Unsafe.inject Js._false); ("error", str e) ]
+    | Ok s ->
+        let solved =
+          { desc with
+            points = Array.mapi (fun i (_, _, f) -> (s.points.(i).x, s.points.(i).y, f)) desc.points;
+            circles = Array.mapi (fun i (c, _) -> (c, s.radii.(i))) desc.circles }
+        in
+        [ ("ok", Js.Unsafe.inject Js._true);
+          ("points", jsarr (Array.to_list (Array.map (fun (p : Geom.V2.t) -> jsarr [ num p.x; num p.y ]) s.points)));
+          ("radii", jsarr (Array.to_list (Array.map num s.radii)));
+          ("dof", num (float s.dof)); ("redundant", num (float s.redundant));
+          ("code", str (Cad.Sketch_desc.to_code ~indent:4 solved)) ]
+  in
+  post (obj (("kind", str "sketch") :: ("id", id) :: kvs)) (jsarr [])
+
 (* Sélection : la feature dont la surface passe le plus près du point (à moins
    de 0,5 mm) ; à
    égalité (surface commune), la plus élémentaire (moins de dépendances). *)
@@ -282,6 +324,7 @@ let () =
          | "params" -> run id (overrides_of d) 0.
          | "pose" -> pose id (overrides_of d)
          | "export3mf" -> export3mf id
+         | "sketch" -> sketch id (Js.Unsafe.get d "sketch")
          | "pick" ->
              let c i = Js.float_of_number (Js.Unsafe.get (Js.Unsafe.get d "point") i) in
              pick id (Geom.V3.v (c 0) (c 1) (c 2))
