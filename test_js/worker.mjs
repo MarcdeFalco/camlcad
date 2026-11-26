@@ -90,3 +90,29 @@ show('ppx', await ask({ kind: 'eval', id: 7, code: 'open Cad\nlet model =\n  let
   const m = await ask({ kind: 'eval', id: 18, code });
   console.log('code inséré :', m.ok, m.ok ? JSON.parse(m.journal).features.map((f) => `${f.name}@${f.loc.line}`).join(' ') : JSON.stringify(m.error));
 }
+{
+  // Frise et panneau « Modifier » : le worker réécrit le code, qui se recompile.
+  const code = fs.readFileSync(path.join(dir, 'support.ml'), 'utf8');
+  const j = JSON.parse((await ask({ kind: 'eval', id: 20, code })).journal);
+  const fid = (n) => j.features.find((f) => f.name === n).id;
+  console.log('frise :', j.features.map((f) => `${f.name}:${f.op}${f.suppressed ? '(supprimée)' : ''}`).join(' '));
+  const lits = await ask({ kind: 'edit', id: 21, code, op: 'literals', fid: fid('trou_aile') });
+  console.log('cotes de trou_aile :', lits.literals.map((l) => l.text + (l.label ? `(${l.label})` : '')).join(' '));
+  const ops = [
+    ['supprimer temporairement trou_aile', { op: 'suppress', fid: fid('trou_aile'), on: true }],
+    ['supprimer trou_aile', { op: 'delete', fid: fid('trou_aile') }],
+    ['supprimer semelle', { op: 'delete', fid: fid('semelle') }],
+    ['supprimer support', { op: 'delete', fid: fid('support') }],
+    ['angle de trou_aile à 0', { op: 'set_literal', fid: fid('trou_aile'), index: 1, value: 0 }],
+    ['hauteur de trou_aile en paramètre', { op: 'promote', fid: fid('trou_aile'), index: 4, name: 'hauteur_trou' }],
+    ['renommer trous_semelle', { op: 'rename', fid: fid('trous_semelle'), name: 'percages' }],
+  ];
+  for (const [label, msg] of ops) {
+    await ask({ kind: 'eval', id: 22, code }); // les positions viennent du journal de ce code
+    const e = await ask({ kind: 'edit', id: 23, code, ...msg });
+    if (!e.ok) { console.log(`${label} : refus (${e.error.split(' :')[0]})`); continue; }
+    const m = await ask({ kind: 'eval', id: 24, code: e.code });
+    const jj = JSON.parse(m.journal);
+    console.log(`${label} : ${m.ok && m.triangles.length > 0} ; params ${jj.params.length} ; ${jj.features.map((f) => f.name + (f.suppressed ? '(supprimée)' : '')).join(' ')}`);
+  }
+}

@@ -29,10 +29,15 @@ val param :
     Un override hors de [range] est une erreur. Déclarer deux fois le même nom
     est une erreur. *)
 
-val feature : ?loc:Loc.t -> name:string -> Shape.t -> Shape.t t
+val feature : ?loc:Loc.t -> ?suppressed:bool -> name:string -> Shape.t -> Shape.t t
 (** Enregistre une feature nommée et rend la forme inchangée. Ses dépendances
     sont les features antérieures dont la forme est un sous-terme de celle-ci.
-    Deux features de même nom : erreur. *)
+    Deux features de même nom : erreur.
+
+    [~suppressed:true] (« suppression temporaire », attribut [[@@suppress]] du
+    ppx) : la feature reste dans le journal, avec sa forme, mais rend
+    [Shape.empty]. Une union ou une différence qui l'utilise l'ignore donc ;
+    les features qui l'utilisent ne la comptent plus dans leurs dépendances. *)
 
 val fail : ?loc:Loc.t -> string -> 'a t
 
@@ -52,7 +57,8 @@ type feature_info = {
   f_name : string;
   f_loc : Loc.t;
   f_deps : int list;  (** [f_id] des features dont elle dépend, croissants *)
-  f_shape : Shape.t;
+  f_shape : Shape.t;  (** la forme déclarée, même supprimée *)
+  f_suppressed : bool;
 }
 
 type journal = { params : param_info list; features : feature_info list }

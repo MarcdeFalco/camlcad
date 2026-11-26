@@ -34,6 +34,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/core/sketch`, `nlsolve` : esquisses contraintes (monade, poignées typées), Gauss-Newton à pas de norme minimale.
 - `src/core/sketch_desc` : esquisse décrite par l'éditeur (indices, contraintes nommées) → résolution et code `let%sketch`.
 - `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
+- `src/core/source_edit` : réécritures du source depuis la frise (cotes, → paramètre, `[@@suppress]`, renommer, supprimer), lexicales.
 - `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante).
 - `src/mech` (`Cad_mech`) : `Part` (solide + ports), `Joint` (encastrement, pivot, glissière), `Assembly` (arbre + boucles + couplages résolus par `Nlsolve`, balayage, interférences).
 - `ppx/` (`ppx_cad`) : `let%feat`, `let%param`, `let%sketch` ; positions au format `__POS__` (voir `Loc`).
@@ -42,6 +43,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
 - `web/site/sketch.js` : choix de face plane, éditeur d'esquisse sur un plan.
+- `web/site/timeline.js` : frise des features, menu contextuel, panneau « Modifier ».
 - À venir : réédition graphique d'une esquisse existante, plan de face paramétrique, arcs.
 
 ## Environnement local (Mac de Marc)
@@ -52,3 +54,6 @@ Le sandbox interdit d'écrire dans `.git` : les commandes git qui écrivent pass
 ## Environnement cloud
 Pas d'accès à opam.ocaml.org : OCaml 4.14 + dune depuis apt (`ocaml-nox ocaml-dune
 libppx-expect-ocaml-dev libqcheck-ocaml-dev js-of-ocaml libjs-of-ocaml-dev`), Node 22 et npm disponibles. La CI GitHub utilise opam (4.14 et 5.2).
+Paquets apt en plus pour `dune test` : `libppx-hash-ocaml-dev libppx-enumerate-ocaml-dev libjane-street-headers-ocaml-dev`.
+Le js_of_ocaml d'apt (5.6) ne compile pas `web/toplevel.ml` (API 6.x) et les CDN sont bloqués : le worker
+se vérifie par la CI ; l'interface, dans Chromium avec un worker simulé et three/CodeMirror installés par npm.

@@ -17,8 +17,20 @@ et `let%param` sont disponibles.
 - **Curseurs** : un `let%param` avec `[@range lo, hi]` devient un curseur ; le
   déplacer réévalue sans recompiler (overrides du Reader, cache `Eval` conservé).
   « écrire dans le code » remplace le littéral par défaut à sa position.
-- **Arbre** : cliquer une feature (dans l'arbre ou sur la pièce en 3D) surligne sa ligne et la montre en orange ;
-  déplacer le curseur du code sélectionne la feature correspondante.
+- **Frise et arbre** (façon Fusion 360) : la frise en bas de la vue et la liste
+  « Features » montrent chaque feature avec l'icône de son opération. Cliquer
+  une feature (frise, liste ou pièce en 3D) surligne sa ligne et la montre en
+  orange ; déplacer le curseur du code sélectionne la feature correspondante.
+  Clic droit : Modifier, Renommer, Supprimer temporairement / Réactiver,
+  Supprimer. Double-clic : panneau « Modifier » (renommer, cotes littérales
+  de la liaison à éditer, « → paramètre » pour en faire un `let%param`).
+  Chaque action est une réécriture du code par `Cad.Source_edit` (dans le
+  worker), puis une recompilation : Ctrl+Z dans le code annule. La
+  suppression temporaire écrit `[@@suppress]` sur la liaison (la feature rend
+  `Shape.empty`) ; la suppression retire la liaison et ses usages dans les
+  unions et différences, et refuse les autres cas (base d'une différence,
+  résultat du modèle…) en disant pourquoi.
+- **Paramètres** : valeur tapée au clavier ou curseur, puis « écrire dans le code ».
 - **Erreurs** de syntaxe/typage soulignées dans le code ; erreurs de `Doc`
   (paramètre hors bornes…) localisées aussi.
 - **Esquisse** : « Plan XY/XZ/YZ », ou cliquer une face plane de la pièce
@@ -38,7 +50,7 @@ et `let%param` sont disponibles.
   courante avec leurs couleurs, pour l'impression en place).
 
 Fichiers : `toplevel.ml` (worker, protocole en tête), `hook/` (rendez-vous
-`model`), `site/` (HTML, `main.js` avec three.js et CodeMirror par CDN,
+`model`), `site/` (HTML, `main.js` avec three.js et CodeMirror par CDN, `timeline.js` (frise, menu, panneau Modifier),
 `worker.js` qui charge manifold-3d puis le toplevel).
 
 Test : `test_js/worker.mjs` pilote le worker sous Node (dans `@test_js/runtest-js`).

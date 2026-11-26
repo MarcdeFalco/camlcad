@@ -17,12 +17,47 @@ aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color
 .param label { display:flex; justify-content:space-between; font-size:13px; }
 .param input[type=range] { width:100%; }
 .param button { font-size:11px; padding:1px 6px; }
-#tree { padding-left:20px; margin:0; }
-#tree li { cursor:pointer; padding:2px 4px; border-radius:4px; }
+#tree { list-style:none; padding-left:0; margin:0; }
+#tree li { cursor:pointer; padding:2px 4px; border-radius:4px; display:flex; gap:6px; align-items:baseline; }
 #tree li:hover { background:var(--line); }
 #tree li.sel { background:var(--accent); color:#fff; }
-#tree li .deps { color:var(--muted); font-size:12px; }
+#tree li .deps { color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #tree li.sel .deps { color:#e0e8ff; }
+#tree li.off .name, #timeline .off .name { text-decoration:line-through; opacity:.6; }
+#tree .eye { border:none; background:none; color:inherit; padding:0 2px; cursor:pointer; font-size:12px; }
+#tree .icon { color:var(--muted); }
+#tree li.sel .icon { color:#fff; }
+h2 .hint { text-transform:none; letter-spacing:0; font-weight:normal; margin-left:6px; }
+/* Frise : bas de la vue 3D, comme la timeline de Fusion 360. */
+#timeline { position:absolute; left:8px; right:8px; bottom:8px; display:flex; gap:2px; overflow-x:auto; padding:4px;
+  background:color-mix(in srgb, var(--panel) 92%, transparent); border:1px solid var(--line); border-radius:6px; }
+#timeline .feat { display:flex; gap:4px; align-items:center; flex:none; padding:3px 8px; border:1px solid var(--line);
+  border-radius:4px; background:var(--panel); color:var(--text); font:12px system-ui, sans-serif; cursor:pointer; }
+#timeline .feat:hover { border-color:var(--accent); }
+#timeline .feat.sel { background:var(--accent); color:#fff; border-color:var(--accent); }
+#timeline .feat.off { border-style:dashed; }
+#timeline .icon { font-size:14px; }
+#notice { position:absolute; top:8px; left:50%; transform:translateX(-50%); max-width:80%; padding:6px 12px; border-radius:6px;
+  background:var(--panel); border:1px solid var(--line); font-size:13px; box-shadow:0 2px 8px #0002; z-index:2; }
+#notice.err { color:var(--err); border-color:var(--err); }
+#ctxmenu { position:fixed; z-index:10; display:flex; flex-direction:column; min-width:190px; padding:4px; background:var(--panel);
+  border:1px solid var(--line); border-radius:6px; box-shadow:0 4px 16px #0003; }
+#ctxmenu[hidden], #timeline[hidden], #notice[hidden], #feature-panel[hidden] { display:none; }
+#ctxmenu button { text-align:left; border:none; background:none; color:var(--text); padding:5px 10px; border-radius:4px; font-size:13px; cursor:pointer; }
+#ctxmenu button:hover { background:var(--accent); color:#fff; }
+#feature-panel { border:1px solid var(--accent); border-radius:6px; padding:4px 8px 8px; margin-top:8px; }
+#feature-panel h2 { display:flex; justify-content:space-between; align-items:center; }
+#feature-panel .close { border:none; background:none; color:var(--muted); font-size:16px; cursor:pointer; }
+#feature-panel .rename input { width:100%; font:600 14px system-ui, sans-serif; }
+#feature-panel .lit { border-top:1px solid var(--line); padding:6px 0; }
+#feature-panel .lit-head { display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+#feature-panel .lit-head input { width:90px; }
+#feature-panel .ctx { display:block; font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:2px 0; }
+#feature-panel .ctx b { color:var(--text); }
+#feature-panel .lit button { font-size:11px; padding:1px 6px; }
+#feature-panel .promote { display:flex; gap:4px; }
+#feature-panel .promote input { flex:1; min-width:0; font-size:12px; }
+.param input.num { width:70px; font:inherit; text-align:right; }
 #error { color:var(--err); white-space:pre-wrap; font-size:12px; }
 .cm-feat-line { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 @media (max-width: 900px) {

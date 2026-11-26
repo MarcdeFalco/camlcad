@@ -8,6 +8,7 @@ import { setDiagnostics } from '@codemirror/lint';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 import { SketchEditor, planarFace, basePlanes, frameCode } from './sketch.js';
+import { Timeline, replaceCode, notify, stlBlob } from './timeline.js';
 
 const $ = (id) => document.getElementById(id);
 const EXAMPLES = ['nouveau', 'support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
@@ -17,12 +18,22 @@ const worker = new Worker('worker.js', { type: 'module' });
 let ready = false, nextId = 1, pending = null, inflight = false;
 let overrides = new Map(); // nom -> valeur (curseurs non validés)
 let journal = null, lastMesh = null, selected = null;
+let sentCode = null, evaluatedCode = null; // code du dernier « eval » envoyé / dont le journal est affiché
 
 function send(msg) {
   if (!ready) return;
   if (inflight) { pending = msg; return; }
   inflight = true;
+  sentCode = msg.kind === 'eval' ? msg.code : null;
   worker.postMessage({ ...msg, id: nextId++, overrides: [...overrides] });
+}
+// Réécriture du code par le worker (frise) : seulement sur le code dont le journal est affiché.
+const edits = new Map();
+function edit(msg) {
+  const code = view.state.doc.toString();
+  if (inflight || pending || code !== evaluatedCode) return Promise.reject(new Error('Code en cours d\'évaluation : réessayez dans un instant.'));
+  const id = nextId++;
+  return new Promise((resolve) => { edits.set(id, resolve); worker.postMessage({ ...msg, kind: 'edit', id, code, overrides: [] }); });
 }
 function evalCode() { send({ kind: 'eval', code: view.state.doc.toString() }); }
 function evalParams() { send({ kind: 'params' }); }
@@ -37,11 +48,14 @@ worker.onmessage = ({ data: m }) => {
   }
   if (m.kind === 'feature') { showFeatureMesh(m); return; }
   if (m.kind === 'sketch') { sketch.onSolved(m); return; }
+  if (m.kind === 'edit') { edits.get(m.id)?.(m); edits.delete(m.id); return; }
   if (m.kind === 'export3mf') { download(new Blob([m.data], { type: 'model/3mf' }), '3mf'); return; }
   if (m.kind === 'pick') { if (m.fid >= 0) selectFeature(m.fid, true); return; }
   if (m.kind === 'pose') { poseInflight = false; onPose(m); if (poseNext) { const p = poseNext; poseNext = null; sendPose(p); } return; }
   inflight = false;
-  onResult(m);
+  const fromEval = sentCode != null;
+  if (fromEval) evaluatedCode = sentCode;
+  onResult(m, fromEval);
   if (pending) { const p = pending; pending = null; send(p); }
 };
 
@@ -192,7 +206,7 @@ function fit(g) {
 }
 
 // ---------- Résultats ----------
-function onResult(m) {
+function onResult(m, fromEval) {
   const t = m.timings || {};
   const ntri = m.mode === 'mech' ? m.parts.reduce((n, p) => n + p.triangles.length / 3, 0) : m.triangles.length / 3;
   $('status').textContent = m.ok
@@ -213,7 +227,11 @@ function onResult(m) {
     }
   } else $('error').hidden = true;
   view.dispatch(setDiagnostics(view.state, diags));
-  if (m.journal !== 'null') { journal = JSON.parse(m.journal); renderParams(); renderTree(); }
+  if (m.journal !== 'null') {
+    journal = JSON.parse(m.journal);
+    if (selected != null && selected >= journal.features.length) selected = null;
+    renderParams(); timeline.update(journal, selected, fromEval);
+  }
   $('motion').hidden = m.mode !== 'mech';
   if (m.ok && m.mode === 'mech') { showMech(m); return; }
   if (m.ok) {
@@ -235,10 +253,12 @@ function renderParams() {
     const div = document.createElement('div'); div.className = 'param';
     const [lo, hi] = p.range ?? [p.default / 4, p.default * 4 || 10];
     const step = 10 ** Math.floor(Math.log10((hi - lo) / 100));
-    div.innerHTML = `<label><span>${p.name}</span><span><output>${fmt(p.value)}</output>${p.unit ? ' ' + p.unit : ''}</span></label>
+    div.innerHTML = `<label><span>${p.name}</span><span><input class="num" type="number" step="any" value="${fmt(p.value)}">${p.unit ? ' ' + p.unit : ''}</span></label>
       <input type="range" min="${lo}" max="${hi}" step="${step}" value="${p.value}">`;
-    const input = div.querySelector('input'), out = div.querySelector('output');
-    input.oninput = () => { overrides.set(p.name, Number(input.value)); out.textContent = fmt(Number(input.value)); evalParams(); };
+    const input = div.querySelector('input[type=range]'), out = div.querySelector('input.num');
+    input.oninput = () => { overrides.set(p.name, Number(input.value)); out.value = fmt(Number(input.value)); evalParams(); };
+    // Valeur tapée : essayée comme un curseur (bornes vérifiées par Doc) ; « écrire dans le code » la valide.
+    out.onchange = () => { const v = Number(out.value); if (out.value !== '' && Number.isFinite(v)) { overrides.set(p.name, v); evalParams(); } };
     if (overrides.has(p.name)) {
       const b = document.createElement('button'); b.textContent = 'écrire dans le code';
       b.title = 'Remplace la valeur par défaut dans le source';
@@ -260,21 +280,15 @@ function commitParam(p) {
   view.dispatch({ changes: { from, to, insert: lit } });
 }
 
-function renderTree() {
-  const ol = $('tree'); ol.replaceChildren();
-  for (const f of journal.features) {
-    const li = document.createElement('li');
-    const deps = f.deps.map((d) => journal.features[d].name).join(', ');
-    li.innerHTML = `${f.name}${deps ? ` <span class="deps">← ${deps}</span>` : ''}`;
-    if (f.id === selected) li.className = 'sel';
-    li.onclick = () => selectFeature(f.id === selected ? null : f.id, true);
-    ol.append(li);
-  }
-}
-
+const timeline = new Timeline({
+  bar: $('timeline'), tree: $('tree'), panel: $('feature-panel'), menu: $('ctxmenu'),
+  edit, select: (fid, move) => selectFeature(fid, move), notify,
+  apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
+});
+window.camlcadTimeline = timeline; // inspection (tests)
 function selectFeature(fid, moveCursor) {
   selected = fid;
-  renderTree();
+  timeline.update(journal, selected, false);
   if (highlight) { scene.remove(highlight); highlight.geometry.dispose(); highlight = null; }
   material.opacity = fid == null ? 1 : 0.35;
   if (fid == null) { view.dispatch({ effects: setFeatLine.of(null) }); return; }
@@ -370,16 +384,7 @@ $('animate').onclick = () => {
 };
 
 // ---------- Export STL binaire ----------
-$('export-stl').onclick = () => {
-  const { vertices: v, triangles: t } = lastMesh, n = t.length / 3;
-  const buf = new ArrayBuffer(84 + 50 * n), dv = new DataView(buf);
-  dv.setUint32(80, n, true);
-  for (let i = 0; i < n; i++) {
-    const o = 84 + 50 * i;
-    for (let k = 0; k < 3; k++) for (let c = 0; c < 3; c++) dv.setFloat32(o + 12 + 12 * k + 4 * c, v[3 * t[3 * i + k] + c], true);
-  }
-  download(new Blob([buf], { type: 'model/stl' }), 'stl');
-};
+$('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
 function download(blob, ext) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
