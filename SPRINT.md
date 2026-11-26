@@ -84,6 +84,11 @@ du cache Playwright).
   longueur, angles orientés ; le dernier élément choisi est le centre) ; menu circulaire du
   clic droit dans la vue (esquisse, extrusion, pousser/tirer, congé, perçage, mesurer,
   ajuster, annuler). `marking.js`. Scénario `reseau_circulaire.spec.js` (volume vérifié).
+- Lot 20, chapitres 3 et 1 : plan milieu (deux faces parallèles cliquées) et plan à un angle
+  (plan d'origine tourné autour d'un de ses axes), repères littéraux marqués
+  `(* construction *)` et listés dans le navigateur ; annuler / rétablir (boutons, Ctrl+Z hors du
+  code) sur l'historique du code, chaque commande de l'éditeur étant une étape à part.
+  Scénario `construction2.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

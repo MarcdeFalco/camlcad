@@ -1,7 +1,7 @@
 // Commandes qui commencent par un clic sur une face plane de la pièce (Black Book ch. 4 et 6) :
 // perçage, pousser/tirer, congé et chanfrein d'arête (deux faces).
 import * as feats from './dialogs_features.js';
-import { faceLoops } from './planes.js';
+import { faceLoops, frameCode } from './planes.js';
 
 export class FaceCommands {
   // ctx : mesh() (maillage évalué), hint(texte|null), notify(texte, erreur?), dialogs
@@ -17,6 +17,13 @@ export class FaceCommands {
       presspull: () => this.start('Cliquez la face plane à pousser ou tirer', (hit, f) => feats.pressPull(dialogs, f, faceLoops(mesh(), f))),
       fillet: () => edge('fillet'), chamfer: () => edge('chamfer'),
       thread: () => feats.threadRod(dialogs),
+      // Plan milieu (ch. 3, Midplane) : entre deux faces planes parallèles.
+      midplane: () => this.start('Cliquez la première face', (h1, f1) => setTimeout(() => this.start('Cliquez la seconde face (parallèle)', (h2, f2) => {
+        const n = f1.frame.z;
+        if (Math.abs(Math.abs(n.dot(f2.frame.z)) - 1) > 1e-6) { ctx.notify('Plan milieu : les faces ne sont pas parallèles.', true); return; }
+        const d = f2.frame.origin.clone().sub(f1.frame.origin).dot(n);
+        ctx.insertPlane(`(* construction *) ${frameCode({ ...f1.frame, origin: f1.frame.origin.clone().addScaledVector(n, d / 2) })}`);
+      }))),
     };
   }
   get active() { return this.act != null; }
