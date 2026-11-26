@@ -15,6 +15,7 @@ import { Dialogs } from './dialogs.js';
 import { Mech } from './mech.js';
 import { codeEdits } from './code_edit.js';
 import { Bodies } from './bodies.js';
+import { Inspect } from './inspect.js';
 import * as feats from './dialogs_features.js';
 
 const $ = (id) => document.getElementById(id);
@@ -140,6 +141,7 @@ const dialogs = new Dialogs({
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });
+const inspect = new Inspect({ viewport: vp, dialogs, notify, mesh: () => (rollbackAt == null ? lastMesh : null) });
 const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] }) });
 
 // Clic (sans glisser) : plan d'esquisse, face plane, ou feature sous la souris.
@@ -154,6 +156,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (plane) { const P = allPlanes()[plane]; stopPicking(); startSketch(P.frame, P.code); return; }
   const hit = vp.part && !mech.active ? vp.ray(e).intersectObject(vp.part)[0] : null;
   if (hit && rollbackAt == null) {
+    if (inspect.measuring) { inspect.pick(hit); return; }
     const f = planarFace(lastMesh, hit.faceIndex);
     if (holePick) { if (f) { stopHolePick(); feats.hole(dialogs, hit.point.clone(), f.frame, throughDepth(hit.point, f.frame.z)); } return; }
     if (picking) { if (f) { stopPicking(); startSketch(f.frame, frameCode(f.frame)); } return; }
@@ -220,6 +223,7 @@ const COMMANDS = {
   hole: startHolePick,
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
+  measure: () => inspect.startMeasure(), section: () => inspect.section(), props: () => inspect.properties(),
   combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),

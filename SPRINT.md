@@ -31,9 +31,13 @@ du cache Playwright).
   badge + / − / ∩ ; marqueur et lecteur sur les étapes visibles), Combiner (résultat et un autre
   corps), Déplacer (rotation puis translation du résultat). `bodies.js` sorti de `main.js`.
   Scénario `edition.spec.js`.
+- Lot 6, chapitre 8 : Mesurer (deux points, aire d'une face plane, écart de faces parallèles),
+  Coupe (plan d'origine décalé, matière coupée en rouge), Propriétés (volume, centre de gravité,
+  masse PLA/PETG/ABS/TPU). `inspect.js`. Scénario `inspecter.spec.js`.
 
 ## En cours
-- Lot 6, chapitre 8 : mesurer, interférences, coupe (section analysis), centre de gravité.
+- Fusion des PR des lots 3 à 6 (une par lot), puis : chapitre 7 (assemblage : liaisons à la
+  souris, étude de mouvement), chapitre 2 (miroir et réseaux d'esquisse, ajuster/prolonger).
 
 ## Suivant
 
