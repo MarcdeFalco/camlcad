@@ -2,7 +2,7 @@
 // une face, réseaux rectangulaire et circulaire, symétrie. Chacun écrit une feature dans le
 // code (insert du contexte des dialogues) et la combine au résultat (Joindre, Couper…).
 import * as THREE from 'three';
-import { el } from './timeline.js';
+import { el, fmt } from './timeline.js';
 import { num, choice, row, OPS } from './dialogs.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(10)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
@@ -206,6 +206,37 @@ export function threadRod(d) {
       const [dm, pas] = METRIC[P.size], n = d.ctx.nextIndex(), name = `filetage${n}`;
       const at = P.pos.x || P.pos.y || P.pos.z ? ` |> translate ${v3(P.pos)}` : '';
       d.ctx.insert(`  let%feat ${name} = Shape.(Cad_parts.Thread.rod ~d:${lit(dm)} ~pitch:${lit(pas)} ~h:${lit(P.h)} ()${at}) in\n`, name, P.op, n);
+    },
+  });
+  preview();
+}
+
+// Pousser / tirer (Press Pull, ch. 6) : la face cliquée est extrudée le long de sa normale ;
+// distance > 0 : matière ajoutée (Joindre), < 0 : matière retirée (Couper).
+export function pressPull(d, face, loops) {
+  if (!loops.length) { d.ctx.notify('Face sans contour lisible.', true); return; }
+  const P = { dist: 5 };
+  const shape = () => { const s = new THREE.Shape(loops[0].map((p) => new THREE.Vector2(p.x, p.y))); for (const h of loops.slice(1)) s.holes.push(new THREE.Path(h.map((p) => new THREE.Vector2(p.x, p.y)))); return s; };
+  const preview = () => {
+    const h = Math.abs(P.dist) || 0.01, g = new THREE.ExtrudeGeometry(shape(), { depth: h, bevelEnabled: false });
+    if (P.dist < 0) g.translate(0, 0, -h);
+    const m = new THREE.Mesh(g), f = face.frame; m.matrixAutoUpdate = false; m.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin);
+    d.setPreview(m, P.dist < 0 ? 0xe74c3c : 0x2ecc71);
+  };
+  d.open('POUSSER / TIRER', [
+    row('Face', el('span', { className: 'hint', textContent: `${fmt(Math.round(face.area * 100) / 100)} mm², ${loops.length - 1} trou(s)` })),
+    row('Distance', num(P.dist, (v) => { P.dist = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
+    el('div', { className: 'hint', textContent: 'Positive : tirer (ajouter de la matière) ; négative : pousser (en retirer).' }),
+  ], {
+    key: 'presspull',
+    ok: () => {
+      if (!P.dist) return false;
+      const n = d.ctx.nextIndex(), name = `poussee${n}`, h = Math.abs(P.dist), e = 0.01, f = face.frame;
+      const poly = (l) => `Profile.polygon [ ${l.map((p) => `Geom.V2.v ${litp(Math.round(p.x * 1e4) / 1e4 + 0)} ${litp(Math.round(p.y * 1e4) / 1e4 + 0)}`).join('; ')} ]`;
+      const prof = loops.slice(1).reduce((acc, l) => `Profile.difference (${acc}) (${poly(l)})`, poly(loops[0]));
+      const z = P.dist > 0 ? -e : -h; // recouvre la face de 0,01 mm (pas de faces confondues)
+      const code = `  let%feat ${name} =\n    let repere = Geom.Frame.make ~origin:${v3(f.origin)} ~x:${v3n(f.x)} ~z:${v3n(f.z)} in\n    Shape.(extrude ~h:${lit(h + e)} (${prof}) |> translate (Geom.V3.v 0. 0. ${litp(z)}) |> place repere)\n  in\n`;
+      d.ctx.insert(code, name, P.dist > 0 ? 'join' : 'cut', n);
     },
   });
   preview();

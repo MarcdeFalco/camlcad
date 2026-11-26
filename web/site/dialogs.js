@@ -73,11 +73,16 @@ export class Dialogs {
 
   // ---------- Primitives ----------
   primitive(kind) {
-    const P = { op: 'join', pos: { x: 0, y: 0, z: 0 }, l: 20, w: 20, h: 10, r: 10 };
+    const P = { op: 'join', pos: { x: 0, y: 0, z: 0 }, l: 20, w: 20, h: 10, r: 10, R: 15, rt: 3, pitch: 8, turns: 4 };
     const preview = () => {
       let g;
       if (kind === 'box') { g = new THREE.BoxGeometry(P.l, P.w, P.h); g.translate(P.l / 2, P.w / 2, P.h / 2); }
       else if (kind === 'cylinder') { g = new THREE.CylinderGeometry(P.r, P.r, P.h, 48); g.rotateX(Math.PI / 2); g.translate(0, 0, P.h / 2); }
+      else if (kind === 'torus') g = new THREE.TorusGeometry(P.R, P.rt, 16, 48);
+      else if (kind === 'coil') {
+        const pts = Array.from({ length: 24 * P.turns + 1 }, (_, i) => { const t = (i / 24) * 2 * Math.PI; return new THREE.Vector3(P.R * Math.cos(t), P.R * Math.sin(t), (P.pitch * i) / 24); });
+        g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24 * P.turns, P.rt, 8);
+      }
       else g = new THREE.SphereGeometry(P.r, 32, 16);
       g.translate(P.pos.x, P.pos.y, P.pos.z);
       this.setPreview(new THREE.Mesh(g), OP_COLOR[P.op]);
@@ -86,20 +91,27 @@ export class Dialogs {
       box: [row('Longueur (x)', num(P.l, (v) => { P.l = v; preview(); }, { min: 0 })), row('Largeur (y)', num(P.w, (v) => { P.w = v; preview(); }, { min: 0 })), row('Hauteur (z)', num(P.h, (v) => { P.h = v; preview(); }, { min: 0 }))],
       cylinder: [row('Rayon', num(P.r, (v) => { P.r = v; preview(); }, { min: 0 })), row('Hauteur', num(P.h, (v) => { P.h = v; preview(); }, { min: 0 }))],
       sphere: [row('Rayon', num(P.r, (v) => { P.r = v; preview(); }, { min: 0 }))],
+      torus: [row('Rayon (axe)', num(P.R, (v) => { P.R = v; preview(); }, { min: 0 })), row('Rayon du tube', num(P.rt, (v) => { P.rt = v; preview(); }, { min: 0 }))],
+      coil: [row('Rayon (axe)', num(P.R, (v) => { P.R = v; preview(); }, { min: 0 })), row('Rayon du fil', num(P.rt, (v) => { P.rt = v; preview(); }, { min: 0 })),
+        row('Pas', num(P.pitch, (v) => { P.pitch = v; preview(); }, { min: 0 })), row('Tours', num(P.turns, (v) => { P.turns = Math.max(1, Math.round(v)); preview(); }, { step: 1, min: 1 }))],
     }[kind];
-    const title = { box: 'BOÎTE', cylinder: 'CYLINDRE', sphere: 'SPHÈRE' }[kind];
+    const title = { box: 'BOÎTE', cylinder: 'CYLINDRE', sphere: 'SPHÈRE', torus: 'TORE', coil: 'RESSORT (HÉLICE)' }[kind];
     const empty = this.ctx.isEmpty();
     this.open(title, [
       ...dims,
-      row(kind === 'sphere' ? 'Centre' : 'Position', xyz(P.pos, preview)),
+      row(kind === 'sphere' || kind === 'torus' ? 'Centre' : 'Position', xyz(P.pos, preview)),
       row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; preview(); })),
     ], {
       key: kind,
       ok: () => {
-        const n = this.ctx.nextIndex(), name = { box: 'boite', cylinder: 'cylindre', sphere: 'sphere' }[kind] + n;
+        if (kind === 'coil' && !(P.pitch > 2 * P.rt)) { this.ctx.notify('Ressort : le pas doit dépasser le diamètre du fil.', true); return false; }
+        const n = this.ctx.nextIndex(), name = { box: 'boite', cylinder: 'cylindre', sphere: 'sphere', torus: 'tore', coil: 'ressort' }[kind] + n;
         const at = P.pos.x || P.pos.y || P.pos.z ? ` |> translate ${v3(P.pos.x, P.pos.y, P.pos.z)}` : '';
         const shape = {
           box: `cube ${v3(P.l, P.w, P.h)}`, cylinder: `cylinder ~r:${lit(P.r)} ~h:${lit(P.h)} ()`, sphere: `sphere ~r:${lit(P.r)}`,
+          torus: `revolve (Profile.translate (Geom.V2.v ${lit(P.R)} 0.) (Profile.circle ~r:${lit(P.rt)}))`,
+          // Ressort : cercle décalé de l'axe, extrudé en tournant d'un tour par pas (hélice).
+          coil: `extrude ~twist:${lit(360 * P.turns)} ~h:${lit(P.pitch * P.turns)} (Profile.translate (Geom.V2.v ${lit(P.R)} 0.) (Profile.circle ~r:${lit(P.rt)}))`,
         }[kind];
         this.ctx.insert(`  let%feat ${name} = Shape.(${shape}${at}) in\n`, name, P.op, n);
       },

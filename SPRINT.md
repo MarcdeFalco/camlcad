@@ -53,6 +53,9 @@ du cache Playwright).
 - Lot 11, chapitre 4 (Hole « Tapped », Thread) : `Cad_parts.Thread` (pas ISO, section à rayon
   triangulaire extrudée avec torsion = hélice ; `rod`, `tap` avec jeu d'impression) ; perçage
   taraudé M2–M12, commande Filetage (tige filetée). Scénario `filetage.spec.js`.
+- Lot 12, chapitres 4 et 6 : Pousser/tirer une face plane (contour de la face relu du maillage,
+  trous compris ; tirer = Joindre, pousser = Couper), Tore, Ressort (cercle décalé extrudé avec
+  torsion). Scénario `pousser.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
