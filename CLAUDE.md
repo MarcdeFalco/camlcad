@@ -36,7 +36,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/core/sketch_desc` : esquisse décrite par l'éditeur (indices, contraintes nommées) → résolution et code `let%sketch`.
 - `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
 - `src/core/source_edit` : réécritures du source depuis la frise (cotes, → paramètre, `[@@suppress]`, renommer, supprimer), lexicales.
-- `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante).
+- `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante ; `Thread` : filetages ISO).
 - `src/mech` (`Cad_mech`) : `Part` (solide + ports), `Joint` (encastrement, pivot, glissière), `Assembly` (arbre + boucles + couplages résolus par `Nlsolve`, balayage, interférences).
 - `ppx/` (`ppx_cad`) : `let%feat`, `let%param`, `let%sketch` ; positions au format `__POS__` (voir `Loc`).
 - `examples/` (`Cad_examples`) : pièces de référence (support, engrenage, charnière, patte esquissée, bielle-manivelle), `all`.

@@ -10,12 +10,15 @@ const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
 const v3 = (v) => `(Geom.V3.v ${litp(Math.round(v.x * 100) / 100 + 0)} ${litp(Math.round(v.y * 100) / 100 + 0)} ${litp(Math.round(v.z * 100) / 100 + 0)})`;
 const v3n = (v) => `(Geom.V3.v ${litp(Math.round(v.x * 1e6) / 1e6 + 0)} ${litp(Math.round(v.y * 1e6) / 1e6 + 0)} ${litp(Math.round(v.z * 1e6) / 1e6 + 0)})`;
 const AXES = { X: [1, 0, 0], Y: [0, 1, 0], Z: [0, 0, 1] };
+// Filetages métriques ISO, pas gros (Cad_parts.Thread.pitch).
+export const METRIC = { M2: [2, 0.4], M2_5: [2.5, 0.45], M3: [3, 0.5], M4: [4, 0.7], M5: [5, 0.8], M6: [6, 1], M8: [8, 1.25], M10: [10, 1.5], M12: [12, 1.75] };
+const METRIC_LABELS = Object.fromEntries(Object.keys(METRIC).map((k) => [k, k.replace('_', '.')]));
 const AXIS_CODE = { X: 'Geom.V3.ex', Y: 'Geom.V3.ey', Z: 'Geom.V3.ez' };
 
 // Perçage au point `p` d'une face plane de repère `frame` (z = normale sortante).
 // through : profondeur pour « traversant » (diagonale de la pièce).
 export function hole(d, p, frame, through) {
-  const P = { type: 'simple', dia: 5, depth: 10, thru: true, cbDia: 9, cbDepth: 3, csDia: 10 };
+  const P = { type: 'simple', dia: 5, depth: 10, thru: true, cbDia: 9, cbDepth: 3, csDia: 10, size: 'M5' };
   const depth = () => (P.thru ? through : P.depth);
   const preview = () => {
     const g = new THREE.Group(), h = depth();
@@ -28,7 +31,7 @@ export function hole(d, p, frame, through) {
   };
   const extra = el('div');
   const showExtra = () => {
-    extra.replaceChildren(...(P.type === 'cb' ? [row('Ø lamage', num(P.cbDia, (v) => { P.cbDia = v; preview(); }, { min: 0 })), row('Prof. lamage', num(P.cbDepth, (v) => { P.cbDepth = v; preview(); }, { min: 0 }))]
+    extra.replaceChildren(...(P.type === 'tap' ? [row('Taraudage', choice(METRIC_LABELS, P.size, (v) => { P.size = v; P.dia = METRIC[v][0]; preview(); }))] : P.type === 'cb' ? [row('Ø lamage', num(P.cbDia, (v) => { P.cbDia = v; preview(); }, { min: 0 })), row('Prof. lamage', num(P.cbDepth, (v) => { P.cbDepth = v; preview(); }, { min: 0 }))]
       : P.type === 'cs' ? [row('Ø fraisure (90°)', num(P.csDia, (v) => { P.csDia = v; preview(); }, { min: 0 }))] : []));
   };
   const depthIn = num(P.depth, (v) => { P.depth = v; preview(); }, { min: 0 });
@@ -37,7 +40,7 @@ export function hole(d, p, frame, through) {
   thru.onchange = () => { P.thru = thru.checked; depthIn.disabled = P.thru; preview(); };
   d.open('PERÇAGE', [
     row('Position', el('span', { className: 'hint', textContent: `(${[p.x, p.y, p.z].map((c) => Math.round(c * 100) / 100).join(', ')})` })),
-    row('Type', choice({ simple: 'Simple', cb: 'Lamage', cs: 'Fraisure' }, P.type, (v) => { P.type = v; showExtra(); preview(); })),
+    row('Type', choice({ simple: 'Simple', cb: 'Lamage', cs: 'Fraisure', tap: 'Taraudé (filetage)' }, P.type, (v) => { P.type = v; if (v === 'tap') P.dia = METRIC[P.size][0]; showExtra(); preview(); })),
     row('Diamètre', num(P.dia, (v) => { P.dia = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
     row('Traversant', thru), row('Profondeur', depthIn, el('span', { className: 'unit', textContent: 'mm' })),
     extra,
@@ -48,6 +51,7 @@ export function hole(d, p, frame, through) {
       const n = d.ctx.nextIndex(), name = `percage${n}`, h = depth(), e = 0.01; // dépasse un peu de la face
       const cyl = (r, hh) => `cylinder ~r:${lit(r)} ~h:${lit(hh + e)} () |> translate (Geom.V3.v 0. 0. ${litp(-hh)})`;
       let tool = cyl(P.dia / 2, h);
+      if (P.type === 'tap') { const [dm, pas] = METRIC[P.size]; tool = `Cad_parts.Thread.tap ~d:${lit(dm)} ~pitch:${lit(pas)} ~h:${lit(h)} () |> translate (Geom.V3.v 0. 0. ${litp(-h)})`; }
       if (P.type === 'cb') tool = `(${tool}) + (${cyl(P.cbDia / 2, P.cbDepth)})`;
       if (P.type === 'cs') { const hc = (P.csDia - P.dia) / 2; tool = `(${tool}) + (extrude ~h:${lit(hc + e)} ~scale_top:${lit((P.csDia / 2 + e) / (P.dia / 2))} (Profile.circle ~r:${lit(P.dia / 2)}) |> translate (Geom.V3.v 0. 0. ${litp(-hc)}))`; }
       const code = `  let%feat ${name} =\n    let repere = Geom.Frame.make ~origin:${v3(p)} ~x:${v3n(frame.x)} ~z:${v3n(frame.z)} in\n    Shape.((${tool}) |> place repere)\n  in\n`;
@@ -175,6 +179,33 @@ export function move(d) {
       const tr = P.dx || P.dy || P.dz ? ` |> translate ${v3({ x: P.dx, y: P.dy, z: P.dz })}` : '';
       if (!rot && !tr) return false;
       d.ctx.insertResult(name, (x) => `Shape.(${x}${rot}${tr})`);
+    },
+  });
+  preview();
+}
+
+// Tige filetée (vis) ISO : taille, longueur, position, opération (Black Book ch. 4, Thread).
+export function threadRod(d) {
+  const P = { size: 'M6', h: 20, pos: { x: 0, y: 0, z: 0 }, op: 'join' };
+  const empty = d.ctx.isEmpty();
+  const preview = () => {
+    const [dm] = METRIC[P.size], c = new THREE.Mesh(new THREE.CylinderGeometry(dm / 2, dm / 2, P.h, 24));
+    c.rotation.x = Math.PI / 2; c.position.set(P.pos.x, P.pos.y, P.pos.z + P.h / 2);
+    d.setPreview(c, P.op === 'cut' ? 0xe74c3c : 0x2ecc71);
+  };
+  const xyz = el('span', { className: 'xyz' }, ...['x', 'y', 'z'].map((k) => num(P.pos[k], (v) => { P.pos[k] = v; preview(); })));
+  d.open('TIGE FILETÉE', [
+    row('Taille', choice(METRIC_LABELS, P.size, (v) => { P.size = v; preview(); })),
+    row('Longueur', num(P.h, (v) => { P.h = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+    row('Position', xyz),
+    row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; preview(); })),
+  ], {
+    key: 'thread',
+    ok: () => {
+      if (!(P.h > 0)) return false;
+      const [dm, pas] = METRIC[P.size], n = d.ctx.nextIndex(), name = `filetage${n}`;
+      const at = P.pos.x || P.pos.y || P.pos.z ? ` |> translate ${v3(P.pos)}` : '';
+      d.ctx.insert(`  let%feat ${name} = Shape.(Cad_parts.Thread.rod ~d:${lit(dm)} ~pitch:${lit(pas)} ~h:${lit(P.h)} ()${at}) in\n`, name, P.op, n);
     },
   });
   preview();

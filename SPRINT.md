@@ -50,6 +50,9 @@ du cache Playwright).
   côtés parallèles) ; régions : une boucle dans une boucle est un trou (profondeur
   d'imbrication, `Sketch_desc`), aperçu d'extrusion compris. Paroi / cadre en une esquisse.
   Scénario `esquisse_decalage.spec.js` (volume vérifié), test d'expectation (aire 204).
+- Lot 11, chapitre 4 (Hole « Tapped », Thread) : `Cad_parts.Thread` (pas ISO, section à rayon
+  triangulaire extrudée avec torsion = hélice ; `rod`, `tap` avec jeu d'impression) ; perçage
+  taraudé M2–M12, commande Filetage (tige filetée). Scénario `filetage.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
