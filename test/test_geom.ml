@@ -27,6 +27,11 @@ let%expect_test "Plane.zx : normale y" =
   Format.printf "%a@." V3.pp (Plane.normal Plane.zx);
   [%expect {| (0, 1, 0) |}]
 
+let%expect_test "Plane.xz : vu de face, y local = Z" =
+  let p = Plane.xz in
+  Format.printf "%a %a@." V3.pp (Plane.normal p) V3.pp (Frame.y_axis p);
+  [%expect {| (-0, -1, -0) (0, 0, 1) |}]
+
 let%expect_test "Bbox" =
   let b = Bbox.of_points [ V3.v 0. 0. 0.; V3.v 10. 20. 5. ] in
   Format.printf "%a %a %b@." V3.pp (Bbox.size b) V3.pp (Bbox.center b) (Bbox.is_empty Bbox.empty);

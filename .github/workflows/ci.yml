@@ -29,3 +29,27 @@ jobs:
       - run: npm ci --prefix test_js
       - run: opam exec -- dune build @test_js/runtest-js
       - run: opam exec -- dune build @test_native/runtest-native
+
+  # Scénarios d'interface : vraie UI (worker OCaml compilé) pilotée par Playwright.
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.2"
+      - run: opam install . --deps-only -y
+      - run: opam exec -- dune build --profile release @web/site
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix test_ui
+      - run: cd test_ui && npx playwright install --with-deps chromium
+      - run: cd test_ui && npx playwright test
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-ui
+          path: |
+            test_ui/shots/
+            test_ui/results/

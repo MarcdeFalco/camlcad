@@ -52,7 +52,7 @@ worker.onmessage = ({ data: m }) => {
     return;
   }
   if (m.kind === 'feature') {
-    if (m.id === -1) { if (rollbackAt != null && m.fid === rollbackAt - 1) vp.setPart(m); }
+    if (m.id === -1) { if (bodies && bodies.want.has(m.fid)) { bodies.got.set(m.fid, m); if (bodies.got.size === bodies.want.size) showBodies(); } }
     else if (m.fid === selected) vp.setHighlight(m);
     return;
   }
@@ -136,6 +136,8 @@ function insertFeature(code, feat, op, n) {
     res = `resultat${n}`;
     ins += `  let%feat ${res} = Shape.(${prev} ${{ join: '+', cut: '-', intersect: '*' }[op]} ${feat}) in\n`;
   }
+  if (selected != null) selectFeature(null, false); // commande terminée : plus de sélection
+  showFace(null);
   view.dispatch({ changes: { from: last.index, to: last.index + last[0].length, insert: ins + `${last[1]}Doc.return ${res}` } });
   clearTimeout(debounce); evalCode();
 }
@@ -145,6 +147,7 @@ const sketchesInCode = () => [...view.state.doc.toString().matchAll(/let%sketch\
 
 // ---------- Vue 3D ----------
 const vp = new Viewport($('view'));
+window.camlcadView = vp; // inspection (tests)
 const dialogs = new Dialogs({
   scene: vp.scene, insert: insertFeature, nextIndex, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
@@ -156,7 +159,7 @@ const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({
 let down = null, face = null, faceMesh = null, picking = false;
 const canvas = vp.renderer.domElement;
 canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
-canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); });
+canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); if (sketch.active) sketch.move(e); });
 canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
   if (sketch.active) { sketch.click(e); return; }
@@ -194,11 +197,12 @@ function startPicking() {
   if (sketch.active) return;
   if (face) { const f = face; startSketch(f.frame, frameCode(f.frame)); return; }
   picking = true; vp.showPlanes(basePlanes);
+  if (!lastMesh || !lastMesh.triangles.length) { vp.planes.updateMatrixWorld(true); vp.fit([vp.planes]); } // document vide : les trois plans entiers à l'écran
   hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
 }
 function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
-for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => { sketch.tool = b.dataset.tool; sketch.chain = null; sketch.pending = null; sketch.redraw(); };
+for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
 $('sketch-cancel').onclick = () => sketch.stop();
 
@@ -250,15 +254,39 @@ const timeline = new Timeline({
   sketchOn: (k) => { stopPicking(); startSketch(basePlanes[k].frame, basePlanes[k].code); },
   gotoLine, toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
   rollback: (k) => {
-    rollbackAt = k;
+    rollbackAt = k; bodies = null;
     vp.setHighlight(null);
     if (k == null) { if (lastMesh) vp.setPart(lastMesh); }
     else if (k === 0) vp.clearPart();
-    else featureMesh(k - 1, -1);
+    else requestBodies(k);
     $('status').textContent = k == null ? lastStatus : `retour à l’étape ${k} / ${journal.features.length}`;
   },
 });
 window.camlcadTimeline = timeline; // inspection (tests)
+
+// Retour arrière : comme dans un modeleur, on voit tous les corps présents à l'étape k,
+// c'est-à-dire les features d'avant le marqueur qu'aucune autre d'avant n'a consommées.
+let bodies = null;
+function requestBodies(k) {
+  const fs = journal.features.filter((f) => f.id < k);
+  const used = new Set(fs.flatMap((f) => f.deps));
+  const want = new Set(fs.filter((f) => !used.has(f.id) && !f.suppressed).map((f) => f.id));
+  bodies = { want, got: new Map() };
+  if (!want.size) { vp.clearPart(); return; }
+  for (const id of want) featureMesh(id, -1);
+}
+function showBodies() {
+  const ms = [...bodies.got.values()];
+  const nv = ms.reduce((n, m) => n + m.vertices.length, 0), nt = ms.reduce((n, m) => n + m.triangles.length, 0);
+  const vertices = new Float32Array(nv), triangles = new Uint32Array(nt);
+  let ov = 0, ot = 0;
+  for (const m of ms) {
+    vertices.set(m.vertices, ov);
+    for (let i = 0; i < m.triangles.length; i++) triangles[ot + i] = m.triangles[i] + ov / 3;
+    ov += m.vertices.length; ot += m.triangles.length;
+  }
+  vp.setPart({ vertices, triangles });
+}
 
 function selectFeature(fid, moveCursor) {
   selected = fid;
@@ -357,9 +385,12 @@ const BLANK = 'open Cad\n\n(* Commencez par « Esquisse » ou « Boîte » dans 
 async function loadExample(name) {
   if (sketch.active) sketch.stop();
   dialogs.close(true); stopPicking();
+  $("status").textContent = lastStatus = `ouverture de « ${name} »…`; $('status').classList.remove('err');
+  $('export-stl').disabled = $('export-3mf').disabled = true; // rien à exporter avant le premier résultat
   const code = name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text();
   if (journal) selectFeature(null, false);
-  overrides = new Map(); vp.fitted = false; journal = null; timeline.setMarker(null);
+  timeline.setMarker(null); // avant de vider : remettrait l'ancienne pièce
+  overrides = new Map(); vp.fitted = false; journal = null; lastMesh = null; vp.clearPart();
   $('example').value = name;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
 }

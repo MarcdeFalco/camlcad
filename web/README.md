@@ -16,7 +16,7 @@ et `let%param` sont disponibles.
 
 Disposition d'un modeleur paramétrique (inspirée de Fusion 360, visuels propres) :
 barre d'outils à onglets en haut, navigateur à gauche, vue 3D au centre (cube de
-vue cliquable, ⌂ vue de départ, barre de navigation : orbite, panoramique,
+vue cliquable, flèches vers la face voisine, ⌂ vue de départ, barre de navigation : orbite, panoramique,
 ajuster, regarder une face, style, grille), dialogues de commande à droite,
 frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
 
@@ -33,8 +33,9 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   en surbrillance) ; double-clic : dialogue « Modifier » (nom, cotes littérales,
   ƒx pour en faire un `let%param`) ; clic droit : modifier, renommer, supprimer
   temporairement, revenir avant cette étape, aller au code, supprimer. Le
-  marqueur (à glisser, ou ⏮ ◀ ▶ ▶| ⏭) montre la pièce à une étape : la forme de
-  la dernière feature avant le marqueur. Chaque action est une réécriture du
+  marqueur (à glisser, ou ⏮ ◀ ▶ ▶| ⏭) montre la pièce à une étape : les corps
+  présents, c'est-à-dire les features d'avant le marqueur qu'aucune autre
+  d'avant n'utilise. Chaque action est une réécriture du
   code par `Cad.Source_edit` (dans le worker), puis une recompilation : Ctrl+Z
   dans le code annule. La suppression temporaire écrit `[@@suppress]` (la
   feature rend `Shape.empty`) ; la suppression retire la liaison et ses usages
@@ -46,9 +47,14 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   (paramètre hors bornes…) localisées aussi.
 - **Esquisse** : Esquisse, puis un plan d'origine (plans affichés dans la vue)
   ou une face plane de la pièce (une face déjà sélectionnée est prise
-  directement). L'onglet ESQUISSE apparaît : contour (L, cliquer le premier
-  point pour fermer), cercle (C, centre puis rayon), sélection (S, Maj pour
-  plusieurs) ; les contraintes proposées dépendent de la sélection et sont
+  directement ; origine de l'esquisse : origine du monde projetée sur la face).
+  Plans comme dans un modeleur : XY vu de dessus, XZ vu de face (`Geom.Plane.xz`),
+  YZ vu de droite. L'onglet ESQUISSE apparaît : rectangle (R, deux coins, lignes
+  horizontales et verticales contraintes), contour (L, cliquer le premier point
+  pour fermer ; lignes presque horizontales ou verticales contraintes), cercle
+  (C, centre puis rayon), sélection (S, Maj pour plusieurs), avec élastique et
+  mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,
+  double-clic sur une cote pour la modifier ; les contraintes proposées dépendent de la sélection et sont
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
   les degrés de liberté, la cote demandée et la liste des contraintes.
   « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
@@ -67,7 +73,8 @@ Fichiers : `toplevel.ml` (worker, protocole en tête), `hook/` (rendez-vous
 `timeline.js` : frise, navigateur, menu ; `dialogs.js` : dialogues de commande ; `sketch.js` ; `mech.js` ;
 `worker.js` qui charge manifold-3d puis le toplevel).
 
-Test : `test_js/worker.mjs` pilote le worker sous Node (dans `@test_js/runtest-js`).
+Test : `test_js/worker.mjs` pilote le worker sous Node (dans `@test_js/runtest-js`) ;
+`test_ui/` pilote l'interface complète à la souris (Playwright, voir `test_ui/README.md`).
 
 Mesures (Mac M-series) : toplevel prêt en ~0,3 s sous Node ; compilation d'une
 pièce 60-130 ms, réévaluation après curseur 1-15 ms. Chromium headless

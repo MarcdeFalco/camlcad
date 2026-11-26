@@ -4,3 +4,6 @@ _opam/
 *.stl
 *.3mf
 _manifold/
+node_modules/
+test_ui/results/
+test_ui/shots/

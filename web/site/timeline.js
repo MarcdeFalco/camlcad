@@ -134,7 +134,7 @@ export class Timeline {
       kids.push(this.folder('params', `Paramètres (${j.params.length})`, j.params.map((p) =>
         this.leaf('ƒ', p.name, { sub: `${fmt(p.value)}${p.unit ? ' ' + p.unit : ''}`, title: 'Ouvrir les paramètres', onclick: () => this.ctx.openParams() }))));
     const originOn = this.ctx.originVisible();
-    kids.push(this.folder('origin', 'Origine', [['XY', 'Plan XY'], ['ZX', 'Plan XZ'], ['YZ', 'Plan YZ']].map(([k, label]) =>
+    kids.push(this.folder('origin', 'Origine', [['XY', 'Plan XY'], ['XZ', 'Plan XZ'], ['YZ', 'Plan YZ']].map(([k, label]) =>
       this.leaf('▱', label, { title: 'Nouvelle esquisse sur ce plan', onclick: () => this.ctx.sketchOn(k) })),
       this.eye(originOn, 'Afficher la grille et les axes', () => { this.ctx.toggleOrigin(); this.renderTree(); })));
     if (this.sketches.length)
