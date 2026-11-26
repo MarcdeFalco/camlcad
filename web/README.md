@@ -20,7 +20,7 @@ vue cliquable, flèches vers la face voisine, ⌂ vue de départ, barre de navig
 ajuster, regarder une face, style, grille), dialogues de commande à droite,
 frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
 
-- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé (construction, listé dans le navigateur), Boîte, Cylindre, Sphère ; Feature
+- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé (construction, listé dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, traversant), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Boîte, Cylindre, Sphère ; Feature
   (modifier la sélection), Paramètres (tableau, OK écrit les valeurs dans le
   code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F). Boîte,
   cylindre et sphère ouvrent un dialogue avec aperçu (opération Joindre,

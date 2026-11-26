@@ -1,0 +1,132 @@
+// Dialogues des features du chapitre 4 du Black Book (Advanced 3D Modeling) : perçage sur
+// une face, réseaux rectangulaire et circulaire, symétrie. Chacun écrit une feature dans le
+// code (insert du contexte des dialogues) et la combine au résultat (Joindre, Couper…).
+import * as THREE from 'three';
+import { el } from './timeline.js';
+import { num, choice, row, OPS } from './dialogs.js';
+
+const lit = (x) => { const s = Number(Number(x).toPrecision(10)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
+const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
+const v3 = (v) => `(Geom.V3.v ${litp(Math.round(v.x * 100) / 100 + 0)} ${litp(Math.round(v.y * 100) / 100 + 0)} ${litp(Math.round(v.z * 100) / 100 + 0)})`;
+const v3n = (v) => `(Geom.V3.v ${litp(Math.round(v.x * 1e6) / 1e6 + 0)} ${litp(Math.round(v.y * 1e6) / 1e6 + 0)} ${litp(Math.round(v.z * 1e6) / 1e6 + 0)})`;
+const AXES = { X: [1, 0, 0], Y: [0, 1, 0], Z: [0, 0, 1] };
+const AXIS_CODE = { X: 'Geom.V3.ex', Y: 'Geom.V3.ey', Z: 'Geom.V3.ez' };
+
+// Perçage au point `p` d'une face plane de repère `frame` (z = normale sortante).
+// through : profondeur pour « traversant » (diagonale de la pièce).
+export function hole(d, p, frame, through) {
+  const P = { type: 'simple', dia: 5, depth: 10, thru: true, cbDia: 9, cbDepth: 3, csDia: 10 };
+  const depth = () => (P.thru ? through : P.depth);
+  const preview = () => {
+    const g = new THREE.Group(), h = depth();
+    const cyl = (r, hh) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, hh, 32)); c.rotation.x = Math.PI / 2; c.position.z = -hh / 2; g.add(c); };
+    cyl(P.dia / 2, h);
+    if (P.type === 'cb') cyl(P.cbDia / 2, P.cbDepth);
+    if (P.type === 'cs') { const hc = (P.csDia - P.dia) / 2; const c = new THREE.Mesh(new THREE.CylinderGeometry(P.csDia / 2, P.dia / 2, hc, 32)); c.rotation.x = Math.PI / 2; c.position.z = -hc / 2; g.add(c); }
+    g.matrixAutoUpdate = false; g.matrix.makeBasis(frame.x, frame.y, frame.z).setPosition(p);
+    d.setPreview(g, 0xe74c3c);
+  };
+  const extra = el('div');
+  const showExtra = () => {
+    extra.replaceChildren(...(P.type === 'cb' ? [row('Ø lamage', num(P.cbDia, (v) => { P.cbDia = v; preview(); }, { min: 0 })), row('Prof. lamage', num(P.cbDepth, (v) => { P.cbDepth = v; preview(); }, { min: 0 }))]
+      : P.type === 'cs' ? [row('Ø fraisure (90°)', num(P.csDia, (v) => { P.csDia = v; preview(); }, { min: 0 }))] : []));
+  };
+  const depthIn = num(P.depth, (v) => { P.depth = v; preview(); }, { min: 0 });
+  depthIn.disabled = P.thru;
+  const thru = el('input', { type: 'checkbox', checked: P.thru });
+  thru.onchange = () => { P.thru = thru.checked; depthIn.disabled = P.thru; preview(); };
+  d.open('PERÇAGE', [
+    row('Position', el('span', { className: 'hint', textContent: `(${[p.x, p.y, p.z].map((c) => Math.round(c * 100) / 100).join(', ')})` })),
+    row('Type', choice({ simple: 'Simple', cb: 'Lamage', cs: 'Fraisure' }, P.type, (v) => { P.type = v; showExtra(); preview(); })),
+    row('Diamètre', num(P.dia, (v) => { P.dia = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+    row('Traversant', thru), row('Profondeur', depthIn, el('span', { className: 'unit', textContent: 'mm' })),
+    extra,
+  ], {
+    key: 'hole',
+    ok: () => {
+      if (!(P.dia > 0 && depth() > 0)) return false;
+      const n = d.ctx.nextIndex(), name = `percage${n}`, h = depth(), e = 0.01; // dépasse un peu de la face
+      const cyl = (r, hh) => `cylinder ~r:${lit(r)} ~h:${lit(hh + e)} () |> translate (Geom.V3.v 0. 0. ${litp(-hh)})`;
+      let tool = cyl(P.dia / 2, h);
+      if (P.type === 'cb') tool = `(${tool}) + (${cyl(P.cbDia / 2, P.cbDepth)})`;
+      if (P.type === 'cs') { const hc = (P.csDia - P.dia) / 2; tool = `(${tool}) + (extrude ~h:${lit(hc + e)} ~scale_top:${lit((P.csDia / 2 + e) / (P.dia / 2))} (Profile.circle ~r:${lit(P.dia / 2)}) |> translate (Geom.V3.v 0. 0. ${litp(-hc)}))`; }
+      const code = `  let%feat ${name} =\n    let repere = Geom.Frame.make ~origin:${v3(p)} ~x:${v3n(frame.x)} ~z:${v3n(frame.z)} in\n    Shape.((${tool}) |> place repere)\n  in\n`;
+      d.ctx.insert(code, name, 'cut', n);
+    },
+  });
+  showExtra(); preview();
+}
+
+// Réseau (rectangulaire ou circulaire) de la feature `f` ; `geo` : son maillage (aperçu).
+export function pattern(d, f, geo) {
+  const P = { type: 'rect', dir1: 'X', n1: 3, s1: 10, dir2: 'Y', n2: 1, s2: 10, axis: 'Z', n: 6, angle: 360, op: /^(poche|percage)/.test(f.name) ? 'cut' : 'join' };
+  const copies = () => {
+    const out = [];
+    if (P.type === 'rect') {
+      for (let i = 0; i < P.n1; i++) for (let j = 0; j < P.n2; j++) {
+        const t = new THREE.Vector3(...AXES[P.dir1]).multiplyScalar(i * P.s1).addScaledVector(new THREE.Vector3(...AXES[P.dir2]), j * P.s2);
+        out.push(new THREE.Matrix4().makeTranslation(t.x, t.y, t.z));
+      }
+    } else for (let i = 0; i < P.n; i++) out.push(new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(...AXES[P.axis]), ((i * stepDeg()) * Math.PI) / 180));
+    return out;
+  };
+  const stepDeg = () => (P.angle >= 360 ? 360 / P.n : P.angle / Math.max(1, P.n - 1));
+  const preview = () => {
+    const g = new THREE.Group();
+    if (geo) for (const m of copies()) { const o = new THREE.Mesh(geo.clone()); o.applyMatrix4(m); g.add(o); }
+    d.setPreview(g, P.op === 'cut' ? 0xe74c3c : 0x2ecc71);
+  };
+  const body = el('div');
+  const rows = () => body.replaceChildren(...(P.type === 'rect' ? [
+    row('Direction 1', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.dir1, (v) => { P.dir1 = v; preview(); })),
+    row('Nombre 1', num(P.n1, (v) => { P.n1 = Math.max(1, Math.round(v)); preview(); }, { step: 1, min: 1 })),
+    row('Pas 1', num(P.s1, (v) => { P.s1 = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
+    row('Direction 2', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.dir2, (v) => { P.dir2 = v; preview(); })),
+    row('Nombre 2', num(P.n2, (v) => { P.n2 = Math.max(1, Math.round(v)); preview(); }, { step: 1, min: 1 })),
+    row('Pas 2', num(P.s2, (v) => { P.s2 = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
+  ] : [
+    row('Axe (origine)', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.axis, (v) => { P.axis = v; preview(); })),
+    row('Nombre', num(P.n, (v) => { P.n = Math.max(1, Math.round(v)); preview(); }, { step: 1, min: 1 })),
+    row('Angle total', num(P.angle, (v) => { P.angle = v; preview(); }), el('span', { className: 'unit', textContent: '°' })),
+  ]));
+  d.open(`RÉSEAU · ${f.name}`, [
+    row('Type', choice({ rect: 'Rectangulaire', circ: 'Circulaire' }, P.type, (v) => { P.type = v; rows(); preview(); })),
+    body,
+    row('Opération', choice(OPS, P.op, (v) => { P.op = v; preview(); })),
+  ], {
+    key: 'pattern',
+    ok: () => {
+      const n = d.ctx.nextIndex(), name = `reseau${n}`, V = (k) => AXES[k];
+      let expr;
+      if (P.type === 'rect') {
+        const [a, b] = [V(P.dir1).map((c) => c * P.s1), V(P.dir2).map((c) => c * P.s2)];
+        const comp = (k) => [a[k] ? `float i *. ${litp(a[k])}` : '', b[k] ? `float j *. ${litp(b[k])}` : ''].filter(Boolean).join(' +. ') || '0.';
+        expr = `union (List.concat (List.init ${P.n1} (fun i -> List.init ${P.n2} (fun j ->\n      ${f.name} |> translate (Geom.V3.v (${comp(0)}) (${comp(1)}) (${comp(2)}))))))`;
+      } else expr = `union (List.init ${P.n} (fun i -> ${f.name} |> rotate ~axis:${AXIS_CODE[P.axis]} ~deg:(float i *. ${lit(stepDeg())})))`;
+      d.ctx.insert(`  let%feat ${name} =\n    Shape.(${expr})\n  in\n`, name, P.op, n);
+    },
+  });
+  rows(); preview();
+}
+
+// Symétrie de la feature `f` par rapport à un plan d'origine.
+export function mirror(d, f, geo) {
+  const P = { plane: 'YZ', op: 'join' };
+  const N = { XY: 'Z', XZ: 'Y', YZ: 'X' };
+  const preview = () => {
+    const g = new THREE.Group();
+    if (geo) { const s = new THREE.Vector3(1, 1, 1).setComponent('XYZ'.indexOf(N[P.plane]), -1); const o = new THREE.Mesh(geo.clone()); o.scale.copy(s); g.add(o); }
+    d.setPreview(g, P.op === 'cut' ? 0xe74c3c : 0x2ecc71);
+  };
+  d.open(`SYMÉTRIE · ${f.name}`, [
+    row('Plan', choice({ XY: 'Plan XY', XZ: 'Plan XZ', YZ: 'Plan YZ' }, P.plane, (v) => { P.plane = v; preview(); })),
+    row('Opération', choice(OPS, P.op, (v) => { P.op = v; preview(); })),
+  ], {
+    key: 'mirror',
+    ok: () => {
+      const n = d.ctx.nextIndex(), name = `symetrie${n}`;
+      d.ctx.insert(`  let%feat ${name} = Shape.(mirror ~normal:${AXIS_CODE[N[P.plane]]} ${f.name}) in\n`, name, P.op, n);
+    },
+  });
+  preview();
+}

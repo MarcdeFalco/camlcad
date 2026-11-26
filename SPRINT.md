@@ -23,12 +23,16 @@ du cache Playwright).
   profil ramené sur l'axe puis replacé), plan décalé (CONSTRUIRE, dossier « Construction » du
   navigateur, esquisse dessus), vue de trois quarts après une esquisse corrigée (plus par-dessous).
   `code_edit.js` sorti de `main.js`. Scénario `construction.spec.js`.
+- Lot 4, chapitre 4 : perçage sur une face cliquée (simple, lamage, fraisure ; traversant =
+  jusqu'au fond de la pièce sous la face), réseau rectangulaire (deux directions) ou circulaire
+  de la feature sélectionnée, symétrie par rapport à un plan d'origine. `dialogs_features.js`.
+  Scénario `features.spec.js`.
 
 ## En cours
-- Lot 4, chapitre 4 : perçage (hole) sur une face, réseaux rectangulaire et circulaire, symétrie.
+- Lot 5, chapitre 6 (Solid Editing) : combiner, déplacer/copier, échelle ; frise : Joindre/Couper
+  en une seule étape (plus de `resultatN` visible).
 
 ## Suivant
-- Lot 5, chapitre 6 : combiner, déplacer/copier, échelle, coque (si le noyau le permet).
 - Lot 6, chapitre 8 : mesurer, interférences, coupe (section analysis), centre de gravité.
 
 ## Écarts connus avec Fusion (pas encore traités)
