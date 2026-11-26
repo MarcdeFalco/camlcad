@@ -86,6 +86,21 @@ export class Viewport {
       this.cubeScene.add(o);
     }
     $('home').onclick = () => this.home();
+    // Flèches autour du cube : amène à l'écran la face voisine (vue de face comprise).
+    for (const [k, t, title] of [['up', '▲', 'Face du dessus'], ['down', '▼', 'Face du dessous'], ['left', '◀', 'Face de gauche'], ['right', '▶', 'Face de droite']]) {
+      const b = document.createElement('button');
+      b.className = `cubearrow ${k}`; b.textContent = t; b.title = title; b.onclick = () => this.roll(k);
+      box.append(b);
+    }
+  }
+
+  // Tourne la vue d'un quart de tour vers la face voisine (repère de l'écran).
+  roll(k) {
+    const q = this.camera.quaternion, d = this.camera.position.clone().sub(this.controls.target).normalize();
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q), right = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+    const snap = (v) => { const a = v.toArray().map(Math.abs), i = a.indexOf(Math.max(...a)); return a[i] > 0.97 ? new THREE.Vector3().setComponent(i, Math.sign(v.getComponent(i))) : v; };
+    const [nd, nu] = { up: [up, d.clone().negate()], down: [up.clone().negate(), d], left: [right.clone().negate(), up], right: [right, up] }[k];
+    this.orient(snap(nd), snap(nu));
   }
 
   // Oriente la caméra (animation courte) : direction vers la caméra et haut d'écran.
@@ -188,7 +203,7 @@ export class Viewport {
   showPlanes(planes) {
     this.hidePlanes();
     this.planes = new THREE.Group();
-    const colors = { XY: 0x3d7bd9, ZX: 0x5cb85c, YZ: 0xd9534f };
+    const colors = { XY: 0x3d7bd9, XZ: 0x5cb85c, YZ: 0xd9534f };
     for (const [name, p] of Object.entries(planes)) {
       const f = p.frame, m = new THREE.Mesh(new THREE.PlaneGeometry(40, 40),
         new THREE.MeshBasicMaterial({ color: colors[name], transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false }));

@@ -1,74 +1,18 @@
-// Choix d'une face plane et édition d'esquisse sur un plan.
-// Le solveur est celui d'OCaml (worker, message "sketch") ; « Terminer
-// l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
+// Édition d'esquisse sur un plan (plans et faces : planes.js ; cotes, symboles et
+// élastique : sketch_marks.js). Le solveur est celui d'OCaml (worker, message
+// "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
+import { SketchMarks } from './sketch_marks.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
-const lit = (x) => { const s = fmt(x === 0 ? 0 : x); return (s.includes('.') ? s : s + '.') ; };
-const litp = (x) => (x < 0 ? `(${lit(x)})` : lit(x));
-const v3 = (v) => `(Geom.V3.v ${litp(v.x)} ${litp(v.y)} ${litp(v.z)})`;
 
-// ---------- Faces planes ----------
-// Triangles coplanaires connexes au triangle touché (arêtes partagées).
-export function planarFace(mesh, tri) {
-  const V = mesh.vertices, T = mesh.triangles, nt = T.length / 3;
-  const p = (i) => new THREE.Vector3(V[3 * i], V[3 * i + 1], V[3 * i + 2]);
-  const normal = (t) => {
-    const a = p(T[3 * t]), b = p(T[3 * t + 1]), c = p(T[3 * t + 2]);
-    return { n: b.clone().sub(a).cross(c.clone().sub(a)), a };
-  };
-  if (!mesh.edges) {
-    mesh.edges = new Map();
-    for (let t = 0; t < nt; t++) for (let k = 0; k < 3; k++) {
-      const i = T[3 * t + k], j = T[3 * t + ((k + 1) % 3)];
-      const key = i < j ? `${i},${j}` : `${j},${i}`;
-      (mesh.edges.get(key) || mesh.edges.set(key, []).get(key)).push(t);
-    }
-  }
-  const { n: n0raw, a: a0 } = normal(tri);
-  const n0 = n0raw.clone().normalize(), d0 = n0.dot(a0);
-  const seen = new Set([tri]), stack = [tri], tris = [];
-  let area = 0; const centroid = new THREE.Vector3();
-  while (stack.length) {
-    const t = stack.pop(); tris.push(t);
-    const { n } = normal(t), ar = n.length() / 2;
-    const c = p(T[3 * t]).add(p(T[3 * t + 1])).add(p(T[3 * t + 2])).multiplyScalar(1 / 3);
-    centroid.addScaledVector(c, ar); area += ar;
-    for (let k = 0; k < 3; k++) {
-      const i = T[3 * t + k], j = T[3 * t + ((k + 1) % 3)];
-      for (const u of mesh.edges.get(i < j ? `${i},${j}` : `${j},${i}`)) {
-        if (seen.has(u)) continue;
-        const { n, a } = normal(u);
-        if (n.length() < 1e-12) continue;
-        if (n.clone().normalize().dot(n0) > 1 - 1e-6 && Math.abs(n0.dot(a) - d0) < 1e-4) { seen.add(u); stack.push(u); }
-      }
-    }
-  }
-  centroid.multiplyScalar(1 / area);
-  // Repère : z = normale, x = projection de l'axe x du monde (ou y si parallèle).
-  let x = new THREE.Vector3(1, 0, 0);
-  if (Math.abs(x.dot(n0)) > 0.9) x = new THREE.Vector3(0, 1, 0);
-  x.addScaledVector(n0, -x.dot(n0)).normalize();
-  const round = (v, k) => v.set(...v.toArray().map((c) => Math.round(c * k) / k + 0));
-  return { tris, frame: frameOf(round(centroid, 100), round(x, 1e6), round(n0.clone(), 1e6)), area };
-}
-
-function frameOf(origin, x, z) {
-  const y = z.clone().cross(x);
-  return { origin, x, y, z };
-}
-
-export const basePlanes = {
-  XY: { frame: frameOf(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 1)), code: 'Geom.Plane.xy' },
-  YZ: { frame: frameOf(new THREE.Vector3(), new THREE.Vector3(0, 1, 0), new THREE.Vector3(1, 0, 0)), code: 'Geom.Plane.yz' },
-  ZX: { frame: frameOf(new THREE.Vector3(), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0)), code: 'Geom.Plane.zx' },
-};
-export const frameCode = (f) => `Geom.Frame.make ~origin:${v3(f.origin)} ~x:${v3(f.x)} ~z:${v3(f.z)}`;
+export { planarFace, basePlanes, frameCode } from './planes.js';
 
 // ---------- Éditeur d'esquisse ----------
-export class SketchEditor {
+export class SketchEditor extends SketchMarks {
   constructor(ctx) {
+    super();
     this.ctx = ctx; // { scene, camera, controls, renderer, solve(desc), mode(on), finish(data), done() }
     this.group = null;
   }
@@ -76,7 +20,7 @@ export class SketchEditor {
   start(plane, planeCode) {
     this.plane = plane; this.planeCode = planeCode;
     this.pts = []; this.lines = []; this.circles = []; this.cons = []; this.loops = [];
-    this.tool = 'poly'; this.chain = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
+    this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
     this.show();
   }
 
@@ -96,6 +40,8 @@ export class SketchEditor {
     camera.position.copy(f.origin).addScaledVector(f.z, dist);
     controls.enableRotate = false;
     controls.update();
+    this.onCam = () => this.placeLabels();
+    controls.addEventListener('change', this.onCam);
     this.panel(true);
     this.redraw();
   }
@@ -104,6 +50,8 @@ export class SketchEditor {
   suspend() {
     const { scene, camera, controls } = this.ctx;
     if (this.group) { scene.remove(this.group); this.group = null; }
+    if (this.onCam) controls.removeEventListener('change', this.onCam);
+    this.labels().replaceChildren();
     camera.up.set(0, 0, 1); controls.enableRotate = true; controls.update();
     this.panel(false);
   }
@@ -150,14 +98,41 @@ export class SketchEditor {
     return this.pts.length - 1;
   }
 
+  // Survol : élastique du tracé en cours et point d'accroche.
+  move(e) {
+    this.hover = this.local(e);
+    this.drawRubber();
+  }
+
+  // Rectangle par deux coins : quatre lignes fermées, horizontales et verticales (comme un modeleur).
+  rect(a, q) {
+    const A = this.pts[a];
+    if (Math.abs(q.x - A.x) < 1e-6 || Math.abs(q.y - A.y) < 1e-6) return;
+    const c = this.pointAt(q), add = (x, y) => (this.pts.push({ x, y, fixed: false }), this.pts.length - 1);
+    const b = add(q.x, A.y), d = add(A.x, q.y), l = this.lines.length;
+    this.lines.push([a, b], [b, c], [c, d], [d, a]);
+    this.loops.push([a, b, c, d]);
+    this.cons.push({ kind: 'horizontal', refs: [l] }, { kind: 'vertical', refs: [l + 1] }, { kind: 'horizontal', refs: [l + 2] }, { kind: 'vertical', refs: [l + 3] });
+  }
+
   click(e) {
     const q = this.local(e); if (!q) return;
-    if (this.tool === 'poly') {
+    if (this.tool === 'rect') {
+      if (this.pending == null) { this.pending = this.pointAt(q); this.redraw(); }
+      else { const a = this.pending; this.pending = null; this.rect(a, q); this.changed(); }
+    } else if (this.tool === 'poly') {
       const first = this.chain ? this.chain[0] : null;
       const i = this.pointAt(q);
       if (this.chain) {
         const prev = this.chain[this.chain.length - 1];
-        if (i !== prev) this.lines.push([prev, i]);
+        if (i !== prev) {
+          this.lines.push([prev, i]);
+          // Contrainte implicite : ligne presque horizontale ou verticale (à 3° près).
+          const A = this.pts[prev], B = this.pts[i], ang = Math.abs(Math.atan2(B.y - A.y, B.x - A.x) * 180 / Math.PI) % 180;
+          const l = this.lines.length - 1;
+          if (ang < 3 || ang > 177) this.cons.push({ kind: 'horizontal', refs: [l] });
+          else if (Math.abs(ang - 90) < 3) this.cons.push({ kind: 'vertical', refs: [l] });
+        }
         if (i === first && this.chain.length >= 3) { this.loops.push(this.chain.slice()); this.chain = null; }
         else this.chain.push(i);
       } else this.chain = [i];
@@ -183,9 +158,19 @@ export class SketchEditor {
 
   key(e) {
     if (e.target.closest('input,select,.cm-editor')) return;
-    if (e.key === 'Escape') { if (this.chain || this.pending != null) { this.chain = null; this.pending = null; this.redraw(); } else this.stop(); }
-    const tools = { l: 'poly', c: 'circle', s: 'select' };
-    if (tools[e.key]) { this.tool = tools[e.key]; this.chain = null; this.pending = null; this.redraw(); }
+    if (e.key === 'Escape') {
+      if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else this.stop();
+    }
+    const tools = { r: 'rect', l: 'poly', c: 'circle', s: 'select' };
+    if (tools[e.key]) this.setTool(tools[e.key]);
+  }
+  setTool(t) { this.dropPending(); this.tool = t; this.chain = null; this.redraw(); }
+  // Premier clic d'un rectangle ou d'un cercle abandonné : retire le point s'il ne sert à rien.
+  dropPending() {
+    const i = this.pending; this.pending = null;
+    if (i == null || i !== this.pts.length - 1 || i === 0) return;
+    const used = this.lines.some((l) => l.includes(i)) || this.circles.some((c) => c.c === i) || this.cons.some((c) => c.refs.includes(i));
+    if (!used) this.pts.pop();
   }
 
   desc() {
@@ -246,7 +231,9 @@ export class SketchEditor {
     this.sel = []; this.changed();
   }
 
+
   panel(show) {
+    if (!show) { const live = document.getElementById('sketch-live'); if (live) live.hidden = true; }
     $('palette').hidden = !show;
     this.ctx.mode(show);
   }
@@ -267,7 +254,7 @@ export class SketchEditor {
   redraw() {
     if (!this.group) return;
     const g = this.group;
-    for (const o of [...g.children]) { g.remove(o); o.geometry?.dispose(); o.material?.dispose(); }
+    for (const o of [...g.children]) { g.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.dispose(); }); }
     const isSel = (k, i) => this.sel.some((s) => s.kind === k && s.i === i);
     const col = (k, i) => (isSel(k, i) ? 0xff8a3d : 0x1f6feb);
     const seg = (pts, color) => {
@@ -287,7 +274,7 @@ export class SketchEditor {
     });
     // Panneau
     const status = this.error ? `⚠ ${this.error}` :
-      this.dof == null ? 'Dessinez un contour (cliquez sur le premier point pour le fermer).' :
+      this.dof == null ? 'Dessinez un rectangle, un contour ou un cercle.' :
       `${this.dof === 0 ? 'Entièrement contrainte' : `${this.dof} degré${this.dof > 1 ? 's' : ''} de liberté`}${this.redundant ? ` · ${this.redundant} redondante(s)` : ''}`;
     $('sketch-status').textContent = status;
     $('sketch-status').className = 'status' + (this.error ? ' err' : this.dof === 0 ? ' ok' : '');
@@ -305,17 +292,18 @@ export class SketchEditor {
       i.onkeydown = (e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') { this.asking = null; this.redraw(); } };
       ok.onclick = go;
       ask.append(Object.assign(document.createElement('span'), { textContent: `${a.label} (${a.kind === 'angle' ? '°' : 'mm'})` }), i, ok);
-      setTimeout(() => i.select(), 0);
+      i.focus(); i.select();
     }
     const list = $('sketch-list'); list.replaceChildren();
     this.cons.forEach((c, i) => {
       const li = document.createElement('li');
-      li.textContent = `${c.kind} ${c.refs.join(',')}${c.value != null ? ' = ' + fmt(c.value) : ''} `;
+      li.textContent = this.consText(c) + ' ';
       const x = document.createElement('button'); x.textContent = '✕';
       x.onclick = () => { this.cons.splice(i, 1); this.changed(); };
       li.append(x); list.append(li);
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
     $('sketch-finish').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
+    this.rubber = null; this.drawRubber(); this.drawLabels();
   }
 }

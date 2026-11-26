@@ -75,7 +75,7 @@ button { font:inherit; color:inherit; }
 .tree .folder > .row .eye { margin-left:auto; }
 
 /* Vue : cube de vue, barre de navigation, messages */
-#viewcube { position:absolute; top:10px; right:14px; width:96px; height:96px; z-index:3; }
+#viewcube { position:absolute; top:18px; right:14px; width:96px; height:96px; z-index:3; }
 .cubeface { width:60px; height:60px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600;
   color:#39424e; background:rgba(245,247,250,.92); border:1px solid #9aa3ae; cursor:pointer; user-select:none; backface-visibility:hidden; }
 .cubeface:hover { background:#cfe0fb; color:#123; }
@@ -159,3 +159,18 @@ button { font:inherit; color:inherit; }
   #workspace { grid-template-columns:1fr; grid-template-rows:50vh auto auto 40vh; grid-template-areas:"view" "tl" "browser" "code"; height:auto; overflow:auto; }
   html, body { overflow:auto; }
 }
+
+/* Esquisse : cotes et symboles posés sur le dessin, mesure du tracé en cours */
+#palette { width:240px; }
+#sketch-dims { position:absolute; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
+#sketch-dims .dim, #sketch-dims .glyph, .dim-edit { position:absolute; transform:translate(-50%,-50%); pointer-events:auto; font:12px/1.2 system-ui, sans-serif; }
+#sketch-dims .dim { background:#fff; border:1px solid #1f6feb; color:#1f6feb; padding:1px 5px; border-radius:3px; cursor:text; white-space:nowrap; }
+#sketch-dims .glyph { transform:none; background:#fff8; color:#555; border:1px solid #bbb; border-radius:2px; padding:0 3px; font-size:10px; }
+.dim-edit { width:64px; }
+#sketch-live { position:absolute; z-index:3; pointer-events:none; background:#1f6feb; color:#fff; font:12px system-ui, sans-serif; padding:1px 6px; border-radius:3px; }
+
+/* Flèches du cube de vue */
+#viewcube .cubearrow { position:absolute; width:16px; height:16px; padding:0; border:0; background:none; color:#7a8594; font-size:10px; cursor:pointer; opacity:.55; }
+#viewcube .cubearrow:hover { opacity:1; color:var(--accent); }
+#viewcube .cubearrow.up { top:-12px; left:40px; } #viewcube .cubearrow.down { bottom:-12px; left:40px; }
+#viewcube .cubearrow.left { left:-14px; top:40px; } #viewcube .cubearrow.right { right:-14px; top:40px; }

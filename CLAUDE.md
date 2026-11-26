@@ -10,6 +10,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `scripts/build-manifold.sh` puis `dune build @test_native/runtest-native` : noyau natif, mêmes `.expected` que `test_js/`.
 - `dune exec cad -- PIÈCE [-D nom=valeur] [--stl F] [--3mf F] [--json]` : CLI natif.
 - `dune build --profile release @web/site` : site statique de l'éditeur dans `_build/default/web/site`.
+- `cd test_ui && npx playwright test` : scénarios d'interface sur le vrai site (souris, clavier, captures dans `test_ui/shots/`) ; voir `test_ui/README.md`. Toute évolution de l'UI se vérifie par un scénario.
 - `dune promote` : uniquement si la nouvelle sortie est *voulue* ; le dire dans la PR.
 
 ## Règles
@@ -42,7 +43,8 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `bin/cad` : CLI natif (résumé, export STL/3MF, mécanismes à la pose de repos).
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
-- `web/site/` : `main.js` (worker, code, commandes), `viewport.js` (vue, cube de vue), `timeline.js` (frise, navigateur, menu), `dialogs.js` (dialogues de commande), `sketch.js` (plan ou face, éditeur d'esquisse), `mech.js`.
+- `web/site/` : `main.js` (worker, code, commandes), `viewport.js` (vue, cube de vue), `timeline.js` (frise, navigateur, menu), `dialogs.js` (dialogues de commande), `sketch.js` (éditeur d'esquisse), `sketch_marks.js` (cotes, symboles, élastique), `planes.js` (plans d'origine, faces planes), `mech.js`.
+- `test_ui/` : scénarios Playwright sur la vraie UI (souris, clavier), captures dans `test_ui/shots/`.
 - À venir : réédition graphique d'une esquisse existante, plan de face paramétrique, arcs.
 
 ## Environnement local (Mac de Marc)
@@ -55,4 +57,4 @@ Pas d'accès à opam.ocaml.org : OCaml 4.14 + dune depuis apt (`ocaml-nox ocaml-
 libppx-expect-ocaml-dev libqcheck-ocaml-dev js-of-ocaml libjs-of-ocaml-dev`), Node 22 et npm disponibles. La CI GitHub utilise opam (4.14 et 5.2).
 Paquets apt en plus pour `dune test` : `libppx-hash-ocaml-dev libppx-enumerate-ocaml-dev libjane-street-headers-ocaml-dev`.
 Le js_of_ocaml d'apt (5.6) ne compile pas `web/toplevel.ml` (API 6.x) et les CDN sont bloqués : le worker
-se vérifie par la CI ; l'interface, dans Chromium avec un worker simulé et three/CodeMirror installés par npm.
+se vérifie par la CI ; l'interface aussi (job `ui` : scénarios `test_ui/` sur le vrai site), à défaut dans Chromium avec un worker simulé.
