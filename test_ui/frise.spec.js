@@ -47,5 +47,7 @@ test('frise : cote par double-clic, marqueur de retour arrière', async ({ page 
   // Lecteur : fin de la frise.
   await page.locator('[data-tl=last]').click();
   await expect(page.locator('#status')).toContainText('triangles');
-  expect(await triangles(page)).toBe(await triangles(page));
+  // La pièce entière est revenue : autant de triangles affichés que la pièce évaluée.
+  const n = Number((await page.locator('#status').textContent()).match(/(\d+) triangles/)[1]);
+  await expect.poll(() => page.evaluate(() => window.camlcadView.part.geometry.attributes.position.count / 3)).toBe(n);
 });
