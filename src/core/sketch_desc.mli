@@ -13,17 +13,22 @@ type constr = {
       ["coincident" | "distance" | "hdistance" | "vdistance"] : sur des points ;
       ["radius" | "equal_radius" | "concentric"] : sur des cercles ;
       ["tangent"] : ligne, cercle ; ["on_line" | "midpoint"] : point, ligne ;
-      ["on_circle"] : point, cercle. *)
-  refs : int list;  (** indices dans [lines], [points] ou [circles] selon [kind] *)
+      ["on_circle"] : point, cercle ; ["arc_radius"] : arc ; ["tangent_arc"] : ligne, arc. *)
+  refs : int list;  (** indices dans [lines], [points], [circles] ou [arcs] selon [kind] *)
   value : float option;  (** longueur, distance, angle (degrés) ou rayon *)
 }
+
+type item = P of int | A of int | Rev of int
+(** Élément d'une boucle : point, arc parcouru de son début à sa fin, ou à l'envers. *)
 
 type t = {
   points : (float * float * bool) array;  (** x, y (valeurs initiales), fixe *)
   lines : (int * int) array;  (** indices de points *)
   circles : (int * float) array;  (** centre (indice de point), rayon initial *)
+  arcs : (int * int * int) array;
+  (** centre, début, fin (indices de points) ; sens trigonométrique du début à la fin *)
   constraints : constr list;
-  loops : int list list;  (** boucles fermées, indices de points dans l'ordre *)
+  loops : item list list;  (** boucles fermées, éléments dans l'ordre (voir [Sketch.path]) *)
 }
 
 val build : t -> (Sketch.region Sketch.t, string) result

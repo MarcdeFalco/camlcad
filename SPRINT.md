@@ -14,13 +14,16 @@ du cache Playwright).
   job CI `ui`, 9 corrections (plan XZ, rectangle, élastique, cotes sur le dessin, retour arrière…).
 - Lot 1, chapitre 2 : rectangle par le centre (diagonale de construction + milieu), polygone
   régulier inscrit (n côtés, rayon coté), point, outil Cote (D : ligne, cercle, deux points,
-  deux lignes), lignes de construction en pointillés orange. Scénario `esquisse_outils.spec.js`.
+  deux lignes), lignes de construction en pointillés orange. Scénario `esquisse_outils.spec.js`. PR 15.
+- Lot 2, chapitre 2 : arcs dans `Sketch` (`arc`, `path`/`pt`/`along`/`back`, `arc_radius`,
+  `tangent_arc` écrite au point de contact quand la ligne y aboutit), `Sketch_desc` (arcs,
+  éléments de boucle) ; outils Arc par le centre, Oblong, Congé d'esquisse (sommet virtuel
+  conservé), Cote sur un arc. Scénario `esquisse_arcs.spec.js`.
 
 ## En cours
-- Lot 2, chapitre 2 : arcs dans `Sketch` (OCaml), oblong (slot), congé d'esquisse.
+- Lot 3, chapitre 3 : révolution, plan décalé (offset plane), extrusion symétrique et « jusqu'à ».
 
 ## Suivant
-- Lot 3, chapitre 3 : révolution, plan décalé (offset plane), extrusion symétrique et « jusqu'à ».
 - Lot 4, chapitre 4 : perçage (hole), réseaux rectangulaire et circulaire, symétrie, tore.
 - Lot 5, chapitre 6 : combiner, déplacer/copier, échelle, coque (si le noyau le permet).
 - Lot 6, chapitre 8 : mesurer, interférences, coupe (section analysis), centre de gravité.

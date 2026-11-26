@@ -4,6 +4,7 @@ let rect_trou : Sketch_desc.t =
   { points = [| (0., 0., true); (38., 1., false); (41., 22., false); (1., 19., false); (20., 12., false) |];
     lines = [| (0, 1); (1, 2); (2, 3); (3, 0) |];
     circles = [| (4, 3.) |];
+    arcs = [||];
     constraints =
       Sketch_desc.
         [ { kind = "horizontal"; refs = [ 0 ]; value = None }; { kind = "vertical"; refs = [ 1 ]; value = None };
@@ -11,7 +12,7 @@ let rect_trou : Sketch_desc.t =
           { kind = "length"; refs = [ 0 ]; value = Some 40. }; { kind = "length"; refs = [ 1 ]; value = Some 20. };
           { kind = "hdistance"; refs = [ 0; 4 ]; value = Some 20. }; { kind = "vdistance"; refs = [ 0; 4 ]; value = Some 10. };
           { kind = "radius"; refs = [ 0 ]; value = Some 4. } ];
-    loops = [ [ 0; 1; 2; 3 ] ] }
+    loops = [ Sketch_desc.[ P 0; P 1; P 2; P 3 ] ] }
 
 let r x = Float.round (x *. 1e6) /. 1e6 +. 0.
 
@@ -60,11 +61,53 @@ let%expect_test "erreurs de description" =
   List.iter
     (fun d -> match Sketch_desc.solve d with Ok _ -> print_endline "ok ?" | Error e -> print_endline e)
     [ bad "length" [ 0 ]; bad "horizontal" [ 9 ]; bad "tangent" [ 0 ]; bad "glisse" [];
-      { rect_trou with loops = [ [ 0; 1 ] ] } ];
+      { rect_trou with loops = [ Sketch_desc.[ P 0; P 1 ] ] } ];
   [%expect {|
     contrainte length : valeur manquante
     contrainte horizontal : références invalides
     contrainte tangent : références invalides
     contrainte inconnue : glisse
     boucle invalide
+    |}]
+
+(* Oblong (slot) : deux demi-cercles de rayon 5 aux centres p0 et p1, reliés par
+   deux segments implicites. Les arcs vont du haut au bas (gauche) et du bas au haut (droite). *)
+let oblong : Sketch_desc.t =
+  { points = [| (0., 0., true); (30., 0., true); (0., 5., false); (0., -5., false); (30., -5., false); (30., 5., false) |];
+    lines = [| (3, 4); (5, 2) |];
+    circles = [||];
+    arcs = [| (0, 2, 3); (1, 4, 5) |];
+    constraints =
+      Sketch_desc.
+        [ { kind = "arc_radius"; refs = [ 0 ]; value = Some 5. }; { kind = "tangent_arc"; refs = [ 0; 0 ]; value = None };
+          { kind = "tangent_arc"; refs = [ 0; 1 ]; value = None }; { kind = "tangent_arc"; refs = [ 1; 1 ]; value = None } ];
+    loops = [ Sketch_desc.[ A 0; A 1 ] ] }
+
+let%expect_test "oblong : arcs dans un contour" =
+  (match Sketch_desc.solve oblong with
+  | Error e -> print_endline e
+  | Ok s -> (
+      Printf.printf "dof %d\n" s.dof;
+      match Profile.view s.profile with
+      | Polygon ps ->
+          let n = List.length ps and area = ref 0. in
+          List.iteri (fun i (a : Geom.V2.t) -> area := !area +. Geom.V2.cross a (List.nth ps ((i + 1) mod n))) ps;
+          Printf.printf "%d sommets, aire %.1f (exacte %.1f)\n" n (!area /. 2.) ((30. *. 10.) +. (Float.pi *. 25.))
+      | _ -> print_endline "pas un polygone"));
+  print_string (Sketch_desc.to_code ~indent:0 oblong |> String.split_on_char '\n' |> List.filteri (fun i _ -> i >= 10) |> String.concat "\n");
+  [%expect {|
+    dof 2
+    74 sommets, aire 378.4 (exacte 378.5)
+    in
+    let* a0 = Sketch.arc p0 p2 p3
+    and* a1 = Sketch.arc p1 p4 p5
+    in
+    let+ () =
+      Sketch.constrain
+        Sketch.[ arc_radius a0 5.;
+                 tangent_arc l0 a0;
+                 tangent_arc l0 a1;
+                 tangent_arc l1 a1 ]
+    in
+    Sketch.(path [ along a0; along a1 ])
     |}]

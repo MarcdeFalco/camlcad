@@ -52,12 +52,15 @@ function circle(ed, c, q) {
   return true;
 }
 
+import { slot } from './sketch_arcs.js';
+
 // Outils à deux clics : nom → [création, texte de la mesure pendant le tracé].
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
 export const TWO_CLICK = {
   rect: [rect2, (A, q) => `${fmt(Math.abs(q.x - A.x))} × ${fmt(Math.abs(q.y - A.y))} mm`],
   crect: [rectCenter, (A, q) => `${fmt(2 * Math.abs(q.x - A.x))} × ${fmt(2 * Math.abs(q.y - A.y))} mm`],
   circle: [circle, (A, q) => `R ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
+  slot: [slot, (A, q) => `entraxe ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   polygon: [polygon, (A, q) => `R ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
 };
 
@@ -65,6 +68,12 @@ export const TWO_CLICK = {
 export function rubberShape(tool, A, q, n) {
   if (tool === 'rect') return [A, { x: q.x, y: A.y }, q, { x: A.x, y: q.y }, A];
   if (tool === 'crect') { const dx = q.x - A.x, dy = q.y - A.y; return [{ x: A.x - dx, y: A.y - dy }, { x: A.x + dx, y: A.y - dy }, { x: A.x + dx, y: A.y + dy }, { x: A.x - dx, y: A.y + dy }, { x: A.x - dx, y: A.y - dy }]; }
+  if (tool === 'slot') {
+    const L = Math.hypot(q.x - A.x, q.y - A.y) || 1, r = L / 6, t = Math.atan2(q.y - A.y, q.x - A.x), out = [];
+    for (let k = 0; k <= 16; k++) { const u = t + Math.PI / 2 + (Math.PI * k) / 16; out.push({ x: A.x + r * Math.cos(u), y: A.y + r * Math.sin(u) }); }
+    for (let k = 0; k <= 16; k++) { const u = t - Math.PI / 2 + (Math.PI * k) / 16; out.push({ x: q.x + r * Math.cos(u), y: q.y + r * Math.sin(u) }); }
+    return [...out, out[0]];
+  }
   const r = Math.hypot(q.x - A.x, q.y - A.y), a0 = Math.atan2(q.y - A.y, q.x - A.x), m = tool === 'polygon' ? n : 64;
   return Array.from({ length: m + 1 }, (_, k) => ({ x: A.x + r * Math.cos(a0 + (2 * Math.PI * k) / m), y: A.y + r * Math.sin(a0 + (2 * Math.PI * k) / m) }));
 }

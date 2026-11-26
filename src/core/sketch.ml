@@ -41,6 +41,8 @@ let circle ?(fixed_radius = false) c r s =
   let k = { c; r } in
   (k, { s with circles_rev = k :: s.circles_rev })
 
+type arc = { ac : point; as_ : point; ae : point }
+
 let start_ l = l.a
 let end_ l = l.b
 let center c = c.c
@@ -86,20 +88,64 @@ let tangent l c v =
   match on_line c.c l v with [ d ] -> [ Float.abs d -. get v c.r ] | _ -> assert false
 
 let concentric c d = coincident c.c d.c
+let arc_r v a = Float.hypot (px v a.as_ -. px v a.ac) (py v a.as_ -. py v a.ac)
+
+let arc c a b s =
+  let same_r v = [ Float.hypot (px v b -. px v c) (py v b -. py v c) -. Float.hypot (px v a -. px v c) (py v a -. py v c) ] in
+  ({ ac = c; as_ = a; ae = b }, { s with constrs_rev = same_r :: s.constrs_rev })
+
+let arc_center a = a.ac
+let arc_start a = a.as_
+let arc_end a = a.ae
+let arc_radius a r v = [ arc_r v a -. r ]
+
+(* Si la ligne s'arrête à une extrémité de l'arc, la tangence s'écrit en ce point (rayon
+   perpendiculaire à la ligne) : la forme « distance = rayon » y a un gradient nul. *)
+let tangent_arc l a v =
+  match List.find_opt (fun p -> p.id = l.a.id || p.id = l.b.id) [ a.as_; a.ae ] with
+  | Some p -> [ (((px v a.ac -. px v p) *. dx v l) +. ((py v a.ac -. py v p) *. dy v l)) /. safe (len v l) ]
+  | None -> ( match on_line a.ac l v with [ d ] -> [ Float.abs d -. arc_r v a ] | _ -> assert false)
 let hdistance p q d v = [ px v q -. px v p -. d ]
 let vdistance p q d v = [ py v q -. py v p -. d ]
 
 (* Régions *)
-type region = Loop of point list | Disk of circle | Union of region * region | Diff of region * region
+type edge = Pt of point | Along of arc | Back of arc
+type region = Path of edge list | Disk of circle | Union of region * region | Diff of region * region
 
-let loop ps = Loop ps
+let pt p = Pt p
+let along a = Along a
+let back a = Back a
+let path es = Path es
+let loop ps = Path (List.map pt ps)
+
+(* Sommets d'un contour : un arc devient des points de son début à sa fin (sens trigonométrique). *)
+let vertices v es =
+  let p2 p = Geom.V2.v (px v p) (py v p) in
+  let rec expand = function
+    | Pt p -> [ p2 p ]
+    | Back a -> List.rev (expand (Along a))
+    | Along a ->
+        let cx = px v a.ac and cy = py v a.ac and r = arc_r v a in
+        let t0 = Float.atan2 (py v a.as_ -. cy) (px v a.as_ -. cx) in
+        let t1 = Float.atan2 (py v a.ae -. cy) (px v a.ae -. cx) in
+        let sweep = let d = t1 -. t0 in if d <= 1e-9 then d +. (2. *. Float.pi) else d in
+        let n = max 2 (int_of_float (Float.ceil (sweep /. rad 5.))) in
+        List.init (n + 1) (fun k ->
+            let t = t0 +. (sweep *. float_of_int k /. float_of_int n) in
+            Geom.V2.v (cx +. (r *. cos t)) (cy +. (r *. sin t)))
+  in
+  let close (a : Geom.V2.t) (b : Geom.V2.t) = Float.abs (a.x -. b.x) < 1e-9 && Float.abs (a.y -. b.y) < 1e-9 in
+  let rec dedup = function a :: (b :: _ as r) when close a b -> dedup r | a :: r -> a :: dedup r | [] -> [] in
+  match dedup (List.concat_map expand es) with
+  | first :: _ as l when List.length l > 1 && close first (List.nth l (List.length l - 1)) -> List.rev (List.tl (List.rev l))
+  | l -> l
 let disk c = Disk c
 let ( + ) a b = Union (a, b)
 let ( - ) a b = Diff (a, b)
 
 let rec profile v = function
-  | Loop ps ->
-      let pts = List.map (fun p -> Geom.V2.v (px v p) (py v p)) ps in
+  | Path es ->
+      let pts = vertices v es in
       let area =
         match pts with
         | [] -> 0.

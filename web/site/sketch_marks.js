@@ -3,6 +3,7 @@
 // Classe de base de SketchEditor (sketch.js), qui fournit plane, pts, lines, circles, cons…
 import * as THREE from 'three';
 import { TWO_CLICK, rubberShape } from './sketch_tools.js';
+import { arcPoints } from './sketch_arcs.js';
 
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
 
@@ -12,16 +13,16 @@ export class SketchMarks {
     horizontal: 'Horizontale', vertical: 'Verticale', length: 'Longueur', parallel: 'Parallèles', perpendicular: 'Perpendiculaires',
     equal_length: 'Même longueur', angle: 'Angle', coincident: 'Confondus', distance: 'Distance', hdistance: 'Écart x', vdistance: 'Écart y',
     radius: 'Rayon', equal_radius: 'Même rayon', concentric: 'Concentriques', tangent: 'Tangente', on_line: 'Sur la droite',
-    midpoint: 'Milieu', on_circle: 'Sur le cercle',
+    midpoint: 'Milieu', on_circle: 'Sur le cercle', arc_radius: 'Rayon', tangent_arc: 'Tangente',
   };
-  static GLYPH = { horizontal: 'H', vertical: 'V', parallel: '∥', perpendicular: '⊥', equal_length: '=', equal_radius: '=', concentric: '◎', tangent: 'T', coincident: '•', on_line: '⋯', midpoint: 'M', on_circle: '○' };
+  static GLYPH = { horizontal: 'H', vertical: 'V', parallel: '∥', perpendicular: '⊥', equal_length: '=', equal_radius: '=', concentric: '◎', tangent: 'T', coincident: '•', on_line: '⋯', midpoint: 'M', on_circle: '○', tangent_arc: 'T' };
   // Types des références de chaque contrainte : p point, l ligne, c cercle.
   static REFS = {
     horizontal: 'l', vertical: 'l', length: 'l', parallel: 'll', perpendicular: 'll', equal_length: 'll', angle: 'll',
     coincident: 'pp', distance: 'pp', hdistance: 'pp', vdistance: 'pp', radius: 'c', equal_radius: 'cc', concentric: 'cc',
-    tangent: 'lc', on_line: 'pl', midpoint: 'pl', on_circle: 'pc',
+    tangent: 'lc', on_line: 'pl', midpoint: 'pl', on_circle: 'pc', arc_radius: 'a', tangent_arc: 'la',
   };
-  refName(kind, k, i) { return ({ p: 'P', l: 'L', c: 'C' }[SketchMarks.REFS[kind]?.[k]] ?? '#') + (i + 1); }
+  refName(kind, k, i) { return ({ p: 'P', l: 'L', c: 'C', a: 'A' }[SketchMarks.REFS[kind]?.[k]] ?? '#') + (i + 1); }
   consText(c) {
     const v = c.value == null ? '' : ` = ${fmt(c.value)}${c.kind === 'angle' ? '°' : ' mm'}`;
     return `${SketchMarks.NAMES[c.kind] ?? c.kind} · ${c.refs.map((i, k) => this.refName(c.kind, k, i)).join(', ')}${v}`;
@@ -33,6 +34,7 @@ export class SketchMarks {
     const lineMid = (l) => { const [a, b] = this.lines[l]; return mid(P(a), P(b)); };
     const kinds = SketchMarks.REFS[c.kind] ?? '';
     const first = kinds[0], r0 = c.refs[0];
+    if (first === 'a') { const ps = arcPoints(this, r0); return ps[Math.floor(ps.length / 2)]; }
     if (c.kind === 'radius') { const C = this.circles[r0], O = P(C.c); return { x: O.x + C.r * 0.71, y: O.y + C.r * 0.71 }; }
     if (kinds === 'pp') return mid(P(c.refs[0]), P(c.refs[1]));
     if (first === 'l') return lineMid(r0);
@@ -55,7 +57,7 @@ export class SketchMarks {
       const key = `${Math.round(at.x * 10)},${Math.round(at.y * 10)}`, n = seen.get(key) ?? 0; seen.set(key, n + 1);
       const el = document.createElement('div');
       if (c.value != null) {
-        el.className = 'dim'; el.textContent = (c.kind === 'radius' ? 'R' : '') + fmt(c.value) + (c.kind === 'angle' ? '°' : '');
+        el.className = 'dim'; el.textContent = (c.kind === 'radius' || c.kind === 'arc_radius' ? 'R' : '') + fmt(c.value) + (c.kind === 'angle' ? '°' : '');
         el.title = `${this.consText(c)}\nDouble-clic : modifier la cote`;
         el.ondblclick = (e) => { e.stopPropagation(); this.editDim(i, el); };
       } else { el.className = 'glyph'; el.textContent = SketchMarks.GLYPH[c.kind] ?? '·'; el.title = this.consText(c); }
