@@ -110,6 +110,8 @@ du cache Playwright).
 - Lot 27, chapitre 4 (Pipe) : Tuyau le long des lignes ouvertes d'une esquisse (cylindres,
   coudes arrondis aux sommets partagés, extrémités ouvertes ; creux si paroi > 0).
   `dialogs_paths.js` (nervure, tuyau). Scénario `tuyau.spec.js`.
+- Lot 28, chapitre 7 (Motion Link) : MÉCANISME, Lien : une liaison en mène une autre avec un
+  rapport (engrenages : −z1/z2), écrit dans `~couplings` de `Assembly.make`. Scénario `lien.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

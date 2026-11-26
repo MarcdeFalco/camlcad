@@ -15,7 +15,7 @@ import { FaceCommands } from './face_commands.js';
 import { groupMenus } from './toolbar.js';
 import { markingMenu } from './marking.js';
 import { initFiles, saveBlob } from './files.js';
-import { jointDialog } from './mech_joint.js';
+import { jointDialog, linkDialog } from './mech_joint.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
 import { Dialogs } from './dialogs.js';
@@ -247,7 +247,7 @@ const COMMANDS = {
   look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
   fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
   motion: () => mech.panel(), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
-  joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }),
+  joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }), link: () => linkDialog(dialogs, view, mech.state?.coords ?? [], () => { clearTimeout(debounce); evalCode(); }),
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
 groupMenus();
