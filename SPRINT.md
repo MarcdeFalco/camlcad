@@ -34,10 +34,14 @@ du cache Playwright).
 - Lot 6, chapitre 8 : Mesurer (deux points, aire d'une face plane, écart de faces parallèles),
   Coupe (plan d'origine décalé, matière coupée en rouge), Propriétés (volume, centre de gravité,
   masse PLA/PETG/ABS/TPU). `inspect.js`. Scénario `inspecter.spec.js`.
+- Lot 7, chapitre 1 (« 3D Print ») : bouton Impression 3D : face cliquée posée sur le plateau,
+  volume de l'imprimante (MK4, Bambu, Ender 3, Mini), appui, surplombs > 45° en rouge, STL exporté
+  dans l'orientation d'impression. `print.js`. Scénario `impression.spec.js`.
 
 ## En cours
-- Fusion des PR des lots 3 à 6 (une par lot), puis : chapitre 7 (assemblage : liaisons à la
-  souris, étude de mouvement), chapitre 2 (miroir et réseaux d'esquisse, ajuster/prolonger).
+- Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
+  remettre la branche sur origin/main, cherry-pick du lot, fusion neutre de l'ancienne branche
+  distante, push). Puis lot 8 : chapitre 2 (miroir, réseaux et décalage d'esquisse).
 
 ## Suivant
 

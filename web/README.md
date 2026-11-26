@@ -67,6 +67,8 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
 - **MÉCANISME** (onglet) : une pièce par couleur ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.
+- **Impression 3D** (barre du haut) : cliquer la face à poser sur le plateau, volume de
+  l'imprimante, appui, surplombs > 45° en rouge, STL exporté dans cette orientation.
 - **Export** STL (solide) et 3MF (solide, ou pièces d'un mécanisme placées à la pose
   courante avec leurs couleurs, pour l'impression en place).
 

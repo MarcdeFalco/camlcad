@@ -27,6 +27,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `features.spec.js` | Black Book ch. 4 : perçage à lamage sur une face cliquée, réseau 4 × 2 du perçage, symétrie de la boîte |
 | `edition.spec.js` | Black Book ch. 6 : étapes combinées dans la frise (badge Joindre), retour arrière, Combiner (couper), Déplacer |
 | `inspecter.spec.js` | Black Book ch. 8 : propriétés (volume ≈ 12 cm³ de l'équerre), mesure de 15 mm à la souris, coupe |
+| `impression.spec.js` | Black Book ch. 1 (3D Print) : face posée sur le plateau, encombrement, STL orienté (z de 0 à 25) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |
