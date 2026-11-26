@@ -42,16 +42,17 @@ export class Inspect {
     this.clearMarks();
     const g = (this.marks = new THREE.Group());
     for (const k of this.picks) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.8, 12, 8), new THREE.MeshBasicMaterial({ color: 0xff8a3d, depthTest: false })); s.position.copy(k.p); s.renderOrder = 5; g.add(s); }
-    const out = document.getElementById('measure-out'), r = (v) => [v.x, v.y, v.z].map((c) => fmt(Math.round(c * 100) / 100)).join(', ');
+    const r2 = (x) => fmt(Math.round(x * 100) / 100 + 0); // au centième : pas de 1e-14 affiché
+    const out = document.getElementById('measure-out'), r = (v) => [v.x, v.y, v.z].map(r2).join(', ');
     const lines = [];
     const [a, b] = this.picks;
-    lines.push(`Point 1 : (${r(a.p)})${a.face ? ` · face plane ${fmt(a.face.area)} mm²` : ''}`);
+    lines.push(`Point 1 : (${r(a.p)})${a.face ? ` · face plane ${r2(a.face.area)} mm²` : ''}`);
     if (b) {
-      lines.push(`Point 2 : (${r(b.p)})${b.face ? ` · face plane ${fmt(b.face.area)} mm²` : ''}`);
+      lines.push(`Point 2 : (${r(b.p)})${b.face ? ` · face plane ${r2(b.face.area)} mm²` : ''}`);
       const d = b.p.clone().sub(a.p);
-      lines.push(`Distance : ${fmt(d.length())} mm`, `Δx ${fmt(d.x)} · Δy ${fmt(d.y)} · Δz ${fmt(d.z)} mm`);
+      lines.push(`Distance : ${r2(d.length())} mm`, `Δx ${r2(d.x)} · Δy ${r2(d.y)} · Δz ${r2(d.z)} mm`);
       if (a.face && b.face && Math.abs(Math.abs(a.face.frame.z.dot(b.face.frame.z)) - 1) < 1e-6)
-        lines.push(`Faces parallèles, écart ${fmt(Math.abs(d.dot(a.face.frame.z)))} mm`);
+        lines.push(`Faces parallèles, écart ${r2(Math.abs(d.dot(a.face.frame.z)))} mm`);
       const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.p, b.p]), new THREE.LineBasicMaterial({ color: 0xff8a3d, depthTest: false }));
       l.renderOrder = 5; g.add(l);
     }
