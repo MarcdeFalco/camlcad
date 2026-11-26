@@ -24,6 +24,14 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
     view.dispatch({ changes: { from: last.index, to: last.index + last[0].length, insert: ins + `${last[1]}Doc.return ${res}` } });
     changed();
   }
+  // Remplace le résultat X du dernier Doc.return par une feature « name = expr(X) » (déplacer…).
+  function insertResult(name, expr) {
+    const last = lastReturn();
+    if (!last) { notify('Pas de « Doc.return … » à transformer.', true); return; }
+    beforeInsert();
+    view.dispatch({ changes: { from: last.index, to: last.index + last[0].length, insert: `  let%feat ${name} = ${expr(last[2].trim())} in\n${last[1]}Doc.return ${name}` } });
+    changed();
+  }
   // Plans de construction : « let planN = Geom.Plane.offset d Geom.Plane.xy » (plan décalé).
   function constructionPlanes() {
     const out = {};
@@ -43,8 +51,8 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
     notify(`Plan de construction « ${name} » : cliquez-le dans le navigateur pour y esquisser.`);
   }
   // Numéro libre : un de plus que le plus grand suffixe des noms générés.
-  const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\b(?:esquisse|plan|resultat|boite|cylindre|sphere|extrusion|poche|revolution|percage|reseau|symetrie)(\d+)\b/g)].map((m) => Number(m[1])));
+  const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\b(?:esquisse|plan|resultat|boite|cylindre|sphere|extrusion|poche|revolution|percage|reseau|symetrie|combinaison|deplacement)(\d+)\b/g)].map((m) => Number(m[1])));
   const sketchesInCode = () => [...view.state.doc.toString().matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => ({ name: m[1], line: view.state.doc.lineAt(m.index).number }));
   const allPlanes = () => ({ ...basePlanes, ...constructionPlanes() });
-  return { insertFeature, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };
+  return { insertFeature, insertResult, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };
 }

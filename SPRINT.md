@@ -27,15 +27,18 @@ du cache Playwright).
   jusqu'au fond de la pièce sous la face), réseau rectangulaire (deux directions) ou circulaire
   de la feature sélectionnée, symétrie par rapport à un plan d'origine. `dialogs_features.js`.
   Scénario `features.spec.js`.
+- Lot 5, chapitre 6 : frise d'opérations (l'outil et sa combinaison `resultatN` = une étape,
+  badge + / − / ∩ ; marqueur et lecteur sur les étapes visibles), Combiner (résultat et un autre
+  corps), Déplacer (rotation puis translation du résultat). `bodies.js` sorti de `main.js`.
+  Scénario `edition.spec.js`.
 
 ## En cours
-- Lot 5, chapitre 6 (Solid Editing) : combiner, déplacer/copier, échelle ; frise : Joindre/Couper
-  en une seule étape (plus de `resultatN` visible).
-
-## Suivant
 - Lot 6, chapitre 8 : mesurer, interférences, coupe (section analysis), centre de gravité.
 
+## Suivant
+
 ## Écarts connus avec Fusion (pas encore traités)
-- Joindre/Couper ajoute une feature `resultatN` dans la frise (Fusion : une seule extrusion).
+- Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
+- Pas d'échelle (`Shape.scale` absent du noyau).
 - Pas de flèche de distance dans la vue pour l'extrusion, pas de choix de régions de profil.
 - Esquisse non rééditable à la souris après insertion.
