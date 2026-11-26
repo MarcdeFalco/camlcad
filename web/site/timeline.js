@@ -21,7 +21,7 @@ export class Timeline {
     this.bar = document.getElementById('timeline'); this.tree = document.getElementById('tree');
     this.menu = document.getElementById('ctxmenu');
     this.journal = null; this.selected = null; this.marker = null; this.doc = ''; this.sketches = []; this.mech = null;
-    this.open = new Set(['doc', 'params', 'origin', 'features', 'sketches', 'mech']);
+    this.open = new Set(['doc', 'params', 'origin', 'planes', 'features', 'sketches', 'mech']);
     document.addEventListener('pointerdown', (e) => { if (!this.menu.contains(e.target)) this.hideMenu(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.hideMenu(); });
     for (const b of document.querySelectorAll('[data-tl]')) b.onclick = () => this.player(b.dataset.tl);
@@ -137,6 +137,9 @@ export class Timeline {
     kids.push(this.folder('origin', 'Origine', [['XY', 'Plan XY'], ['XZ', 'Plan XZ'], ['YZ', 'Plan YZ']].map(([k, label]) =>
       this.leaf('▱', label, { title: 'Nouvelle esquisse sur ce plan', onclick: () => this.ctx.sketchOn(k) })),
       this.eye(originOn, 'Afficher la grille et les axes', () => { this.ctx.toggleOrigin(); this.renderTree(); })));
+    if (this.planes?.length)
+      kids.push(this.folder('planes', `Construction (${this.planes.length})`, this.planes.map((k) =>
+        this.leaf('▱', k, { title: 'Nouvelle esquisse sur ce plan', onclick: () => this.ctx.sketchOn(k) }))));
     if (this.sketches.length)
       kids.push(this.folder('sketches', `Esquisses (${this.sketches.length})`, this.sketches.map((s) =>
         this.leaf('✎', s.name, { title: 'Aller au code', onclick: () => this.ctx.gotoLine(s.line) }))));

@@ -123,7 +123,7 @@ export class Viewport {
   home() { this.orient(ISO.clone(), new THREE.Vector3(0, 0, 1)); }
   // Vue de trois quarts sur un plan (après une esquisse, pour voir l'extrusion).
   threeQuarter(frame) {
-    const d = frame.z.clone().multiplyScalar(1.1).addScaledVector(frame.x, 0.8).addScaledVector(frame.y, -1.2);
+    const d = ISO.clone().addScaledVector(frame.z, 0.8); // vue de départ, penchée vers la normale du plan
     this.orient(d, new THREE.Vector3(0, 0, 1));
   }
   lookAt(frame) { this.orient(frame.z.clone(), frame.y.clone(), frame.origin.clone()); }
@@ -206,9 +206,9 @@ export class Viewport {
     const colors = { XY: 0x3d7bd9, XZ: 0x5cb85c, YZ: 0xd9534f };
     for (const [name, p] of Object.entries(planes)) {
       const f = p.frame, m = new THREE.Mesh(new THREE.PlaneGeometry(40, 40),
-        new THREE.MeshBasicMaterial({ color: colors[name], transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false }));
+        new THREE.MeshBasicMaterial({ color: colors[name] ?? 0xe0a030, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false }));
       m.matrixAutoUpdate = false;
-      m.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.x.clone().add(f.y).multiplyScalar(20));
+      m.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin.clone().addScaledVector(f.x.clone().add(f.y), 20));
       m.userData.plane = name;
       this.planes.add(m);
     }

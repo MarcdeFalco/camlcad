@@ -18,13 +18,16 @@ du cache Playwright).
 - Lot 2, chapitre 2 : arcs dans `Sketch` (`arc`, `path`/`pt`/`along`/`back`, `arc_radius`,
   `tangent_arc` écrite au point de contact quand la ligne y aboutit), `Sketch_desc` (arcs,
   éléments de boucle) ; outils Arc par le centre, Oblong, Congé d'esquisse (sommet virtuel
-  conservé), Cote sur un arc. Scénario `esquisse_arcs.spec.js`.
+  conservé), Cote sur un arc. Scénario `esquisse_arcs.spec.js`. PR 16.
+- Lot 3, chapitre 3 : révolution (axe y/x de l'esquisse ou une de ses lignes, angle, opération ;
+  profil ramené sur l'axe puis replacé), plan décalé (CONSTRUIRE, dossier « Construction » du
+  navigateur, esquisse dessus), vue de trois quarts après une esquisse corrigée (plus par-dessous).
+  `code_edit.js` sorti de `main.js`. Scénario `construction.spec.js`.
 
 ## En cours
-- Lot 3, chapitre 3 : révolution, plan décalé (offset plane), extrusion symétrique et « jusqu'à ».
+- Lot 4, chapitre 4 : perçage (hole) sur une face, réseaux rectangulaire et circulaire, symétrie.
 
 ## Suivant
-- Lot 4, chapitre 4 : perçage (hole), réseaux rectangulaire et circulaire, symétrie, tore.
 - Lot 5, chapitre 6 : combiner, déplacer/copier, échelle, coque (si le noyau le permet).
 - Lot 6, chapitre 8 : mesurer, interférences, coupe (section analysis), centre de gravité.
 

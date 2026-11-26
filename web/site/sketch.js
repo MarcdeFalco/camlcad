@@ -263,11 +263,13 @@ export class SketchEditor extends SketchMarks {
   }
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
-  finish() {
+  finish(kind = 'extrude') {
     if (!(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
-      loops: this.loops.map((l) => loopOutline(this, l)),
+      kind, loops: this.loops.map((l) => loopOutline(this, l)),
+      // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
+      lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })),
     };
     this.suspend();
@@ -334,7 +336,7 @@ export class SketchEditor extends SketchMarks {
       li.append(x); list.append(li);
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
-    $('sketch-finish').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
+    $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
 }

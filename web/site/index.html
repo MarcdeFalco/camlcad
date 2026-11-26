@@ -38,10 +38,14 @@
       <div class="group"><div class="tools">
         <button data-cmd="sketch" title="Créer une esquisse sur un plan ou une face (S)"><i>✎</i>Esquisse</button>
         <button data-cmd="extrude" title="Extruder une esquisse (E)"><i>⬆</i>Extrusion</button>
+        <button data-cmd="revolve" title="Révolution d'une esquisse autour d'un axe"><i>↻</i>Révolution</button>
         <button data-cmd="box" title="Boîte"><i>▣</i>Boîte</button>
         <button data-cmd="cylinder" title="Cylindre"><i>◎</i>Cylindre</button>
         <button data-cmd="sphere" title="Sphère"><i>●</i>Sphère</button>
       </div><span>CRÉER</span></div>
+      <div class="group"><div class="tools">
+        <button data-cmd="offsetplane" title="Plan décalé d'un plan d'origine (construction)"><i>▱</i>Plan décalé</button>
+      </div><span>CONSTRUIRE</span></div>
       <div class="group"><div class="tools">
         <button data-cmd="edit" title="Modifier la feature sélectionnée"><i>✐</i>Feature</button>
         <button data-cmd="params" title="Modifier les paramètres"><i>ƒx</i>Paramètres</button>
@@ -74,7 +78,8 @@
       </div><span>COTER</span></div>
       <div class="group"><div class="tools" id="sketch-constraints"></div><span>CONTRAINTES</span></div>
       <div class="group"><div class="tools">
-        <button id="sketch-finish" class="finish" title="Terminer l'esquisse et extruder"><i>✔</i>Terminer l'esquisse</button>
+        <button id="sketch-finish" class="finish" title="Terminer l'esquisse et extruder (E)"><i>✔</i>Terminer l'esquisse</button>
+        <button id="sketch-revolve" title="Terminer l'esquisse et faire une révolution autour d'un axe"><i>↻</i>Révolution</button>
         <button id="sketch-cancel" title="Abandonner l'esquisse (Échap)"><i>✕</i>Abandonner</button>
       </div><span>TERMINER</span></div>
     </div>
