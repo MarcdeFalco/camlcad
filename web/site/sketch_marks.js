@@ -24,7 +24,7 @@ export class SketchMarks {
   };
   refName(kind, k, i) { return ({ p: 'P', l: 'L', c: 'C', a: 'A' }[SketchMarks.REFS[kind]?.[k]] ?? '#') + (i + 1); }
   consText(c) {
-    const v = c.value == null ? '' : ` = ${fmt(c.value)}${c.kind === 'angle' ? '°' : ' mm'}`;
+    const v = c.value == null ? '' : c.kind === 'radius' ? ` = Ø${fmt(2 * c.value)} mm` : ` = ${fmt(c.value)}${c.kind === 'angle' ? '°' : ' mm'}`;
     return `${SketchMarks.NAMES[c.kind] ?? c.kind} · ${c.refs.map((i, k) => this.refName(c.kind, k, i)).join(', ')}${v}`;
   }
 
@@ -57,7 +57,7 @@ export class SketchMarks {
       const key = `${Math.round(at.x * 10)},${Math.round(at.y * 10)}`, n = seen.get(key) ?? 0; seen.set(key, n + 1);
       const el = document.createElement('div');
       if (c.value != null) {
-        el.className = 'dim'; el.textContent = (c.kind === 'radius' || c.kind === 'arc_radius' ? 'R' : '') + fmt(c.value) + (c.kind === 'angle' ? '°' : '');
+        el.className = 'dim'; el.textContent = c.kind === 'radius' ? `Ø${fmt(2 * c.value)}` : (c.kind === 'arc_radius' ? 'R' : '') + fmt(c.value) + (c.kind === 'angle' ? '°' : '');
         el.title = `${this.consText(c)}\nDouble-clic : modifier la cote`;
         el.ondblclick = (e) => { e.stopPropagation(); this.editDim(i, el); };
       } else { el.className = 'glyph'; el.textContent = SketchMarks.GLYPH[c.kind] ?? '·'; el.title = this.consText(c); }
@@ -78,9 +78,10 @@ export class SketchMarks {
   }
   editDim(i, el) {
     const c = this.cons[i], input = document.createElement('input');
-    input.type = 'number'; input.step = 'any'; input.value = fmt(c.value); input.className = 'dim-edit';
+    const k = c.kind === 'radius' ? 2 : 1; // cercle : saisi au diamètre
+    input.type = 'number'; input.step = 'any'; input.value = fmt(k * c.value); input.className = 'dim-edit';
     input.style.left = el.style.left; input.style.top = el.style.top;
-    const done = (ok) => { if (ok && input.value !== '' && Number.isFinite(Number(input.value))) { c.value = Number(input.value); this.changed(); } else this.redraw(); };
+    const done = (ok) => { if (ok && input.value !== '' && Number.isFinite(Number(input.value))) { c.value = Number(input.value) / k; this.changed(); } else this.redraw(); };
     input.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); };
     input.onblur = () => done(true);
     el.replaceWith(input); input.select();

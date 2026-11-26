@@ -104,6 +104,9 @@ du cache Playwright).
 - Lot 25, chapitre 4 (Rib) : Nervure depuis l'esquisse : les lignes ouvertes épaissies et
   extrudées (épaisseur, hauteur, côté), Joindre ; esquisse sur une face : vue cadrée sur la
   face, à gauche de la palette (la palette cachait la zone de dessin). Scénario `nervure.spec.js`.
+- Lot 26, chapitres 2 et 8 : cercles cotés au diamètre (Ø, saisie et palette ; la contrainte
+  reste un rayon dans le code), Mesurer donne l'angle entre deux faces non parallèles.
+  Scénarios `esquisse.spec.js`, `inspecter.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

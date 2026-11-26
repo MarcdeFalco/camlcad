@@ -35,9 +35,10 @@ test('esquisse, contraintes, extrusion Joindre puis Couper', async ({ page }) =>
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('40'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim')).toHaveText(['40']);
   await clickSketch(page, -4, -3);
-  await page.getByRole('button', { name: 'Rayon' }).click();
+  await page.getByRole('button', { name: 'Diamètre' }).click(); // cercle coté au diamètre
   await expect(page.locator('#sketch-ask input')).toBeFocused();
-  await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('5'); await page.keyboard.press('Enter');
+  await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('10'); await page.keyboard.press('Enter');
+  await expect(page.locator('#sketch-dims .dim', { hasText: 'Ø10' })).toBeVisible();
   await expect(page.locator('#sketch-dims .dim')).toHaveCount(2);
   // Cote modifiée sur le dessin : double-clic, nouvelle valeur.
   await page.locator('#sketch-dims .dim', { hasText: '40' }).dblclick();
