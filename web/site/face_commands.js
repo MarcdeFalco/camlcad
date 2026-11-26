@@ -1,5 +1,6 @@
 // Commandes qui commencent par un clic sur une face plane de la pièce (Black Book ch. 4 et 6) :
 // perçage, pousser/tirer, congé et chanfrein d'arête (deux faces).
+import * as THREE from 'three';
 import * as feats from './dialogs_features.js';
 import { faceLoops, frameCode } from './planes.js';
 
@@ -24,6 +25,25 @@ export class FaceCommands {
         const d = f2.frame.origin.clone().sub(f1.frame.origin).dot(n);
         ctx.insertPlane(`(* construction *) ${frameCode({ ...f1.frame, origin: f1.frame.origin.clone().addScaledVector(n, d / 2) })}`);
       }))),
+      // Plan par trois points (ch. 3) : trois clics sur la pièce, accrochés aux sommets proches.
+      plane3: () => {
+        const pts = [];
+        const snap = (hit) => {
+          const V = mesh().vertices, T = mesh().triangles, t = hit.faceIndex;
+          let best = hit.point.clone(), d0 = 2;
+          for (let k = 0; k < 3; k++) { const i = T[3 * t + k], v = new THREE.Vector3(V[3 * i], V[3 * i + 1], V[3 * i + 2]); const d = v.distanceTo(hit.point); if (d < d0) { d0 = d; best = v; } }
+          return best;
+        };
+        const ask = () => this.start(`Point ${pts.length + 1} sur 3 du plan`, (hit) => {
+          pts.push(snap(hit));
+          if (pts.length < 3) { setTimeout(ask); return; }
+          const [a, b, c] = pts, x = b.clone().sub(a), z = x.clone().cross(c.clone().sub(a));
+          if (x.length() < 1e-6 || z.length() < 1e-6) { ctx.notify('Plan : trois points alignés ou confondus.', true); return; }
+          x.normalize(); z.normalize();
+          ctx.insertPlane(`(* construction *) ${frameCode({ origin: a, x, y: z.clone().cross(x), z })}`);
+        });
+        ask();
+      },
     };
   }
   get active() { return this.act != null; }

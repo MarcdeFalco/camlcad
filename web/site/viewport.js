@@ -156,6 +156,18 @@ export class Viewport {
   }
   toggleGrid() { this.grid.visible = !this.grid.visible; this.axes.visible = this.grid.visible; return this.grid.visible; }
 
+  // Analyse zébrée (Black Book ch. 8, Zebra Analysis) : bandes réfléchies sur la pièce ; des
+  // bandes qui se cassent révèlent une discontinuité de surface.
+  toggleZebra() {
+    this.zebra = !this.zebra;
+    if (!this.zebraMat) this.zebraMat = new THREE.ShaderMaterial({
+      vertexShader: 'varying vec3 vN; varying vec3 vV; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+      fragmentShader: 'varying vec3 vN; varying vec3 vV; void main() { vec3 r = reflect(-vV, normalize(vN)); float s = step(0.5, fract(r.y * 5.0)); gl_FragColor = vec4(vec3(0.08 + 0.85 * s), 1.0); }',
+    });
+    if (this.part) { if (this.zebra) this.part.geometry.computeVertexNormals(); this.part.material = this.zebra ? this.zebraMat : this.material; }
+    return this.zebra;
+  }
+
   // Capture d'image (Black Book ch. 1, Capture Image) : la vue telle qu'affichée, en PNG.
   capture() { this.renderer.render(this.scene, this.camera); return this.renderer.domElement.toDataURL('image/png'); }
 
@@ -186,6 +198,7 @@ export class Viewport {
     this.edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: 0x1c2733 }));
     this.scene.add(this.part, this.edges);
     this.applyStyle();
+    if (this.zebra) { g.computeVertexNormals(); this.part.material = this.zebraMat; }
     if (this.clip) this.setClip(this.clip);
     if (!this.fitted) { this.fit(); this.fitted = true; }
   }

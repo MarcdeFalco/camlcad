@@ -114,6 +114,8 @@ du cache Playwright).
   rapport (engrenages : −z1/z2), écrit dans `~couplings` de `Assembly.make`. Scénario `lien.spec.js`.
 - Lot 29, chapitre 10 (Publish Video) : MÉCANISME, Vidéo : un cycle de l'animation (4 s)
   enregistré depuis la vue en WebM. Scénario `video.spec.js` (en-tête WebM vérifié).
+- Lot 30, chapitres 3 et 8 : Plan par 3 points (clics accrochés aux sommets proches),
+  analyse zébrée (bandes réfléchies, pour juger la continuité). Scénario `plan3.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
