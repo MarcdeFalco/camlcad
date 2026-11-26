@@ -18,6 +18,7 @@ export default defineConfig({
     deviceScaleFactor: 1,
     acceptDownloads: true,
     actionTimeout: 15_000,
+    screenshot: 'only-on-failure',
     launchOptions: process.env.CAMLCAD_CHROMIUM ? { executablePath: process.env.CAMLCAD_CHROMIUM } : {},
   },
 });

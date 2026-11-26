@@ -50,4 +50,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: captures-ui
-          path: test_ui/shots/
+          path: |
+            test_ui/shots/
+            test_ui/results/

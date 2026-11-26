@@ -17,13 +17,14 @@ test('mécanisme : animation et mouvement', async ({ page }) => {
   await page.screenshot({ path: new URL('./shots/31-animation.png', import.meta.url).pathname });
   expect(a.equals(b)).toBe(false); // la pièce a bougé
   await page.getByRole('button', { name: 'Animer' }).click(); // pause
+  await expect(page.locator('#animate i')).toHaveText('▶');
   // Mouvement : curseur glissé à la souris.
   await page.getByRole('button', { name: 'Mouvement' }).click();
   const slider = page.locator('#dialog input[type=range]').first();
   await expect(slider).toBeVisible();
   const before = await slider.inputValue();
   const sb = await slider.boundingBox();
-  await page.mouse.click(sb.x + sb.width * 0.8, sb.y + sb.height / 2);
+  await slider.click({ position: { x: sb.width * 0.8, y: sb.height / 2 } });
   await expect.poll(() => slider.inputValue()).not.toBe(before);
   await expect(page.locator('#inter')).toContainText(/interférence/i);
   await shot(page, '32-mouvement');
