@@ -24,7 +24,10 @@ test('mécanisme : animation et mouvement', async ({ page }) => {
   await expect(slider).toBeVisible();
   const before = await slider.inputValue();
   const sb = await slider.boundingBox();
-  await slider.click({ position: { x: sb.width * 0.8, y: sb.height / 2 } });
+  // Clic loin de la valeur courante (l'animation s'arrête n'importe où).
+  const [lo, hi] = await slider.evaluate((i) => [Number(i.min), Number(i.max)]);
+  const frac = (Number(before) - lo) / (hi - lo) > 0.5 ? 0.15 : 0.85;
+  await slider.click({ position: { x: sb.width * frac, y: sb.height / 2 } });
   await expect.poll(() => slider.inputValue()).not.toBe(before);
   await expect(page.locator('#inter')).toContainText(/interférence/i);
   await shot(page, '32-mouvement');
