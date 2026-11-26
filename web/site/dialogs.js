@@ -8,6 +8,10 @@ const lit = (x) => { const s = Number(Number(x).toPrecision(12)).toString(); ret
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
 const v3 = (x, y, z) => `(Geom.V3.v ${litp(x)} ${litp(y)} ${litp(z)})`;
 
+// Plan d'une esquisse : un plan déjà nommé dans le code (plan de construction) est repris tel quel.
+const named = (code) => /^[a-z_][\w']*$/.test(code);
+const planDecl = (plan, code) => (named(code) ? '' : `  let ${plan} = ${code} in\n`);
+
 export const OPS = { join: 'Joindre', cut: 'Couper', intersect: 'Intersection' };
 const OP_COLOR = { join: 0x2ecc71, cut: 0xe74c3c, intersect: 0x3d8bff };
 
@@ -140,15 +144,85 @@ export class Dialogs {
         const name = (P.op === 'cut' ? 'poche' : 'extrusion') + n;
         const eps = P.op === 'cut' && P.dir !== 'sym';
         let shape;
-        if (P.dir === 'one' && !eps) shape = `Shape.(extrude ~h:${lit(P.h)} ${esq} |> place ${plan})`;
+        if (P.dir === 'one' && !eps) shape = `Shape.(extrude ~h:${lit(P.h)} ${esq} |> place ${named(sk.planeCode) ? sk.planeCode : plan})`;
         else {
           const off = P.dir === 'sym' ? '(-. h /. 2.)' : P.dir === 'flip' ? '(-. h)' : '(-0.01)';
-          shape = `let h = ${lit(P.h)} in\n    Shape.(extrude ~h:${eps ? '(h +. 0.01)' : 'h'} ${esq} |> translate (Geom.V3.v 0. 0. ${off}) |> place ${plan})`;
+          shape = `let h = ${lit(P.h)} in\n    Shape.(extrude ~h:${eps ? '(h +. 0.01)' : 'h'} ${esq} |> translate (Geom.V3.v 0. 0. ${off}) |> place ${named(sk.planeCode) ? sk.planeCode : plan})`;
         }
-        const code = `  let ${plan} = ${sk.planeCode} in\n  let%sketch ${esq} =\n${sk.code}  in\n  let%feat ${name} =\n    ${shape}\n  in\n`;
+        const code = `${planDecl(plan, sk.planeCode)}  let%sketch ${esq} =\n${sk.code}  in\n  let%feat ${name} =\n    ${shape}\n  in\n`;
         this.ctx.insert(code, name, P.op, n);
       },
     });
+    preview();
+  }
+
+  // ---------- Révolution d'une esquisse ----------
+  // Axe : y ou x de l'esquisse, ou une de ses lignes. Le noyau tourne autour du y local
+  // (rayon = x) et rend l'axe selon z : le profil est d'abord ramené sur l'axe, puis
+  // le solide est replacé dans le plan d'esquisse.
+  revolve(sk, back) {
+    const empty = this.ctx.isEmpty();
+    const axes = { Y: { name: 'Axe y de l’esquisse', a: { x: 0, y: 0 }, b: { x: 0, y: 1 } }, X: { name: 'Axe x de l’esquisse', a: { x: 0, y: 0 }, b: { x: 1, y: 0 } } };
+    for (const l of sk.lines) axes[l.name] = { name: `Ligne ${l.name}`, a: l.a, b: l.b };
+    const P = { axis: 'Y', deg: 360, op: 'join' };
+    const geom = () => {
+      const { a, b } = axes[P.axis], t = Math.atan2(b.y - a.y, b.x - a.x);
+      // Rotation qui amène l'axe sur +y, le profil du côté x > 0 (le noyau coupe x < 0).
+      let rot = 90 - (t * 180) / Math.PI;
+      const r = (rot * Math.PI) / 180, pts = [...sk.loops.flat(), ...sk.circles];
+      const side = pts.reduce((acc, p) => acc + Math.cos(r) * (p.x - a.x) - Math.sin(r) * (p.y - a.y), 0);
+      if (side < 0) rot += 180;
+      return { a, rot: ((rot % 360) + 360) % 360 };
+    };
+    const preview = () => {
+      const { a, rot } = geom(), r = (rot * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+      const to = (p) => new THREE.Vector2(Math.abs(c * (p.x - a.x) - s * (p.y - a.y)), s * (p.x - a.x) + c * (p.y - a.y));
+      const g = new THREE.Group();
+      const outlines = [...sk.loops, ...sk.circles.map((k) => Array.from({ length: 33 }, (_, i) => ({ x: k.x + k.r * Math.cos((i / 32) * 2 * Math.PI), y: k.y + k.r * Math.sin((i / 32) * 2 * Math.PI) })))];
+      for (const l of outlines) {
+        const pts = [...l, l[0]].map(to);
+        g.add(new THREE.Mesh(new THREE.LatheGeometry(pts, 48, 0, (Math.max(1, P.deg) * Math.PI) / 180)));
+      }
+      // Lathe : axe y, rayon x ; ramené dans le plan d'esquisse (inverse de la mise sur l'axe).
+      const m = new THREE.Matrix4().makeRotationZ(-r).premultiply(new THREE.Matrix4().makeTranslation(a.x, a.y, 0));
+      const f = sk.frame, w = new THREE.Matrix4().makeBasis(f.x, f.y, f.z).setPosition(f.origin);
+      g.matrixAutoUpdate = false; g.matrix.copy(w.multiply(m));
+      this.setPreview(g, OP_COLOR[P.op]);
+    };
+    this.open('RÉVOLUTION', [
+      row('Profil', el('span', { className: 'hint', textContent: `esquisse (${sk.loops.length} contour${sk.loops.length > 1 ? 's' : ''}, ${sk.circles.length} cercle${sk.circles.length > 1 ? 's' : ''})` })),
+      row('Axe', choice(Object.fromEntries(Object.entries(axes).map(([k, v]) => [k, v.name])), P.axis, (v) => { P.axis = v; preview(); })),
+      row('Angle', num(P.deg, (v) => { P.deg = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: '°' })),
+      row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; preview(); })),
+    ], {
+      key: 'revolve', cancel: back,
+      ok: () => {
+        if (!(P.deg > 0 && P.deg <= 360)) return false;
+        const { a, rot } = geom(), n = this.ctx.nextIndex(), plan = `plan${n}`, esq = `esquisse${n}`, name = `revolution${n}`;
+        const r = Math.round(rot * 1e4) / 1e4;
+        const prof = `${esq}${a.x || a.y ? ` |> Profile.translate (Geom.V2.v ${litp(-a.x)} ${litp(-a.y)})` : ''}${r ? ` |> Profile.rotate ~deg:${litp(r)}` : ''}`;
+        const back3 = `${r ? ` |> rotate ~axis:Geom.V3.ez ~deg:${litp(-r)}` : ''}${a.x || a.y ? ` |> translate ${v3(a.x, a.y, 0)}` : ''}`;
+        const deg = P.deg === 360 ? '' : ` ~deg:${lit(P.deg)}`;
+        const code = `${planDecl(plan, sk.planeCode)}  let%sketch ${esq} =\n${sk.code}  in\n  let%feat ${name} =\n    Shape.(revolve${deg} (${prof}) |> rotate ~axis:Geom.V3.ex ~deg:(-90.)${back3} |> place ${named(sk.planeCode) ? sk.planeCode : plan})\n  in\n`;
+        this.ctx.insert(code, name, P.op, n);
+      },
+    });
+    preview();
+  }
+
+  // ---------- Plan décalé (construction) ----------
+  offsetPlane(done) {
+    const P = { ref: 'XY', d: 10 };
+    const N = { XY: [0, 0, 1], XZ: [0, -1, 0], YZ: [1, 0, 0] };
+    const preview = () => {
+      const g = new THREE.PlaneGeometry(40, 40); const m = new THREE.Mesh(g), n = new THREE.Vector3(...N[P.ref]);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n); m.position.copy(n.multiplyScalar(P.d));
+      this.setPreview(m, 0xe0a030);
+    };
+    this.open('PLAN DÉCALÉ', [
+      row('Référence', choice({ XY: 'Plan XY', XZ: 'Plan XZ', YZ: 'Plan YZ' }, P.ref, (v) => { P.ref = v; preview(); })),
+      row('Distance', num(P.d, (v) => { P.d = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
+    ], { key: 'offsetplane', ok: () => done(`Geom.Plane.offset ${litp(P.d)} Geom.Plane.${P.ref.toLowerCase()}`) });
     preview();
   }
 

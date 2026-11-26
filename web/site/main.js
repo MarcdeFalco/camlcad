@@ -13,6 +13,7 @@ import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
 import { Dialogs } from './dialogs.js';
 import { Mech } from './mech.js';
+import { codeEdits } from './code_edit.js';
 
 const $ = (id) => document.getElementById(id);
 const EXAMPLES = ['nouveau', 'support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
@@ -123,27 +124,10 @@ function toggleCode() {
 }
 $('toggle-code').onclick = toggleCode;
 
-// Insère une feature avant le dernier « Doc.return X » et la combine : X + f, X - f ou X * f.
-function insertFeature(code, feat, op, n) {
-  const doc = view.state.doc.toString();
-  const re = /^([ \t]*)Doc\.return\s+(.+?)\s*$/gm;
-  let m, last = null;
-  while ((m = re.exec(doc))) last = m;
-  if (!last) { notify('Pas de « Doc.return … » où insérer la feature.', true); return; }
-  const prev = last[2].trim();
-  let ins = code, res = feat;
-  if (!/^(Shape\.)?empty$/.test(prev)) {
-    res = `resultat${n}`;
-    ins += `  let%feat ${res} = Shape.(${prev} ${{ join: '+', cut: '-', intersect: '*' }[op]} ${feat}) in\n`;
-  }
-  if (selected != null) selectFeature(null, false); // commande terminée : plus de sélection
-  showFace(null);
-  view.dispatch({ changes: { from: last.index, to: last.index + last[0].length, insert: ins + `${last[1]}Doc.return ${res}` } });
-  clearTimeout(debounce); evalCode();
-}
-// Numéro libre : un de plus que le plus grand suffixe des noms générés.
-const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\b(?:esquisse|plan|resultat|boite|cylindre|sphere|extrusion|poche)(\d+)\b/g)].map((m) => Number(m[1])));
-const sketchesInCode = () => [...view.state.doc.toString().matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => ({ name: m[1], line: view.state.doc.lineAt(m.index).number }));
+const { insertFeature, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode } = codeEdits({
+  view, notify, changed: () => { clearTimeout(debounce); evalCode(); },
+  beforeInsert: () => { if (selected != null) selectFeature(null, false); showFace(null); },
+});
 
 // ---------- Vue 3D ----------
 const vp = new Viewport($('view'));
@@ -164,7 +148,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
   if (sketch.active) { sketch.click(e); return; }
   const plane = picking && vp.pickPlane(e);
-  if (plane) { stopPicking(); startSketch(basePlanes[plane].frame, basePlanes[plane].code); return; }
+  if (plane) { const P = allPlanes()[plane]; stopPicking(); startSketch(P.frame, P.code); return; }
   const hit = vp.part && !mech.active ? vp.ray(e).intersectObject(vp.part)[0] : null;
   if (hit && rollbackAt == null) {
     const f = planarFace(lastMesh, hit.faceIndex);
@@ -188,7 +172,7 @@ const sketch = new SketchEditor({
   scene: vp.scene, camera: vp.camera, controls: vp.controls, renderer: vp.renderer,
   solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
   mode: (on) => showTab(on ? 'sketch' : null),
-  finish: (data) => { vp.threeQuarter(data.frame); dialogs.extrude(data, () => sketch.resume()); },
+  finish: (data) => { vp.threeQuarter(data.frame); dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](data, () => sketch.resume()); },
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
@@ -196,7 +180,7 @@ function startSketch(frame, code) { dialogs.close(true); showFace(null); sketch.
 function startPicking() {
   if (sketch.active) return;
   if (face) { const f = face; startSketch(f.frame, frameCode(f.frame)); return; }
-  picking = true; vp.showPlanes(basePlanes);
+  picking = true; vp.showPlanes(allPlanes());
   if (!lastMesh || !lastMesh.triangles.length) { vp.planes.updateMatrixWorld(true); vp.fit([vp.planes]); } // document vide : les trois plans entiers à l'écran
   hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
 }
@@ -204,6 +188,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
+$('sketch-revolve').onclick = () => sketch.finish('revolve');
 $('sketch-cancel').onclick = () => sketch.stop();
 
 // ---------- Barre d'outils ----------
@@ -219,6 +204,8 @@ const needSel = () => { if (selected == null) notify('Sélectionnez d’abord un
 const COMMANDS = {
   sketch: startPicking,
   extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : (notify('Choisissez le plan de l’esquisse à extruder.'), startPicking())),
+  revolve: () => (sketch.active ? sketch.finish('revolve') || notify('Fermez un contour ou tracez un cercle avant la révolution.', true) : (notify('Esquissez d’abord le profil, puis « Révolution ».'), startPicking())),
+  offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
   edit: () => needSel() && dialogs.feature(selected),
   params: openParams,
@@ -251,7 +238,7 @@ const timeline = new Timeline({
   edit, notify, select: (fid, move) => selectFeature(fid, move),
   apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
   openEdit: (fid, rename) => dialogs.feature(fid, rename), openParams,
-  sketchOn: (k) => { stopPicking(); startSketch(basePlanes[k].frame, basePlanes[k].code); },
+  sketchOn: (k) => { const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
   gotoLine, toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
   rollback: (k) => {
     rollbackAt = k; bodies = null;
@@ -304,7 +291,7 @@ function selectFeature(fid, moveCursor) {
   featureMesh(fid, 0);
 }
 function renderTimeline() {
-  timeline.update(journal, selected, { doc: $('example').value, sketches: sketchesInCode(), mech: mech.active ? mech.state.parts : null });
+  timeline.update(journal, selected, { doc: $('example').value, sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }
 
 // ---------- Paramètres ----------
