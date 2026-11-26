@@ -32,6 +32,17 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
     view.dispatch({ changes: { from: last.index, to: last.index + last[0].length, insert: `  let%feat ${name} = ${expr(last[2].trim())} in\n${last[1]}Doc.return ${name}` } });
     changed();
   }
+  // Paramètre utilisateur : « let%param nom = v [@unit …] in » au début du corps de model.
+  function insertParam(name, v, unit) {
+    const m = /^let model\b[^\n]*=\s*\n/m.exec(view.state.doc.toString());
+    if (!m) { notify('Pas de « let model … = » où ajouter le paramètre.', true); return; }
+    let lit = String(Number(v.toPrecision(10))); if (!/[.e]/.test(lit)) lit += '.';
+    const u = unit === 'mm' ? ' [@unit "mm"]' : unit === 'deg' ? ' [@unit "°"]' : '';
+    const lo = v > 0 ? v / 4 : v - 10, hi = v > 0 ? v * 4 : v + 10, f = (x) => { let s = String(Number(x.toPrecision(6))); return /[.e]/.test(s) ? s : s + '.'; };
+    view.dispatch({ changes: { from: m.index + m[0].length, insert: `  let%param ${name} = ${lit} [@range ${f(lo)}, ${f(hi)}]${u} in\n` } });
+    changed();
+    notify(`Paramètre « ${name} » créé.`);
+  }
   // Plans de construction : « let planN = Geom.Plane.offset d Geom.Plane.xy » (plan décalé).
   function constructionPlanes() {
     const out = {};
@@ -54,7 +65,7 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
   const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\b(?:esquisse|plan|resultat|boite|cylindre|sphere|extrusion|poche|revolution|percage|reseau|symetrie|combinaison|deplacement|filetage|tore|ressort|poussee|conge|chanfrein)(\d+)\b/g)].map((m) => Number(m[1])));
   const sketchesInCode = () => [...view.state.doc.toString().matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => ({ name: m[1], line: view.state.doc.lineAt(m.index).number }));
   const allPlanes = () => ({ ...basePlanes, ...constructionPlanes() });
-  return { insertFeature, insertResult, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };
+  return { insertFeature, insertResult, insertParam, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };
 }
 
 // Positions au format __POS__ : colonnes en octets depuis le début de la ligne.

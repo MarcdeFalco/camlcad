@@ -127,7 +127,7 @@ function toggleCode() {
 }
 $('toggle-code').onclick = toggleCode;
 
-const { insertFeature, insertResult, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode } = codeEdits({
+const { insertFeature, insertResult, insertParam, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode } = codeEdits({
   view, notify, changed: () => { clearTimeout(debounce); evalCode(); },
   beforeInsert: () => { if (selected != null) selectFeature(null, false); showFace(null); },
 });
@@ -137,7 +137,7 @@ const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
 const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, insert: insertFeature, insertResult, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
+  scene: vp.scene, insert: insertFeature, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });

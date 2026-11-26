@@ -288,8 +288,7 @@ export class Dialogs {
   // ---------- Paramètres (tableau) ----------
   // overrides : Map nom → valeur (essais sans recompilation) ; commit() écrit dans le code.
   params({ overrides, preview, commit, revert }) {
-    const j = this.ctx.journal();
-    if (!j || !j.params.length) { this.ctx.notify('Aucun paramètre : créez-en avec ƒx dans « Modifier la feature ».', true); return; }
+    const j = this.ctx.journal() ?? { params: [] };
     const head = el('div', { className: 'prow phead' }, ...['Nom', 'Valeur', '', 'Plage'].map((t) => el('span', { textContent: t })));
     const rows = j.params.map((p) => {
       const [lo, hi] = p.range ?? [p.default / 4, p.default * 4 || 10];
@@ -300,7 +299,18 @@ export class Dialogs {
       return el('div', { className: 'prow' }, el('span', { className: 'pname', textContent: p.name }), box,
         el('span', { className: 'unit', textContent: p.unit ?? '' }), el('span', { className: 'range' }, slider));
     });
-    this.open('PARAMÈTRES', [head, ...rows], { key: 'params', ok: commit, cancel: revert });
+    // Paramètre utilisateur (Black Book ch. 6, Change Parameters : « + ») : écrit en tête du modèle.
+    const nName = el('input', { placeholder: 'nom', spellcheck: false, className: 'noenter', id: 'param-new-name' });
+    const nVal = el('input', { type: 'number', step: 'any', value: '10', className: 'noenter', id: 'param-new-value' });
+    const nUnit = choice({ mm: 'mm', deg: '°', '': '—' }, 'mm', () => {});
+    const add = el('button', { textContent: '+ Ajouter' });
+    add.onclick = () => {
+      const name = nName.value.trim(), v = Number(nVal.value);
+      if (!/^[a-z_][a-z0-9_']*$/.test(name) || !Number.isFinite(v)) { this.ctx.notify('Paramètre : nom en minuscules (lettres, chiffres, _) et valeur numérique.', true); return; }
+      this.close(true); this.ctx.addParam(name, v, nUnit.value);
+    };
+    const addRow = el('div', { className: 'prow padd' }, nName, nVal, nUnit, add);
+    this.open('PARAMÈTRES', [head, ...rows, el('div', { className: 'hint', textContent: 'Nouveau paramètre (utilisable dans le code et par ƒx) :' }), addRow], { key: 'params', ok: commit, cancel: revert });
   }
 
   // Panneau libre (mouvement d'un mécanisme…).

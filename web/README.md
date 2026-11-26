@@ -40,7 +40,7 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   dans le code annule. La suppression temporaire écrit `[@@suppress]` (la
   feature rend `Shape.empty`) ; la suppression retire la liaison et ses usages
   dans les unions et différences, et refuse les autres cas en disant pourquoi.
-- **Paramètres** : un `let%param` avec `[@range lo, hi]` a un curseur dans le
+- **Paramètres** : « + Ajouter » crée un paramètre utilisateur ; un `let%param` avec `[@range lo, hi]` a un curseur dans le
   dialogue Paramètres ; l'essai réévalue sans recompiler (overrides du Reader),
   OK écrit les valeurs à la place des littéraux, Annuler revient.
 - **Erreurs** de syntaxe/typage soulignées dans le code ; erreurs de `Doc`

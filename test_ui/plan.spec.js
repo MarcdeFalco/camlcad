@@ -16,6 +16,8 @@ test('mise en plan et capture', async ({ page }) => {
   expect((svg.match(/class="view"/g) ?? []).length).toBe(3);
   for (const [k, v] of [['largeur', '60'], ['hauteur', '30'], ['profondeur', '25']]) expect(svg).toMatch(new RegExp(`data-dim="${k}"[^]*?>${v}</text>`));
   expect(svg).toContain('Échelle 2:1');
+  // Les trous de la semelle sont cachés en vue de face : traits interrompus.
+  expect(svg).toMatch(/data-view="face"[^]*?class="hidden"/);
   const [png] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Capture de la vue (PNG)' }).click()]);
   const buf = await readFile(await png.path());
   expect(buf.subarray(1, 4).toString()).toBe('PNG');
