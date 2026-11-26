@@ -1,78 +1,173 @@
-// Frise des features (façon Fusion 360), menu contextuel et panneau « Modifier ».
-// Toute action devient une réécriture du code par le worker (Cad.Source_edit) :
-// le code reste la seule source de vérité, et Ctrl+Z dans le code annule.
+// Frise (bas de l'écran, avec lecteur et marqueur de retour arrière), navigateur
+// (arbre à gauche) et menu contextuel. Toute action devient une réécriture du
+// code par le worker (Cad.Source_edit) : le code reste la seule source de vérité.
 
-const ICONS = {
+export const ICONS = {
   cube: '▣', cylinder: '◎', sphere: '●', extrude: '⬆', revolve: '↻', union: '∪',
   difference: '∖', intersection: '∩', mirror: '⇋', empty: '∅',
 };
-const KIND = {
-  cube: 'pavé', cylinder: 'cylindre', sphere: 'sphère', extrude: 'extrusion', revolve: 'révolution',
+export const KIND = {
+  cube: 'boîte', cylinder: 'cylindre', sphere: 'sphère', extrude: 'extrusion', revolve: 'révolution',
   union: 'union', difference: 'enlèvement', intersection: 'intersection', mirror: 'symétrie', empty: 'vide',
 };
-const fmt = (x) => (Math.abs(x) >= 100 ? x.toFixed(0) : Number(x.toPrecision(4)).toString());
-const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+export const fmt = (x) => (Math.abs(x) >= 100 ? x.toFixed(0) : Number(x.toPrecision(4)).toString());
+export const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 
 export class Timeline {
-  // edit(msg) -> Promise<réponse du worker> ; apply(code) ; select(fid, moveCursor) ; notify(texte, erreur?)
-  constructor({ bar, tree, panel, menu, edit, apply, select, notify }) {
-    Object.assign(this, { bar, tree, panel, menu, edit, apply, select, notify });
-    this.journal = null; this.selected = null; this.open = null;
+  // ctx : edit(msg) -> Promise ; apply(code) ; select(fid, moveCursor) ; notify(texte, erreur?) ;
+  // openEdit(fid) ; openParams() ; sketchOn(plan) ; gotoLine(n) ; rollback(k|null) ; toggleOrigin() -> bool
+  constructor(ctx) {
+    this.ctx = ctx;
+    this.bar = document.getElementById('timeline'); this.tree = document.getElementById('tree');
+    this.menu = document.getElementById('ctxmenu');
+    this.journal = null; this.selected = null; this.marker = null; this.doc = ''; this.sketches = []; this.mech = null;
+    this.open = new Set(['doc', 'params', 'origin', 'features', 'sketches', 'mech']);
     document.addEventListener('pointerdown', (e) => { if (!this.menu.contains(e.target)) this.hideMenu(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.hideMenu(); });
+    for (const b of document.querySelectorAll('[data-tl]')) b.onclick = () => this.player(b.dataset.tl);
   }
 
-  // refresh : le code a changé, le panneau ouvert relit ses cotes.
-  update(journal, selected, refresh) {
+  // Appelé à chaque résultat : journal, sélection, nom du document, esquisses du code, mécanisme.
+  update(journal, selected, info = {}) {
     this.journal = journal; this.selected = selected;
+    Object.assign(this, info);
+    const n = journal ? journal.features.length : 0;
+    if (this.marker != null && this.marker >= n) this.setMarker(null);
     this.renderBar(); this.renderTree();
-    if (refresh && this.open != null) {
-      // Le panneau suit la feature par son nom (son numéro peut changer).
-      const f = journal.features.find((g) => g.name === this.open.name) ?? journal.features[this.open.id];
-      if (f) this.openPanel(f.id, false); else this.closePanel();
-    }
   }
+  get count() { return this.journal ? this.journal.features.length : 0; }
 
-  chip(f, cls) {
+  // ---------- Frise ----------
+  chip(f) {
+    const future = this.marker != null && f.id >= this.marker;
+    const e = el('button', { className: 'feat' + (f.suppressed ? ' off' : '') + (f.id === this.selected ? ' sel' : '') + (future ? ' future' : '') });
     const deps = f.deps.map((d) => this.journal.features[d].name).join(', ');
-    const e = el(cls === 'li' ? 'li' : 'button', { className: 'feat' + (f.suppressed ? ' off' : '') + (f.id === this.selected ? ' sel' : '') });
-    e.title = `${f.name} : ${KIND[f.op] ?? f.op}${deps ? ' ← ' + deps : ''}${f.suppressed ? ' (supprimée temporairement)' : ''}\nDouble-clic : modifier · clic droit : actions`;
+    e.title = `${f.name} · ${KIND[f.op] ?? f.op}${deps ? '\nutilise : ' + deps : ''}${f.suppressed ? '\n(supprimée temporairement)' : ''}\nDouble-clic : modifier · clic droit : actions`;
     e.append(el('span', { className: 'icon', textContent: ICONS[f.op] ?? '◇' }), el('span', { className: 'name', textContent: f.name }));
-    if (cls === 'li' && deps) e.append(el('span', { className: 'deps', textContent: ' ← ' + deps }));
-    e.onclick = () => this.select(f.id === this.selected ? null : f.id, true);
-    e.ondblclick = (ev) => { ev.preventDefault(); this.select(f.id, true); this.openPanel(f.id, true); };
-    e.oncontextmenu = (ev) => { ev.preventDefault(); this.select(f.id, true); this.showMenu(f, ev.clientX, ev.clientY); };
+    this.bindFeature(e, f);
     return e;
+  }
+  bindFeature(e, f) {
+    e.onclick = () => this.ctx.select(f.id === this.selected ? null : f.id, true);
+    e.ondblclick = (ev) => { ev.preventDefault(); this.ctx.select(f.id, true); this.ctx.openEdit(f.id); };
+    e.oncontextmenu = (ev) => { ev.preventDefault(); this.ctx.select(f.id, true); this.showMenu(f, ev.clientX, ev.clientY); };
   }
 
   renderBar() {
     this.bar.replaceChildren();
-    if (!this.journal || !this.journal.features.length) { this.bar.hidden = true; return; }
-    this.bar.hidden = false;
-    this.journal.features.forEach((f) => this.bar.append(this.chip(f, 'chip')));
+    if (!this.journal) return;
+    const n = this.count, m = this.marker ?? n;
+    this.journal.features.forEach((f, i) => {
+      if (i === m) this.bar.append(this.markerEl());
+      this.bar.append(this.chip(f));
+    });
+    if (m === n) this.bar.append(this.markerEl());
   }
 
-  renderTree() {
-    this.tree.replaceChildren();
-    if (!this.journal) return;
-    for (const f of this.journal.features) {
-      const li = this.chip(f, 'li');
-      const eye = el('button', { className: 'eye', textContent: f.suppressed ? '◌' : '●', title: f.suppressed ? 'Réactiver' : 'Supprimer temporairement' });
-      eye.onclick = (ev) => { ev.stopPropagation(); this.run({ op: 'suppress', fid: f.id, on: !f.suppressed }); };
-      li.prepend(eye);
-      this.tree.append(li);
+  // Marqueur de retour arrière : à glisser entre deux features.
+  markerEl() {
+    const mk = el('span', { className: 'marker', title: 'Marqueur : glissez pour revoir la pièce à une étape' });
+    mk.onpointerdown = (e) => {
+      e.preventDefault();
+      const move = (ev) => {
+        const chips = [...this.bar.querySelectorAll('.feat')];
+        let k = chips.length;
+        for (let i = 0; i < chips.length; i++) {
+          const r = chips[i].getBoundingClientRect();
+          if (ev.clientX < r.left + r.width / 2) { k = i; break; }
+        }
+        if (k !== (this.marker ?? this.count)) this.setMarker(k);
+      };
+      const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+      addEventListener('pointermove', move); addEventListener('pointerup', up);
+    };
+    return mk;
+  }
+  setMarker(k) {
+    const n = this.count;
+    this.marker = k == null || k >= n ? null : Math.max(0, k);
+    this.renderBar();
+    this.ctx.rollback(this.marker);
+  }
+  player(cmd) {
+    const n = this.count, m = this.marker ?? n;
+    if (cmd === 'first') this.setMarker(0);
+    else if (cmd === 'last') this.setMarker(null);
+    else if (cmd === 'prev') this.setMarker(Math.max(0, m - 1));
+    else if (cmd === 'next') this.setMarker(m + 1);
+    else if (cmd === 'play') {
+      clearInterval(this.playing);
+      let k = 0; this.setMarker(0);
+      this.playing = setInterval(() => { k++; this.setMarker(k); if (k >= n) clearInterval(this.playing); }, 600);
     }
   }
 
+  // ---------- Navigateur ----------
+  folder(id, label, kids, extra) {
+    const li = el('li', { className: 'folder' + (this.open.has(id) ? ' open' : '') });
+    const head = el('div', { className: 'row' });
+    const tw = el('span', { className: 'twisty', textContent: this.open.has(id) ? '▾' : '▸' });
+    head.append(tw, el('span', { className: 'icon', textContent: '▤' }), el('span', { className: 'name', textContent: label }));
+    if (extra) head.append(extra);
+    head.onclick = (e) => { if (e.target.closest('.eye')) return; this.open.has(id) ? this.open.delete(id) : this.open.add(id); this.renderTree(); };
+    li.append(head);
+    if (this.open.has(id)) li.append(el('ul', {}, ...kids));
+    return li;
+  }
+  leaf(icon, label, { cls = '', title = '', onclick, eye, sub } = {}) {
+    const row = el('div', { className: 'row ' + cls, title });
+    if (eye) row.append(eye); else row.append(el('span', { className: 'eye-space' }));
+    row.append(el('span', { className: 'icon', textContent: icon }), el('span', { className: 'name', textContent: label }));
+    if (sub) row.append(el('span', { className: 'sub', textContent: sub }));
+    if (onclick) row.onclick = onclick;
+    return el('li', {}, row);
+  }
+  eye(on, title, act) {
+    const b = el('button', { className: 'eye', textContent: on ? '◉' : '○', title });
+    b.onclick = (e) => { e.stopPropagation(); act(); };
+    return b;
+  }
+
+  renderTree() {
+    const j = this.journal, kids = [];
+    if (j && j.params.length)
+      kids.push(this.folder('params', `Paramètres (${j.params.length})`, j.params.map((p) =>
+        this.leaf('ƒ', p.name, { sub: `${fmt(p.value)}${p.unit ? ' ' + p.unit : ''}`, title: 'Ouvrir les paramètres', onclick: () => this.ctx.openParams() }))));
+    const originOn = this.ctx.originVisible();
+    kids.push(this.folder('origin', 'Origine', [['XY', 'Plan XY'], ['ZX', 'Plan XZ'], ['YZ', 'Plan YZ']].map(([k, label]) =>
+      this.leaf('▱', label, { title: 'Nouvelle esquisse sur ce plan', onclick: () => this.ctx.sketchOn(k) })),
+      this.eye(originOn, 'Afficher la grille et les axes', () => { this.ctx.toggleOrigin(); this.renderTree(); })));
+    if (this.sketches.length)
+      kids.push(this.folder('sketches', `Esquisses (${this.sketches.length})`, this.sketches.map((s) =>
+        this.leaf('✎', s.name, { title: 'Aller au code', onclick: () => this.ctx.gotoLine(s.line) }))));
+    if (j)
+      kids.push(this.folder('features', `Features (${j.features.length})`, j.features.map((f) => {
+        const li = this.leaf(ICONS[f.op] ?? '◇', f.name, {
+          cls: (f.suppressed ? 'off' : '') + (f.id === this.selected ? ' sel' : '') + (this.marker != null && f.id >= this.marker ? ' future' : ''),
+          eye: this.eye(!f.suppressed, f.suppressed ? 'Réactiver' : 'Supprimer temporairement', () => this.run({ op: 'suppress', fid: f.id, on: !f.suppressed })),
+          title: KIND[f.op] ?? f.op,
+        });
+        this.bindFeature(li.firstChild, f);
+        return li;
+      })));
+    if (this.mech)
+      kids.push(this.folder('mech', `Pièces (${this.mech.length})`, this.mech.map((p) => this.leaf('⬢', p.name, {}))));
+    const doc = this.folder('doc', this.doc || 'Document', kids);
+    this.tree.replaceChildren(doc);
+  }
+
+  // ---------- Menu contextuel ----------
   showMenu(f, x, y) {
     const items = [
-      ['Modifier…', () => this.openPanel(f.id, true)],
-      ['Renommer…', () => { this.openPanel(f.id, true); this.panel.querySelector('.rename input')?.select(); }],
+      ['Modifier la feature…', () => this.ctx.openEdit(f.id)],
+      ['Renommer…', () => this.ctx.openEdit(f.id, true)],
       [f.suppressed ? 'Réactiver' : 'Supprimer temporairement', () => this.run({ op: 'suppress', fid: f.id, on: !f.suppressed })],
-      ['Supprimer', () => this.run({ op: 'delete', fid: f.id }, `« ${f.name} » supprimée (Ctrl+Z dans le code pour annuler)`)],
+      ['Revenir avant cette étape', () => this.setMarker(f.id)],
+      ['Aller au code', () => this.ctx.select(f.id, true)],
+      ['Supprimer', () => this.remove(f.id)],
     ];
     this.menu.replaceChildren(...items.map(([label, act]) => {
-      const b = el('button', { textContent: label });
+      const b = el('button', { textContent: label, className: label === 'Supprimer' ? 'danger' : '' });
       b.onclick = () => { this.hideMenu(); act(); };
       return b;
     }));
@@ -83,63 +178,18 @@ export class Timeline {
   }
   hideMenu() { this.menu.hidden = true; }
 
+  remove(fid) {
+    const f = this.journal?.features[fid];
+    if (f) this.run({ op: 'delete', fid }, `« ${f.name} » supprimée (Ctrl+Z dans le code pour annuler)`);
+  }
+
   // Envoie une réécriture ; applique le code rendu, ou affiche le refus.
   async run(msg, done) {
     let r;
-    try { r = await this.edit(msg); } catch (e) { this.notify(e.message, true); return null; }
-    if (!r.ok) { this.notify(r.error, true); return null; }
-    if (r.code != null) { this.apply(r.code); if (done) this.notify(done, false); }
+    try { r = await this.ctx.edit(msg); } catch (e) { this.ctx.notify(e.message, true); return null; }
+    if (!r.ok) { this.ctx.notify(r.error, true); return null; }
+    if (r.code != null) { this.ctx.apply(r.code); if (done) this.ctx.notify(done, false); }
     return r;
-  }
-
-  async openPanel(fid, focus) {
-    const f = this.journal.features[fid];
-    this.open = { id: fid, name: f.name };
-    let r;
-    try { r = await this.edit({ op: 'literals', fid }); } catch { return; } // code en cours d'évaluation
-    if (!r.ok || this.open?.name !== f.name) return;
-    const p = this.panel;
-    p.hidden = false;
-    const title = el('h2', { textContent: `Modifier · ${KIND[f.op] ?? f.op}` });
-    const close = el('button', { textContent: '×', title: 'Fermer', className: 'close' });
-    close.onclick = () => this.closePanel();
-    title.append(close);
-    const name = el('input', { value: f.name, spellcheck: false });
-    const rename = el('div', { className: 'rename' }, name);
-    name.onkeydown = (e) => { if (e.key === 'Enter' && name.value !== f.name) this.run({ op: 'rename', fid, name: name.value }).then((ok) => { if (ok) this.open.name = name.value; }); };
-    name.onblur = () => { name.value = f.name; };
-    const sup = el('label', { className: 'hint' }, el('input', { type: 'checkbox', checked: f.suppressed }), ' supprimée temporairement');
-    sup.querySelector('input').onchange = (e) => this.run({ op: 'suppress', fid, on: e.target.checked });
-    const rows = r.literals.map((l, i) => this.literalRow(f, l, i));
-    const none = rows.length ? [] : [el('div', { className: 'hint', textContent: 'Aucune cote littérale : elle dépend seulement de paramètres et de features.' })];
-    p.replaceChildren(title, rename, sup, ...rows, ...none);
-    if (focus) p.scrollIntoView({ block: 'nearest' });
-  }
-  closePanel() { this.open = null; this.panel.hidden = true; this.panel.replaceChildren(); }
-
-  literalRow(f, l, i) {
-    const input = el('input', { type: 'number', value: l.value, step: l.int ? 1 : 'any' });
-    const commit = () => {
-      const v = Number(input.value);
-      if (input.value !== '' && Number.isFinite(v) && v !== l.value) this.run({ op: 'set_literal', fid: f.id, index: i, value: v });
-    };
-    input.onchange = commit;
-    input.onkeydown = (e) => { if (e.key === 'Enter') commit(); };
-    const ctx = el('code', { className: 'ctx', title: l.before + l.text + l.after });
-    ctx.append('…' + l.before, el('b', { textContent: l.text }), l.after + '…');
-    const promote = el('button', { textContent: '→ paramètre', title: 'Remplacer cette cote par un let%param (curseur)' });
-    promote.onclick = () => {
-      const suggested = `${f.name}_${(l.label ?? '').replace(/[~?]/g, '') || 'cote' + (i + 1)}`;
-      const name = el('input', { value: suggested, spellcheck: false });
-      const ok = el('button', { textContent: 'créer' });
-      const go = () => this.run({ op: 'promote', fid: f.id, index: i, name: name.value }, `paramètre « ${name.value} » créé`);
-      ok.onclick = go; name.onkeydown = (e) => { if (e.key === 'Enter') go(); };
-      promote.replaceWith(el('span', { className: 'promote' }, name, ok));
-      name.select();
-    };
-    return el('div', { className: 'lit' },
-      el('div', { className: 'lit-head' }, el('span', { textContent: l.label ? l.label.slice(1) + (l.label === '~deg' ? ' (°)' : '') : `cote ${i + 1}` }), input),
-      ctx, el('div', {}, promote));
   }
 }
 

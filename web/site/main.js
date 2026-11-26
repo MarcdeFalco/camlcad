@@ -1,6 +1,7 @@
 // Éditeur camlcad : code (CodeMirror) ↔ worker OCaml ↔ vue 3D (three.js).
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// Disposition d'un modeleur paramétrique : barre d'outils à onglets, navigateur
+// à gauche, vue au centre (cube de vue, barre de navigation), dialogues à
+// droite, frise en bas, code repliable. Le code reste la seule source de vérité.
 import { EditorView, basicSetup } from 'codemirror';
 import { StreamLanguage } from '@codemirror/language';
 import { oCaml } from '@codemirror/legacy-modes/mode/mllike';
@@ -8,7 +9,10 @@ import { setDiagnostics } from '@codemirror/lint';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 import { SketchEditor, planarFace, basePlanes, frameCode } from './sketch.js';
-import { Timeline, replaceCode, notify, stlBlob } from './timeline.js';
+import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
+import { Viewport } from './viewport.js';
+import { Dialogs } from './dialogs.js';
+import { Mech } from './mech.js';
 
 const $ = (id) => document.getElementById(id);
 const EXAMPLES = ['nouveau', 'support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
@@ -16,8 +20,8 @@ const EXAMPLES = ['nouveau', 'support', 'engrenage', 'charniere', 'patte', 'biel
 // ---------- Worker ----------
 const worker = new Worker('worker.js', { type: 'module' });
 let ready = false, nextId = 1, pending = null, inflight = false;
-let overrides = new Map(); // nom -> valeur (curseurs non validés)
-let journal = null, lastMesh = null, selected = null;
+let overrides = new Map(); // nom -> valeur (essais de paramètres non écrits)
+let journal = null, lastMesh = null, selected = null, rollbackAt = null, lastStatus = '';
 let sentCode = null, evaluatedCode = null; // code du dernier « eval » envoyé / dont le journal est affiché
 
 function send(msg) {
@@ -27,7 +31,7 @@ function send(msg) {
   sentCode = msg.kind === 'eval' ? msg.code : null;
   worker.postMessage({ ...msg, id: nextId++, overrides: [...overrides] });
 }
-// Réécriture du code par le worker (frise) : seulement sur le code dont le journal est affiché.
+// Réécriture du code par le worker : seulement sur le code dont le journal est affiché.
 const edits = new Map();
 function edit(msg) {
   const code = view.state.doc.toString();
@@ -37,29 +41,34 @@ function edit(msg) {
 }
 function evalCode() { send({ kind: 'eval', code: view.state.doc.toString() }); }
 function evalParams() { send({ kind: 'params' }); }
+const featureMesh = (fid, id) => worker.postMessage({ kind: 'feature', id, fid, overrides: [] });
 
 const t0 = performance.now();
 worker.onmessage = ({ data: m }) => {
   if (m.kind === 'ready') {
     ready = true;
-    $('status').textContent = `toplevel prêt en ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+    $('status').textContent = `prêt en ${((performance.now() - t0) / 1000).toFixed(1)} s`;
     evalCode();
     return;
   }
-  if (m.kind === 'feature') { showFeatureMesh(m); return; }
+  if (m.kind === 'feature') {
+    if (m.id === -1) { if (rollbackAt != null && m.fid === rollbackAt - 1) vp.setPart(m); }
+    else if (m.fid === selected) vp.setHighlight(m);
+    return;
+  }
   if (m.kind === 'sketch') { sketch.onSolved(m); return; }
   if (m.kind === 'edit') { edits.get(m.id)?.(m); edits.delete(m.id); return; }
   if (m.kind === 'export3mf') { download(new Blob([m.data], { type: 'model/3mf' }), '3mf'); return; }
   if (m.kind === 'pick') { if (m.fid >= 0) selectFeature(m.fid, true); return; }
-  if (m.kind === 'pose') { poseInflight = false; onPose(m); if (poseNext) { const p = poseNext; poseNext = null; sendPose(p); } return; }
+  if (m.kind === 'pose') { mech.onPose(m); return; }
   inflight = false;
   const fromEval = sentCode != null;
   if (fromEval) evaluatedCode = sentCode;
-  onResult(m, fromEval);
+  onResult(m);
   if (pending) { const p = pending; pending = null; send(p); }
 };
 
-// ---------- Éditeur ----------
+// ---------- Code ----------
 const setFeatLine = StateEffect.define();
 const featLine = StateField.define({
   create: () => Decoration.none,
@@ -81,7 +90,7 @@ const view = new EditorView({
     basicSetup, StreamLanguage.define(oCaml), featLine,
     EditorView.updateListener.of((u) => {
       if (u.docChanged) { clearTimeout(debounce); debounce = setTimeout(evalCode, 250); }
-      if (u.selectionSet && !u.docChanged && journal) {
+      if (u.selectionSet && !u.docChanged && journal && u.view.hasFocus) {
         const line = u.state.doc.lineAt(u.state.selection.main.head).number;
         const f = featureAtLine(line);
         if (f && f.id !== selected) selectFeature(f.id, false);
@@ -102,119 +111,207 @@ function featureAtLine(line) {
   for (const f of journal.features) if (f.loc && f.loc.line <= line) best = f;
   return best;
 }
-
-// ---------- Vue 3D ----------
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 5000);
-camera.up.set(0, 0, 1);
-camera.position.set(80, -120, 90);
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(devicePixelRatio);
-$('view').appendChild(renderer.domElement);
-const controls = new OrbitControls(camera, renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x666677, 2.2));
-const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(1, -2, 3); scene.add(sun);
-const grid = new THREE.GridHelper(200, 20, 0x888888, 0xcccccc); grid.rotation.x = Math.PI / 2; scene.add(grid);
-const material = new THREE.MeshStandardMaterial({ color: 0x4f86c6, roughness: 0.55, metalness: 0.05, flatShading: true, transparent: true });
-const hiMaterial = new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.5, flatShading: true, transparent: true, opacity: 0.85, depthTest: false });
-let part = null, highlight = null, fitted = false;
-
-function geometry(m) {
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(m.vertices, 3));
-  g.setIndex(new THREE.BufferAttribute(m.triangles, 1));
-  return g.toNonIndexed();
+function gotoLine(n) {
+  if (!codeShown()) toggleCode();
+  const line = view.state.doc.line(Math.min(n, view.state.doc.lines));
+  view.dispatch({ selection: { anchor: line.from }, scrollIntoView: true });
 }
-function resize() {
-  const r = $('view').getBoundingClientRect();
-  renderer.setSize(r.width, r.height); camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+const codeShown = () => !$('workspace').classList.contains('nocode');
+function toggleCode() {
+  const ws = $('workspace'); ws.classList.toggle('nocode');
+  $('toggle-code').classList.toggle('on', codeShown());
 }
-new ResizeObserver(resize).observe($('view'));
-renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+$('toggle-code').onclick = toggleCode;
 
-// Clic (sans glisser) sur la pièce : sélection de la feature correspondante.
-const raycaster = new THREE.Raycaster();
-let down = null;
-renderer.domElement.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
-renderer.domElement.addEventListener('pointerup', (e) => {
-  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
-  if (sketch.active) { sketch.click(e); return; }
-  if (!part || !journal) return;
-  const r = renderer.domElement.getBoundingClientRect();
-  raycaster.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
-  const hit = raycaster.intersectObject(part)[0];
-  if (hit) {
-    worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
-    showFace(planarFace(lastMesh, hit.faceIndex));
-  } else { selectFeature(null, false); showFace(null); }
-});
-window.addEventListener('keydown', (e) => { if (sketch.active) sketch.key(e); });
-
-// ---------- Face choisie et esquisse ----------
-let face = null, faceMesh = null, sketchCount = 0;
-function showFace(f) {
-  face = f;
-  if (faceMesh) { scene.remove(faceMesh); faceMesh.geometry.dispose(); faceMesh = null; }
-  $('sketch-on-face').disabled = !f;
-  $('face-info').textContent = f ? `Face plane ${fmt(f.area)} mm², normale (${f.frame.z.toArray().map(fmt).join(', ')})` : '';
-  if (!f) return;
-  const V = lastMesh.vertices, T = lastMesh.triangles, pos = [];
-  for (const t of f.tris) for (let k = 0; k < 3; k++) { const i = T[3 * t + k]; pos.push(V[3 * i], V[3 * i + 1], V[3 * i + 2]); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  faceMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x2ecc71, transparent: true, opacity: 0.6, depthTest: false, side: THREE.DoubleSide }));
-  faceMesh.renderOrder = 2; scene.add(faceMesh);
-}
-const sketch = new SketchEditor({
-  scene, camera, controls, renderer,
-  solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
-  insert: insertFeature,
-  done: () => { showFace(null); },
-});
-window.camlcadSketch = sketch; // inspection (tests)
-for (const b of document.querySelectorAll('[data-plane]'))
-  b.onclick = () => { showFace(null); sketch.start(basePlanes[b.dataset.plane].frame, basePlanes[b.dataset.plane].code); };
-$('sketch-on-face').onclick = () => { const f = face; showFace(null); sketch.start(f.frame, frameCode(f.frame)); };
-for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => { sketch.tool = b.dataset.tool; sketch.chain = null; sketch.pending = null; sketch.redraw(); };
-// Numéro libre : un de plus que le plus grand « esquisseN » du code.
-const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/esquisse(\d+)/g)].map((m) => Number(m[1])));
-$('sketch-ok-add').onclick = () => sketch.validate('add', (sketchCount = nextIndex()));
-$('sketch-ok-cut').onclick = () => sketch.validate('cut', (sketchCount = nextIndex()));
-$('sketch-cancel').onclick = () => sketch.stop();
-
-// Insère la feature avant le dernier « Doc.return X » et combine : X + f ou X - f.
-function insertFeature(code, feat, mode) {
+// Insère une feature avant le dernier « Doc.return X » et la combine : X + f, X - f ou X * f.
+function insertFeature(code, feat, op, n) {
   const doc = view.state.doc.toString();
   const re = /^([ \t]*)Doc\.return\s+(.+?)\s*$/gm;
   let m, last = null;
   while ((m = re.exec(doc))) last = m;
-  if (!last) { alert('Pas de « Doc.return … » où insérer la feature.'); return; }
-  const prev = last[2];
-  const res = `resultat${sketchCount}`;
-  const ins = code + `  let%feat ${res} = Shape.(${prev} ${mode === 'add' ? '+' : '-'} ${feat}) in\n`;
-  const from = last.index, to = last.index + last[0].length;
-  view.dispatch({ changes: { from, to, insert: ins + `${last[1]}Doc.return ${res}` } });
+  if (!last) { notify('Pas de « Doc.return … » où insérer la feature.', true); return; }
+  const prev = last[2].trim();
+  let ins = code, res = feat;
+  if (!/^(Shape\.)?empty$/.test(prev)) {
+    res = `resultat${n}`;
+    ins += `  let%feat ${res} = Shape.(${prev} ${{ join: '+', cut: '-', intersect: '*' }[op]} ${feat}) in\n`;
+  }
+  view.dispatch({ changes: { from: last.index, to: last.index + last[0].length, insert: ins + `${last[1]}Doc.return ${res}` } });
+  clearTimeout(debounce); evalCode();
+}
+// Numéro libre : un de plus que le plus grand suffixe des noms générés.
+const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\b(?:esquisse|plan|resultat|boite|cylindre|sphere|extrusion|poche)(\d+)\b/g)].map((m) => Number(m[1])));
+const sketchesInCode = () => [...view.state.doc.toString().matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => ({ name: m[1], line: view.state.doc.lineAt(m.index).number }));
+
+// ---------- Vue 3D ----------
+const vp = new Viewport($('view'));
+const dialogs = new Dialogs({
+  scene: vp.scene, insert: insertFeature, nextIndex, edit, notify, journal: () => journal,
+  run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
+  onClose: () => { if (picking) stopPicking(); },
+});
+const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] }) });
+
+// Clic (sans glisser) : plan d'esquisse, face plane, ou feature sous la souris.
+let down = null, face = null, faceMesh = null, picking = false;
+const canvas = vp.renderer.domElement;
+canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); });
+canvas.addEventListener('pointerup', (e) => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
+  if (sketch.active) { sketch.click(e); return; }
+  const plane = picking && vp.pickPlane(e);
+  if (plane) { stopPicking(); startSketch(basePlanes[plane].frame, basePlanes[plane].code); return; }
+  const hit = vp.part && !mech.active ? vp.ray(e).intersectObject(vp.part)[0] : null;
+  if (hit && rollbackAt == null) {
+    const f = planarFace(lastMesh, hit.faceIndex);
+    if (picking) { if (f) { stopPicking(); startSketch(f.frame, frameCode(f.frame)); } return; }
+    worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
+    showFace(f);
+  } else if (!picking) { selectFeature(null, false); showFace(null); }
+});
+
+function showFace(f) {
+  face = f;
+  if (faceMesh) { vp.scene.remove(faceMesh); faceMesh.geometry.dispose(); faceMesh = null; }
+  if (!f) return;
+  const V = lastMesh.vertices, T = lastMesh.triangles, pos = [];
+  for (const t of f.tris) for (let k = 0; k < 3; k++) { const i = T[3 * t + k]; pos.push(V[3 * i], V[3 * i + 1], V[3 * i + 2]); }
+  faceMesh = vp.faceOverlay(pos);
 }
 
-function fit(g) {
-  g.computeBoundingSphere();
-  const { center } = g.boundingSphere;
-  const radius = Number.isFinite(g.boundingSphere.radius) && g.boundingSphere.radius > 1e-6 ? g.boundingSphere.radius : 50;
-  controls.target.copy(center);
-  const half = THREE.MathUtils.degToRad(camera.fov / 2);
-  const dist = (1.15 * radius) / Math.sin(half) / Math.min(1, camera.aspect);
-  camera.position.copy(center).add(new THREE.Vector3(1, -1.5, 1.1).normalize().multiplyScalar(dist));
+// ---------- Esquisse ----------
+const sketch = new SketchEditor({
+  scene: vp.scene, camera: vp.camera, controls: vp.controls, renderer: vp.renderer,
+  solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
+  mode: (on) => showTab(on ? 'sketch' : null),
+  finish: (data) => { vp.threeQuarter(data.frame); dialogs.extrude(data, () => sketch.resume()); },
+  done: () => showFace(null),
+});
+window.camlcadSketch = sketch; // inspection (tests)
+function startSketch(frame, code) { dialogs.close(true); showFace(null); sketch.start(frame, code); }
+function startPicking() {
+  if (sketch.active) return;
+  if (face) { const f = face; startSketch(f.frame, frameCode(f.frame)); return; }
+  picking = true; vp.showPlanes(basePlanes);
+  hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
+}
+function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
+function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
+for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => { sketch.tool = b.dataset.tool; sketch.chain = null; sketch.pending = null; sketch.redraw(); };
+$('sketch-finish').onclick = () => sketch.finish();
+$('sketch-cancel').onclick = () => sketch.stop();
+
+// ---------- Barre d'outils ----------
+function showTab(tab) {
+  const t = tab ?? (mech.active ? 'mech' : 'solid');
+  document.querySelector('[data-tab=sketch]').hidden = tab !== 'sketch';
+  document.querySelector('[data-tab=mech]').hidden = !mech.active;
+  for (const b of document.querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === t);
+  for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== t;
+}
+for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => { if (b.dataset.tab !== 'sketch' || sketch.active) showTab(sketch.active ? 'sketch' : b.dataset.tab); };
+const needSel = () => { if (selected == null) notify('Sélectionnez d’abord une feature (frise, navigateur ou pièce).', true); return selected != null; };
+const COMMANDS = {
+  sketch: startPicking,
+  extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : (notify('Choisissez le plan de l’esquisse à extruder.'), startPicking())),
+  box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
+  edit: () => needSel() && dialogs.feature(selected),
+  params: openParams,
+  suppress: () => needSel() && timeline.run({ op: 'suppress', fid: selected, on: !journal.features[selected].suppressed }),
+  delete: () => needSel() && timeline.remove(selected),
+  look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
+  fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
+  motion: () => mech.panel(),
+};
+for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
+$('animate').onclick = () => mech.toggle();
+for (const b of document.querySelectorAll('[data-nav]')) b.onclick = () => {
+  const n = b.dataset.nav;
+  if (n === 'orbit' || n === 'pan') { vp.setMode(n); for (const x of document.querySelectorAll('[data-nav=orbit],[data-nav=pan]')) x.classList.toggle('on', x === b); }
+  else if (n === 'style') vp.cycleStyle();
+  else if (n === 'grid') b.classList.toggle('on', vp.toggleGrid());
+  else COMMANDS[n]();
+};
+window.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'e') { e.preventDefault(); toggleCode(); return; }
+  if (e.target.closest('input,select,textarea,.cm-editor')) return;
+  if (sketch.active) { sketch.key(e); return; }
+  if (e.key === 'Escape' && picking) { stopPicking(); return; }
+  const keys = { s: 'sketch', e: 'extrude', f: 'fit', Delete: 'delete' };
+  if (keys[e.key] && !e.ctrlKey && !e.metaKey) { e.preventDefault(); COMMANDS[keys[e.key]](); }
+});
+
+// ---------- Frise et navigateur ----------
+const timeline = new Timeline({
+  edit, notify, select: (fid, move) => selectFeature(fid, move),
+  apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
+  openEdit: (fid, rename) => dialogs.feature(fid, rename), openParams,
+  sketchOn: (k) => { stopPicking(); startSketch(basePlanes[k].frame, basePlanes[k].code); },
+  gotoLine, toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
+  rollback: (k) => {
+    rollbackAt = k;
+    vp.setHighlight(null);
+    if (k == null) { if (lastMesh) vp.setPart(lastMesh); }
+    else if (k === 0) vp.clearPart();
+    else featureMesh(k - 1, -1);
+    $('status').textContent = k == null ? lastStatus : `retour à l’étape ${k} / ${journal.features.length}`;
+  },
+});
+window.camlcadTimeline = timeline; // inspection (tests)
+
+function selectFeature(fid, moveCursor) {
+  selected = fid;
+  renderTimeline();
+  vp.setHighlight(null);
+  if (fid == null) { view.dispatch({ effects: setFeatLine.of(null) }); return; }
+  const f = journal.features[fid];
+  if (f.loc) {
+    view.dispatch({ effects: setFeatLine.of(f.loc.line) });
+    if (moveCursor) {
+      const line = view.state.doc.line(f.loc.line);
+      view.dispatch({ selection: { anchor: line.from }, effects: EditorView.scrollIntoView(line.from, { y: 'center' }) });
+    }
+  }
+  featureMesh(fid, 0);
+}
+function renderTimeline() {
+  timeline.update(journal, selected, { doc: $('example').value, sketches: sketchesInCode(), mech: mech.active ? mech.state.parts : null });
+}
+
+// ---------- Paramètres ----------
+function openParams() {
+  const saved = new Map(overrides);
+  dialogs.params({
+    overrides,
+    preview: (name, v) => { overrides.set(name, v); evalParams(); },
+    // Écrit chaque valeur essayée à la place de son littéral par défaut.
+    commit: () => {
+      const changes = [];
+      for (const p of journal.params) {
+        const v = overrides.get(p.name);
+        if (v == null || !p.loc) continue;
+        let lit = fmt(v); if (!/[.e]/.test(lit)) lit += '.';
+        changes.push({ ...locRange(p.loc), insert: lit });
+      }
+      overrides.clear();
+      if (changes.length) view.dispatch({ changes }); else evalParams();
+    },
+    revert: () => { overrides = saved; evalParams(); },
+  });
 }
 
 // ---------- Résultats ----------
-function onResult(m, fromEval) {
+function onResult(m) {
   const t = m.timings || {};
   const ntri = m.mode === 'mech' ? m.parts.reduce((n, p) => n + p.triangles.length / 3, 0) : m.triangles.length / 3;
-  $('status').textContent = m.ok
-    ? `${m.mode === 'mech' ? m.parts.length + ' pièces · ' : ''}${ntri} triangles · compil ${(t.compile ?? 0).toFixed(0)} ms · évaluation ${((t.run ?? 0) + (t.mesh ?? 0)).toFixed(0)} ms`
-    : 'erreur';
+  $('status').textContent = lastStatus = m.ok
+    ? `${m.mode === 'mech' ? m.parts.length + ' pièces · ' : ''}${ntri} triangles · compilation ${(t.compile ?? 0).toFixed(0)} ms · évaluation ${((t.run ?? 0) + (t.mesh ?? 0)).toFixed(0)} ms`
+    : '⚠ erreur';
+  $('status').classList.toggle('err', !m.ok);
   const diags = [];
   if (m.error) {
-    $('error').hidden = false; $('error').textContent = m.error.message;
+    notify(m.error.message.trim().split('\n').slice(-3).join('\n'), true);
     if (m.error.line > 0) {
       const l0 = view.state.doc.line(Math.min(m.error.line, view.state.doc.lines));
       const from = Math.min(l0.from + m.error.col, l0.to);
@@ -225,165 +322,27 @@ function onResult(m, fromEval) {
       }
       diags.push({ from, to, severity: 'error', message: m.error.message });
     }
-  } else $('error').hidden = true;
+  }
   view.dispatch(setDiagnostics(view.state, diags));
   if (m.journal !== 'null') {
     journal = JSON.parse(m.journal);
     if (selected != null && selected >= journal.features.length) selected = null;
-    renderParams(); timeline.update(journal, selected, fromEval);
   }
-  $('motion').hidden = m.mode !== 'mech';
-  if (m.ok && m.mode === 'mech') { showMech(m); return; }
-  if (m.ok) {
-    clearMech();
+  if (m.ok && m.mode === 'mech') {
+    mech.show(m); lastMesh = null;
+    $('export-stl').disabled = true; $('export-3mf').disabled = false;
+  } else if (m.ok) {
+    mech.clear();
     lastMesh = m;
-    $('export-stl').disabled = false;
-    $('export-3mf').disabled = false;
-    if (part) { scene.remove(part); part.geometry.dispose(); }
-    part = new THREE.Mesh(geometry(m), material);
-    scene.add(part);
-    if (!fitted) { fit(part.geometry); fitted = true; }
-    if (selected != null) worker.postMessage({ kind: 'feature', id: 0, fid: selected, overrides: [] });
+    $('export-stl').disabled = $('export-3mf').disabled = false;
+    if (rollbackAt == null) vp.setPart(m); else timeline.setMarker(rollbackAt);
+    if (selected != null) featureMesh(selected, 0);
   }
+  if (!sketch.active) showTab(null);
+  renderTimeline();
 }
 
-function renderParams() {
-  const box = $('params'); box.replaceChildren();
-  for (const p of journal.params) {
-    const div = document.createElement('div'); div.className = 'param';
-    const [lo, hi] = p.range ?? [p.default / 4, p.default * 4 || 10];
-    const step = 10 ** Math.floor(Math.log10((hi - lo) / 100));
-    div.innerHTML = `<label><span>${p.name}</span><span><input class="num" type="number" step="any" value="${fmt(p.value)}">${p.unit ? ' ' + p.unit : ''}</span></label>
-      <input type="range" min="${lo}" max="${hi}" step="${step}" value="${p.value}">`;
-    const input = div.querySelector('input[type=range]'), out = div.querySelector('input.num');
-    input.oninput = () => { overrides.set(p.name, Number(input.value)); out.value = fmt(Number(input.value)); evalParams(); };
-    // Valeur tapée : essayée comme un curseur (bornes vérifiées par Doc) ; « écrire dans le code » la valide.
-    out.onchange = () => { const v = Number(out.value); if (out.value !== '' && Number.isFinite(v)) { overrides.set(p.name, v); evalParams(); } };
-    if (overrides.has(p.name)) {
-      const b = document.createElement('button'); b.textContent = 'écrire dans le code';
-      b.title = 'Remplace la valeur par défaut dans le source';
-      b.onclick = () => commitParam(p);
-      div.querySelector('label span').append(' ', b);
-    }
-    box.append(div);
-  }
-}
-const fmt = (x) => (Math.abs(x) >= 100 ? x.toFixed(0) : Number(x.toPrecision(3)).toString());
-
-// Valider un curseur : réécrit le littéral par défaut à sa position.
-function commitParam(p) {
-  const v = overrides.get(p.name);
-  if (v == null || !p.loc) return;
-  const { from, to } = locRange(p.loc);
-  let lit = fmt(v); if (!lit.includes('.')) lit += '.';
-  overrides.delete(p.name);
-  view.dispatch({ changes: { from, to, insert: lit } });
-}
-
-const timeline = new Timeline({
-  bar: $('timeline'), tree: $('tree'), panel: $('feature-panel'), menu: $('ctxmenu'),
-  edit, select: (fid, move) => selectFeature(fid, move), notify,
-  apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
-});
-window.camlcadTimeline = timeline; // inspection (tests)
-function selectFeature(fid, moveCursor) {
-  selected = fid;
-  timeline.update(journal, selected, false);
-  if (highlight) { scene.remove(highlight); highlight.geometry.dispose(); highlight = null; }
-  material.opacity = fid == null ? 1 : 0.35;
-  if (fid == null) { view.dispatch({ effects: setFeatLine.of(null) }); return; }
-  const f = journal.features[fid];
-  if (f.loc) {
-    view.dispatch({ effects: setFeatLine.of(f.loc.line) });
-    if (moveCursor) {
-      const line = view.state.doc.line(f.loc.line);
-      view.dispatch({ selection: { anchor: line.from }, scrollIntoView: true });
-    }
-  }
-  worker.postMessage({ kind: 'feature', id: 0, fid, overrides: [] });
-}
-function showFeatureMesh(m) {
-  if (m.fid !== selected) return;
-  if (highlight) { scene.remove(highlight); highlight.geometry.dispose(); }
-  highlight = new THREE.Mesh(geometry(m), hiMaterial);
-  highlight.renderOrder = 1;
-  scene.add(highlight);
-}
-
-// ---------- Mécanismes : une pièce par maillage, placée par sa matrice ----------
-let mech = null, poseInflight = false, poseNext = null, drivers = new Map(), anim = null;
-function clearMech() {
-  if (!mech) return;
-  for (const o of mech.meshes) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
-  mech = null; stopAnim();
-}
-function showMech(m) {
-  clearMech();
-  if (part) { scene.remove(part); part.geometry.dispose(); part = null; }
-  $('export-stl').disabled = true;
-  $('export-3mf').disabled = false;
-  const meshes = m.parts.map((p) => {
-    const c = p.color ? new THREE.Color(p.color[0] / 255, p.color[1] / 255, p.color[2] / 255) : new THREE.Color(0x4f86c6);
-    const o = new THREE.Mesh(geometry(p), new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, flatShading: true }));
-    o.matrixAutoUpdate = false; scene.add(o); return o;
-  });
-  mech = { meshes, coords: m.coords };
-  const known = new Set(m.coords.map((c) => c.name));
-  for (const k of [...drivers.keys()]) if (!known.has(k)) drivers.delete(k);
-  onPose(m);
-  renderCoords(m);
-  if (!fitted) { const b = new THREE.Box3(); meshes.forEach((o) => b.expandByObject(o)); const g = new THREE.BufferGeometry(); g.boundingSphere = b.getBoundingSphere(new THREE.Sphere()); fit(g); fitted = true; }
-}
-function onPose(m) {
-  if (!mech) return;
-  if (!m.ok) { $('inter').textContent = m.error; return; }
-  mech.meshes.forEach((o, i) => { o.matrix.fromArray(m.matrices.slice(16 * i, 16 * i + 16)); o.matrixWorldNeedsUpdate = true; });
-  mech.pose = new Map(m.pose);
-  $('inter').textContent = m.interferences.length ? 'Interférences : ' + m.interferences.join(', ') : '';
-  for (const el of document.querySelectorAll('#coords .param')) {
-    const v = mech.pose.get(el.dataset.name);
-    if (v != null && !drivers.has(el.dataset.name)) { el.querySelector('input').value = v; el.querySelector('output').textContent = fmt(v); }
-  }
-}
-function sendPose(d) {
-  if (poseInflight) { poseNext = d; return; }
-  poseInflight = true;
-  worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] });
-}
-function renderCoords(m) {
-  const box = $('coords'); box.replaceChildren();
-  for (const c of m.coords) {
-    const div = document.createElement('div'); div.className = 'param'; div.dataset.name = c.name;
-    const v = mech.pose.get(c.name) ?? 0;
-    div.innerHTML = `<label><span>${c.name}${drivers.has(c.name) ? ' (pilote)' : ''}</span><span><output>${fmt(v)}</output> ${c.unit}</span></label>
-      <input type="range" min="${c.lo}" max="${c.hi}" step="${(c.hi - c.lo) / 360}" value="${v}">`;
-    const input = div.querySelector('input');
-    input.oninput = () => {
-      stopAnim();
-      // un seul pilote à la fois : les autres coordonnées sont résolues
-      drivers = new Map([[c.name, Number(input.value)]]);
-      div.querySelector('output').textContent = fmt(Number(input.value));
-      sendPose(drivers);
-    };
-    box.append(div);
-  }
-}
-function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = null; $('animate').textContent = '▶'; } }
-$('animate').onclick = () => {
-  if (anim) { stopAnim(); return; }
-  if (!mech || !mech.coords.length) return;
-  const c = mech.coords[0], t0 = performance.now();
-  $('animate').textContent = '⏸';
-  const step = (t) => {
-    const q = c.lo + ((((t - t0) / 4000) % 1) * (c.hi - c.lo));
-    drivers = new Map([[c.name, q]]);
-    if (!poseInflight) sendPose(drivers);
-    anim = requestAnimationFrame(step);
-  };
-  anim = requestAnimationFrame(step);
-};
-
-// ---------- Export STL binaire ----------
+// ---------- Export ----------
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
 function download(blob, ext) {
   const a = document.createElement('a');
@@ -394,14 +353,16 @@ $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, o
 
 // ---------- Exemples ----------
 for (const e of EXAMPLES) $('example').append(new Option(e, e));
-const BLANK = 'open Cad\n\n(* Choisissez un plan dans « Esquisse » pour commencer. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';
+const BLANK = 'open Cad\n\n(* Commencez par « Esquisse » ou « Boîte » dans la barre d\'outils. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';
 async function loadExample(name) {
   if (sketch.active) sketch.stop();
+  dialogs.close(true); stopPicking();
   const code = name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text();
   if (journal) selectFeature(null, false);
-  overrides = new Map(); fitted = false; journal = null;
+  overrides = new Map(); vp.fitted = false; journal = null; timeline.setMarker(null);
   $('example').value = name;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
 }
 $('example').onchange = () => loadExample($('example').value);
+if (innerWidth < 1100) toggleCode();
 loadExample('engrenage');

@@ -14,43 +14,57 @@ Le code de l'éditeur doit définir `model : Cad.Shape.t Cad.Doc.t` (ou
 `Cad_mech.Assembly.t Cad.Doc.t` pour un mécanisme) ; `let%feat`
 et `let%param` sont disponibles.
 
-- **Curseurs** : un `let%param` avec `[@range lo, hi]` devient un curseur ; le
-  déplacer réévalue sans recompiler (overrides du Reader, cache `Eval` conservé).
-  « écrire dans le code » remplace le littéral par défaut à sa position.
-- **Frise et arbre** (façon Fusion 360) : la frise en bas de la vue et la liste
-  « Features » montrent chaque feature avec l'icône de son opération. Cliquer
-  une feature (frise, liste ou pièce en 3D) surligne sa ligne et la montre en
-  orange ; déplacer le curseur du code sélectionne la feature correspondante.
-  Clic droit : Modifier, Renommer, Supprimer temporairement / Réactiver,
-  Supprimer. Double-clic : panneau « Modifier » (renommer, cotes littérales
-  de la liaison à éditer, « → paramètre » pour en faire un `let%param`).
-  Chaque action est une réécriture du code par `Cad.Source_edit` (dans le
-  worker), puis une recompilation : Ctrl+Z dans le code annule. La
-  suppression temporaire écrit `[@@suppress]` sur la liaison (la feature rend
-  `Shape.empty`) ; la suppression retire la liaison et ses usages dans les
-  unions et différences, et refuse les autres cas (base d'une différence,
-  résultat du modèle…) en disant pourquoi.
-- **Paramètres** : valeur tapée au clavier ou curseur, puis « écrire dans le code ».
+Disposition d'un modeleur paramétrique (inspirée de Fusion 360, visuels propres) :
+barre d'outils à onglets en haut, navigateur à gauche, vue 3D au centre (cube de
+vue cliquable, ⌂ vue de départ, barre de navigation : orbite, panoramique,
+ajuster, regarder une face, style, grille), dialogues de commande à droite,
+frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
+
+- **SOLIDE** : Esquisse (S), Extrusion (E), Boîte, Cylindre, Sphère ; Feature
+  (modifier la sélection), Paramètres (tableau, OK écrit les valeurs dans le
+  code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F). Boîte,
+  cylindre et sphère ouvrent un dialogue avec aperçu (opération Joindre,
+  Couper ou Intersection) ; OK insère la feature avant le `Doc.return` et la
+  combine au résultat.
+- **Navigateur** : dossiers Paramètres, Origine (œil : grille et axes ; un plan
+  cliqué ouvre une esquisse dessus), Esquisses (`let%sketch` du code), Features
+  (œil : suppression temporaire), Pièces d'un mécanisme.
+- **Frise** : une icône par opération ; clic : sélection (ligne du code, pièce
+  en surbrillance) ; double-clic : dialogue « Modifier » (nom, cotes littérales,
+  ƒx pour en faire un `let%param`) ; clic droit : modifier, renommer, supprimer
+  temporairement, revenir avant cette étape, aller au code, supprimer. Le
+  marqueur (à glisser, ou ⏮ ◀ ▶ ▶| ⏭) montre la pièce à une étape : la forme de
+  la dernière feature avant le marqueur. Chaque action est une réécriture du
+  code par `Cad.Source_edit` (dans le worker), puis une recompilation : Ctrl+Z
+  dans le code annule. La suppression temporaire écrit `[@@suppress]` (la
+  feature rend `Shape.empty`) ; la suppression retire la liaison et ses usages
+  dans les unions et différences, et refuse les autres cas en disant pourquoi.
+- **Paramètres** : un `let%param` avec `[@range lo, hi]` a un curseur dans le
+  dialogue Paramètres ; l'essai réévalue sans recompiler (overrides du Reader),
+  OK écrit les valeurs à la place des littéraux, Annuler revient.
 - **Erreurs** de syntaxe/typage soulignées dans le code ; erreurs de `Doc`
   (paramètre hors bornes…) localisées aussi.
-- **Esquisse** : « Plan XY/XZ/YZ », ou cliquer une face plane de la pièce
-  (surlignée en vert) puis « Sur la face ». Outils : contour (cliquer le
-  premier point pour fermer), cercle (centre puis rayon), sélection (Maj pour
-  plusieurs) ; les contraintes proposées dépendent de la sélection (horizontale,
-  longueur, parallèles, tangente, rayon…) et sont résolues par le solveur OCaml
-  à chaque ajout (degrés de liberté affichés). « Extruder (+) » ou « Enlever
-  (−) » insère dans le code un plan, un paramètre de profondeur, le
-  `let%sketch` généré et la feature, combinée au résultat du `Doc.return`.
-  Limites : le plan d'une face est écrit en littéral (il ne suit pas les
-  paramètres) ; une esquisse insérée se modifie dans le code, pas encore à la souris.
-- **Mécanismes** : une pièce par couleur ; un curseur par coordonnée (celui
+- **Esquisse** : Esquisse, puis un plan d'origine (plans affichés dans la vue)
+  ou une face plane de la pièce (une face déjà sélectionnée est prise
+  directement). L'onglet ESQUISSE apparaît : contour (L, cliquer le premier
+  point pour fermer), cercle (C, centre puis rayon), sélection (S, Maj pour
+  plusieurs) ; les contraintes proposées dépendent de la sélection et sont
+  résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
+  les degrés de liberté, la cote demandée et la liste des contraintes.
+  « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
+  côté opposé, symétrique ; distance ; opération), avec aperçu ; OK insère le
+  plan, le `let%sketch` et la feature ; Annuler revient à l'esquisse.
+  Limites : le plan d'une face est écrit en littéral ; une esquisse insérée se
+  modifie dans le code, pas encore à la souris.
+- **MÉCANISME** (onglet) : une pièce par couleur ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.
 - **Export** STL (solide) et 3MF (solide, ou pièces d'un mécanisme placées à la pose
   courante avec leurs couleurs, pour l'impression en place).
 
 Fichiers : `toplevel.ml` (worker, protocole en tête), `hook/` (rendez-vous
-`model`), `site/` (HTML, `main.js` avec three.js et CodeMirror par CDN, `timeline.js` (frise, menu, panneau Modifier),
+`model`), `site/` (HTML ; `main.js` : worker, code, résultats, commandes ; `viewport.js` : vue three.js, cube de vue ;
+`timeline.js` : frise, navigateur, menu ; `dialogs.js` : dialogues de commande ; `sketch.js` ; `mech.js` ;
 `worker.js` qui charge manifold-3d puis le toplevel).
 
 Test : `test_js/worker.mjs` pilote le worker sous Node (dans `@test_js/runtest-js`).

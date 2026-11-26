@@ -15,46 +15,107 @@
 </script>
 </head>
 <body>
-<header>
-  <strong>camlcad</strong>
-  <select id="example"></select>
+<!-- Barre d'application : document, état, code, export. -->
+<header id="appbar">
+  <strong class="logo">camlcad</strong>
+  <select id="example" title="Document"></select>
   <span id="status">chargement du toplevel…</span>
   <span class="spacer"></span>
+  <button id="toggle-code" class="on" title="Afficher ou masquer le code (Ctrl+E)">&lt;/&gt; Code</button>
   <button id="export-stl" disabled>STL</button>
   <button id="export-3mf" disabled>3MF</button>
 </header>
-<main>
-  <section id="code"></section>
-  <section id="view">
-    <div id="notice" hidden></div>
-    <nav id="timeline" hidden aria-label="Frise des features"></nav>
-  </section>
-  <aside>
-    <h2>Esquisse</h2>
-    <div id="sketch-start">
-      <button data-plane="XY">Plan XY</button> <button data-plane="ZX">Plan XZ</button> <button data-plane="YZ">Plan YZ</button>
-      <button id="sketch-on-face" disabled title="Cliquez d'abord une face plane de la pièce">Sur la face</button>
-      <div id="face-info" class="hint"></div>
+
+<!-- Barre d'outils à onglets : SOLIDE, ESQUISSE (contextuel), MÉCANISME. -->
+<nav id="toolbar">
+  <div class="tabs">
+    <button data-tab="solid" class="on">SOLIDE</button>
+    <button data-tab="sketch" hidden>ESQUISSE</button>
+    <button data-tab="mech" hidden>MÉCANISME</button>
+  </div>
+  <div class="panels">
+    <div class="tabpanel" data-panel="solid">
+      <div class="group"><div class="tools">
+        <button data-cmd="sketch" title="Créer une esquisse sur un plan ou une face (S)"><i>✎</i>Esquisse</button>
+        <button data-cmd="extrude" title="Extruder une esquisse (E)"><i>⬆</i>Extrusion</button>
+        <button data-cmd="box" title="Boîte"><i>▣</i>Boîte</button>
+        <button data-cmd="cylinder" title="Cylindre"><i>◎</i>Cylindre</button>
+        <button data-cmd="sphere" title="Sphère"><i>●</i>Sphère</button>
+      </div><span>CRÉER</span></div>
+      <div class="group"><div class="tools">
+        <button data-cmd="edit" title="Modifier la feature sélectionnée"><i>✐</i>Feature</button>
+        <button data-cmd="params" title="Modifier les paramètres"><i>ƒx</i>Paramètres</button>
+        <button data-cmd="suppress" title="Supprimer temporairement la feature sélectionnée"><i>◌</i>Suppr. temp.</button>
+        <button data-cmd="delete" title="Supprimer la feature sélectionnée (Suppr)"><i>✕</i>Supprimer</button>
+      </div><span>MODIFIER</span></div>
+      <div class="group"><div class="tools">
+        <button data-cmd="look" title="Vue de face sur la face sélectionnée"><i>⊡</i>Regarder</button>
+        <button data-cmd="fit" title="Ajuster la vue (F)"><i>⤢</i>Ajuster</button>
+      </div><span>INSPECTER</span></div>
     </div>
-    <div id="sketch-panel" hidden>
-      <div class="tools"><button data-tool="poly">Contour</button> <button data-tool="circle">Cercle</button> <button data-tool="select">Sélection</button></div>
-      <div id="sketch-status" class="hint"></div>
-      <div id="sketch-constraints" class="tools"></div>
-      <ol id="sketch-list"></ol>
-      <div class="tools"><button id="sketch-ok-add">Extruder (+)</button> <button id="sketch-ok-cut">Enlever (−)</button> <button id="sketch-cancel">Annuler</button></div>
+    <div class="tabpanel" data-panel="sketch" hidden>
+      <div class="group"><div class="tools">
+        <button data-tool="poly" title="Contour fermé (L)"><i>⟋</i>Contour</button>
+        <button data-tool="circle" title="Cercle : centre puis rayon (C)"><i>◯</i>Cercle</button>
+        <button data-tool="select" title="Sélection (Maj : plusieurs)"><i>↖</i>Sélection</button>
+      </div><span>CRÉER</span></div>
+      <div class="group"><div class="tools" id="sketch-constraints"></div><span>CONTRAINTES</span></div>
+      <div class="group"><div class="tools">
+        <button id="sketch-finish" class="finish" title="Terminer l'esquisse et extruder"><i>✔</i>Terminer l'esquisse</button>
+        <button id="sketch-cancel" title="Abandonner l'esquisse (Échap)"><i>✕</i>Abandonner</button>
+      </div><span>TERMINER</span></div>
     </div>
-    <div id="feature-panel" hidden></div>
-    <h2>Paramètres</h2>
-    <div id="params"></div>
-    <div id="motion" hidden>
-      <h2>Mouvement <button id="animate">▶</button></h2>
-      <div id="coords"></div>
-      <div id="inter"></div>
+    <div class="tabpanel" data-panel="mech" hidden>
+      <div class="group"><div class="tools">
+        <button id="animate" title="Animer la première articulation"><i>▶</i>Animer</button>
+        <button data-cmd="motion" title="Piloter les articulations"><i>⟲</i>Mouvement</button>
+      </div><span>MOUVEMENT</span></div>
     </div>
-    <h2>Features <span class="hint">clic droit : actions</span></h2>
-    <ol id="tree"></ol>
-    <pre id="error" hidden></pre>
+  </div>
+</nav>
+
+<main id="workspace">
+  <aside id="browser" aria-label="Navigateur">
+    <div class="paneltitle">NAVIGATEUR</div>
+    <ul id="tree" class="tree"></ul>
   </aside>
+  <section id="view">
+    <div id="viewcube" title="Cliquez une face pour orienter la vue"></div>
+    <button id="home" title="Vue de départ (isométrique)">⌂</button>
+    <div id="notice" hidden></div>
+    <div id="hint" hidden></div>
+    <div id="dialog" hidden></div>
+    <div id="palette" hidden>
+      <div class="dhead"><span>PALETTE D'ESQUISSE</span></div>
+      <div class="dbody">
+        <div id="sketch-status" class="status"></div>
+        <div id="sketch-ask" class="ask" hidden></div>
+        <div class="hint">Contraintes</div>
+        <ol id="sketch-list"></ol>
+        <div class="hint">Contour : cliquez les sommets, puis le premier pour fermer. Cercle : centre puis rayon. Sélection : Maj pour plusieurs. Échap : abandonner le tracé.</div>
+      </div>
+    </div>
+    <div id="navbar">
+      <button data-nav="orbit" class="on" title="Orbite (clic gauche)">⟳</button>
+      <button data-nav="pan" title="Panoramique (clic gauche)">✥</button>
+      <button data-nav="fit" title="Ajuster (F)">⤢</button>
+      <button data-nav="look" title="Regarder la face sélectionnée">⊡</button>
+      <span class="sep"></span>
+      <button data-nav="style" title="Style : ombré avec arêtes / ombré / filaire">◧</button>
+      <button data-nav="grid" class="on" title="Grille">#</button>
+    </div>
+  </section>
+  <section id="code" aria-label="Code OCaml"></section>
+  <footer id="timeline-bar">
+    <div class="player">
+      <button data-tl="first" title="Début de la frise">⏮</button>
+      <button data-tl="prev" title="Étape précédente">◀</button>
+      <button data-tl="play" title="Rejouer la construction">▶</button>
+      <button data-tl="next" title="Étape suivante">▶︎|</button>
+      <button data-tl="last" title="Fin de la frise">⏭</button>
+    </div>
+    <nav id="timeline" aria-label="Frise des features"></nav>
+  </footer>
 </main>
 <div id="ctxmenu" hidden></div>
 <script type="module" src="main.js"></script>

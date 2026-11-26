@@ -1,6 +1,6 @@
 // Choix d'une face plane et édition d'esquisse sur un plan.
-// Le solveur est celui d'OCaml (worker, message "sketch") ; la validation
-// insère dans le source un let%sketch suivi d'une extrusion ou d'une poche.
+// Le solveur est celui d'OCaml (worker, message "sketch") ; « Terminer
+// l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 
 const $ = (id) => document.getElementById(id);
@@ -69,15 +69,22 @@ export const frameCode = (f) => `Geom.Frame.make ~origin:${v3(f.origin)} ~x:${v3
 // ---------- Éditeur d'esquisse ----------
 export class SketchEditor {
   constructor(ctx) {
-    this.ctx = ctx; // { scene, camera, controls, renderer, solve(desc), insert(code), done() }
+    this.ctx = ctx; // { scene, camera, controls, renderer, solve(desc), mode(on), finish(data), done() }
     this.group = null;
   }
 
   start(plane, planeCode) {
     this.plane = plane; this.planeCode = planeCode;
     this.pts = []; this.lines = []; this.circles = []; this.cons = []; this.loops = [];
-    this.tool = 'poly'; this.chain = null; this.sel = []; this.dof = null; this.error = null;
-    const { scene, camera, controls } = this.ctx, f = plane;
+    this.tool = 'poly'; this.chain = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
+    this.show();
+  }
+
+  // Reprend l'esquisse suspendue (extrusion annulée).
+  resume() { this.show(); }
+
+  show() {
+    const { scene, camera, controls } = this.ctx, f = this.plane;
     this.group = new THREE.Group();
     this.group.matrixAutoUpdate = false;
     this.group.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin.clone().addScaledVector(f.z, 0.02));
@@ -93,13 +100,14 @@ export class SketchEditor {
     this.redraw();
   }
 
-  stop() {
+  // Retire l'esquisse de la vue ; ses données restent pour resume().
+  suspend() {
     const { scene, camera, controls } = this.ctx;
     if (this.group) { scene.remove(this.group); this.group = null; }
     camera.up.set(0, 0, 1); controls.enableRotate = true; controls.update();
     this.panel(false);
-    this.ctx.done();
   }
+  stop() { this.suspend(); this.ctx.done(); }
 
   get active() { return this.group != null; }
 
@@ -174,7 +182,10 @@ export class SketchEditor {
   }
 
   key(e) {
-    if (e.key === 'Escape') { this.chain = null; this.pending = null; this.redraw(); }
+    if (e.target.closest('input,select,.cm-editor')) return;
+    if (e.key === 'Escape') { if (this.chain || this.pending != null) { this.chain = null; this.pending = null; this.redraw(); } else this.stop(); }
+    const tools = { l: 'poly', c: 'circle', s: 'select' };
+    if (tools[e.key]) { this.tool = tools[e.key]; this.chain = null; this.pending = null; this.redraw(); }
   }
 
   desc() {
@@ -226,20 +237,31 @@ export class SketchEditor {
 
   addConstraint([kind, label, refs, dflt]) {
     if (kind === 'fix') { const p = this.pts[refs[0]]; p.fixed = !p.fixed; this.sel = []; this.changed(); return; }
-    let value;
-    if (dflt !== undefined) {
-      const s = prompt(`${label} (${kind === 'angle' ? '°' : 'mm'})`, fmt(dflt));
-      if (s == null) return;
-      value = Number(s.replace(',', '.'));
-      if (!Number.isFinite(value)) return;
-    }
+    // Cote : valeur demandée dans la palette (pas de boîte modale).
+    if (dflt !== undefined && this.asking == null) { this.asking = { kind, label, refs, value: dflt }; this.redraw(); return; }
+    const value = dflt === undefined ? undefined : this.asking?.value;
+    this.asking = null;
+    if (dflt !== undefined && !Number.isFinite(value)) { this.redraw(); return; }
     this.cons.push(value === undefined ? { kind, refs } : { kind, refs, value });
     this.sel = []; this.changed();
   }
 
   panel(show) {
-    $('sketch-panel').hidden = !show;
-    $('sketch-start').hidden = show;
+    $('palette').hidden = !show;
+    this.ctx.mode(show);
+  }
+
+  // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
+  finish() {
+    if (!(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
+    const data = {
+      frame: this.plane, planeCode: this.planeCode, code: this.code,
+      loops: this.loops.map((l) => l.map((i) => ({ x: this.pts[i].x, y: this.pts[i].y }))),
+      circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })),
+    };
+    this.suspend();
+    this.ctx.finish(data);
+    return true;
   }
 
   redraw() {
@@ -268,9 +290,22 @@ export class SketchEditor {
       this.dof == null ? 'Dessinez un contour (cliquez sur le premier point pour le fermer).' :
       `${this.dof === 0 ? 'Entièrement contrainte' : `${this.dof} degré${this.dof > 1 ? 's' : ''} de liberté`}${this.redundant ? ` · ${this.redundant} redondante(s)` : ''}`;
     $('sketch-status').textContent = status;
+    $('sketch-status').className = 'status' + (this.error ? ' err' : this.dof === 0 ? ' ok' : '');
     const box = $('sketch-constraints'); box.replaceChildren();
-    for (const c of this.candidates()) {
-      const b = document.createElement('button'); b.textContent = c[1]; b.onclick = () => this.addConstraint(c); box.append(b);
+    const cands = this.candidates();
+    if (!cands.length) box.append(Object.assign(document.createElement('span'), { className: 'hint', textContent: 'Sélectionnez des éléments' }));
+    for (const c of cands) {
+      const b = document.createElement('button'); b.textContent = c[1]; b.onclick = () => { this.asking = null; this.addConstraint(c); }; box.append(b);
+    }
+    const ask = $('sketch-ask'); ask.replaceChildren(); ask.hidden = !this.asking;
+    if (this.asking) {
+      const a = this.asking, i = document.createElement('input'), ok = document.createElement('button');
+      i.type = 'number'; i.step = 'any'; i.value = fmt(a.value); ok.textContent = 'OK';
+      const go = () => { a.value = Number(i.value); this.addConstraint([a.kind, a.label, a.refs, a.value]); };
+      i.onkeydown = (e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') { this.asking = null; this.redraw(); } };
+      ok.onclick = go;
+      ask.append(Object.assign(document.createElement('span'), { textContent: `${a.label} (${a.kind === 'angle' ? '°' : 'mm'})` }), i, ok);
+      setTimeout(() => i.select(), 0);
     }
     const list = $('sketch-list'); list.replaceChildren();
     this.cons.forEach((c, i) => {
@@ -281,21 +316,6 @@ export class SketchEditor {
       li.append(x); list.append(li);
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
-    $('sketch-ok-add').disabled = $('sketch-ok-cut').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
-  }
-
-  // Code inséré : plan, profondeur (paramètre), esquisse, feature, résultat.
-  validate(mode, n) {
-    const plan = `plan${n}`, h = `profondeur${n}`, sk = `esquisse${n}`, ft = mode === 'add' ? `extrusion${n}` : `poche${n}`;
-    const shape = mode === 'add'
-      ? `Shape.(extrude ~h:${h} ${sk} |> place ${plan})`
-      : `Shape.(extrude ~h:(${h} +. 0.01) ${sk} |> place ${plan}\n      |> translate (Geom.V3.scale (-.${h}) (Geom.Frame.z_axis ${plan})))`;
-    const code =
-      `  let ${plan} = ${this.planeCode} in\n` +
-      `  let%param ${h} = 5. [@range 0.5, 100.] [@unit "mm"] in\n` +
-      `  let%sketch ${sk} =\n${this.code}  in\n` +
-      `  let%feat ${ft} = ${shape} in\n`;
-    this.ctx.insert(code, ft, mode);
-    this.stop();
+    $('sketch-finish').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
   }
 }
