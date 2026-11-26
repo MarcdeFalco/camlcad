@@ -50,6 +50,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `lien.spec.js` | Black Book ch. 7 : lien de mouvement de rapport −1 entre deux pivots, le second suit en sens inverse |
 | `video.spec.js` | Black Book ch. 10 : vidéo WebM d'un cycle de la bielle-manivelle |
 | `plan3.spec.js` | Black Book ch. 3 et 8 : plan par trois coins d'une boîte, zébrures activées puis retirées |
+| `esquisse_echelle.spec.js` | Black Book ch. 2 : chanfrein d'esquisse 4, échelle 1,5 (cote 20 → 30), volume extrudé |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

@@ -116,6 +116,9 @@ du cache Playwright).
   enregistré depuis la vue en WebM. Scénario `video.spec.js` (en-tête WebM vérifié).
 - Lot 30, chapitres 3 et 8 : Plan par 3 points (clics accrochés aux sommets proches),
   analyse zébrée (bandes réfléchies, pour juger la continuité). Scénario `plan3.spec.js`.
+- Lot 31, chapitre 2 (Chamfer, Sketch Scale) : chanfrein d'esquisse à un sommet (sommet virtuel
+  gardé comme pour le congé), mise à l'échelle de toute l'esquisse (points et cotes).
+  Scénario `esquisse_echelle.spec.js` (volume vérifié).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
