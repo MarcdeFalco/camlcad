@@ -56,3 +56,13 @@ export async function waitEval(page, prev) {
   await expect(page.locator('#status')).toContainText('triangles');
   if (prev != null) await expect.poll(() => triangles(page)).not.toBe(prev);
 }
+
+// Commande de la barre d'outils : visible, ou rangée dans le menu ▾ de son groupe (on l'ouvre).
+export async function cmd(page, name) {
+  const b = page.locator('#toolbar .tabpanel:not([hidden]) button, .more-menu button').filter({ hasText: name }).first();
+  if (!(await b.isVisible())) {
+    const menu = await b.evaluate((x) => x.closest('.more-menu')?.id);
+    if (menu) await page.locator(`.more-toggle[data-menu="${menu}"]`).click();
+  }
+  await b.click();
+}

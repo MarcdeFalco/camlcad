@@ -1,7 +1,7 @@
 // Black Book, chapitre 4 (Advanced 3D Modeling) : perçage sur une face, réseau
 // rectangulaire de ce perçage, symétrie d'une feature.
 import { test, expect } from './fixtures.js';
-import { open, shot, worldPoint, clickAt, code, triangles } from './lib.js';
+import { open, shot, worldPoint, clickAt, code, triangles, cmd } from './lib.js';
 
 const bbox = (page) => page.evaluate(() => {
   const g = window.camlcadView.part.geometry; g.computeBoundingBox();
@@ -51,7 +51,7 @@ test('perçage, réseau, symétrie', async ({ page }) => {
   // Symétrie de la boîte par rapport au plan YZ, jointe : la pièce va de -60 à 60 en x.
   await page.locator('#timeline .feat', { hasText: 'boite' }).click();
   await expect(page.locator('#timeline .feat', { hasText: 'boite' })).toHaveClass(/sel/);
-  await page.getByRole('button', { name: 'Symétrie' }).click();
+  await cmd(page, 'Symétrie');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => bbox(page)).toEqual([[-60, 0, 0], [60, 40, 10]]);
   await page.getByRole('button', { name: 'Ajuster' }).click();

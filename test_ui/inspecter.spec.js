@@ -1,14 +1,14 @@
 // Black Book, chapitre 8 (Inspect) : mesurer, coupe (section analysis), propriétés
 // physiques (volume, centre de gravité, masse imprimée), sur l'équerre « support ».
 import { test, expect } from './fixtures.js';
-import { open, shot, worldPoint, clickAt } from './lib.js';
+import { open, shot, worldPoint, clickAt, cmd } from './lib.js';
 
 const numberIn = async (loc, re) => Number((await loc.textContent()).match(re)[1]);
 
 test('mesurer, coupe, propriétés', async ({ page }) => {
   await open(page, 'support');
   // Propriétés : 60×25×4 + 60×4×30 − recouvrement − 3 trous Ø5×4 ≈ 12,0 cm³.
-  await page.getByRole('button', { name: 'Propriétés' }).click();
+  await cmd(page, 'Propriétés');
   await expect(page.locator('#dialog')).toContainText('PROPRIÉTÉS');
   const vol = await numberIn(page.locator('#props-volume'), /([\d.]+) cm³/);
   expect(vol).toBeGreaterThan(11.95); expect(vol).toBeLessThan(12.05);

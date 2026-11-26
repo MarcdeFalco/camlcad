@@ -41,21 +41,23 @@
         <button data-cmd="extrude" title="Extruder une esquisse (E)"><i>⬆</i>Extrusion</button>
         <button data-cmd="revolve" title="Révolution d'une esquisse autour d'un axe"><i>↻</i>Révolution</button>
         <button data-cmd="box" title="Boîte"><i>▣</i>Boîte</button>
-        <button data-cmd="cylinder" title="Cylindre"><i>◎</i>Cylindre</button>
-        <button data-cmd="sphere" title="Sphère"><i>●</i>Sphère</button>
-        <button data-cmd="torus" title="Tore"><i>◯</i>Tore</button>
-        <button data-cmd="coil" title="Ressort (hélice) : rayon, fil, pas, tours"><i>➰</i>Ressort</button>
+        <button data-more data-cmd="cylinder" title="Cylindre"><i>◎</i>Cylindre</button>
+        <button data-more data-cmd="sphere" title="Sphère"><i>●</i>Sphère</button>
+        <button data-more data-cmd="torus" title="Tore"><i>◯</i>Tore</button>
+        <button data-more data-cmd="coil" title="Ressort (hélice) : rayon, fil, pas, tours"><i>➰</i>Ressort</button>
       </div><span>CRÉER</span></div>
       <div class="group"><div class="tools">
         <button data-cmd="hole" title="Perçage : cliquez une face plane (simple, lamage, fraisure)"><i>⊙</i>Perçage</button>
-        <button data-cmd="thread" title="Tige filetée ISO (M2 à M12), pour visser des pièces imprimées"><i>⌇</i>Filetage</button>
+        <button data-more data-cmd="thread" title="Tige filetée ISO (M2 à M12), pour visser des pièces imprimées"><i>⌇</i>Filetage</button>
         <button data-cmd="pattern" title="Réseau rectangulaire ou circulaire de la feature sélectionnée"><i>⁙</i>Réseau</button>
-        <button data-cmd="mirror" title="Symétrie de la feature sélectionnée par rapport à un plan d'origine"><i>⇋</i>Symétrie</button>
+        <button data-more data-cmd="mirror" title="Symétrie de la feature sélectionnée par rapport à un plan d'origine"><i>⇋</i>Symétrie</button>
       </div><span>FEATURES</span></div>
       <div class="group"><div class="tools">
+        <button data-cmd="fillet" title="Congé d'arête : cliquez les deux faces de l'arête"><i>◟</i>Congé</button>
+        <button data-more data-cmd="chamfer" title="Chanfrein : cliquez les deux faces de l'arête"><i>◺</i>Chanfrein</button>
         <button data-cmd="presspull" title="Pousser / tirer une face plane (Q)"><i>⇕</i>Pousser/tirer</button>
-        <button data-cmd="combine" title="Combiner le résultat avec un autre corps (joindre, couper, intersection)"><i>⧉</i>Combiner</button>
-        <button data-cmd="move" title="Déplacer la pièce : rotation puis translation"><i>✥</i>Déplacer</button>
+        <button data-more data-cmd="combine" title="Combiner le résultat avec un autre corps (joindre, couper, intersection)"><i>⧉</i>Combiner</button>
+        <button data-more data-cmd="move" title="Déplacer la pièce : rotation puis translation"><i>✥</i>Déplacer</button>
       </div><span>ÉDITER</span></div>
       <div class="group"><div class="tools">
         <button data-cmd="offsetplane" title="Plan décalé d'un plan d'origine (construction)"><i>▱</i>Plan décalé</button>
@@ -63,15 +65,15 @@
       <div class="group"><div class="tools">
         <button data-cmd="edit" title="Modifier la feature sélectionnée"><i>✐</i>Feature</button>
         <button data-cmd="params" title="Modifier les paramètres"><i>ƒx</i>Paramètres</button>
-        <button data-cmd="suppress" title="Supprimer temporairement la feature sélectionnée"><i>◌</i>Suppr. temp.</button>
+        <button data-more data-cmd="suppress" title="Supprimer temporairement la feature sélectionnée"><i>◌</i>Suppr. temp.</button>
         <button data-cmd="delete" title="Supprimer la feature sélectionnée (Suppr)"><i>✕</i>Supprimer</button>
       </div><span>MODIFIER</span></div>
       <div class="group"><div class="tools">
-        <button data-cmd="look" title="Vue de face sur la face sélectionnée"><i>⊡</i>Regarder</button>
+        <button data-more data-cmd="look" title="Vue de face sur la face sélectionnée"><i>⊡</i>Regarder</button>
         <button data-cmd="fit" title="Ajuster la vue (F)"><i>⤢</i>Ajuster</button>
         <button data-cmd="measure" title="Mesurer : distance entre deux points, aire d'une face plane"><i>📏</i>Mesurer</button>
         <button data-cmd="section" title="Coupe : voir l'intérieur de la pièce"><i>◩</i>Coupe</button>
-        <button data-cmd="props" title="Propriétés : volume, centre de gravité, masse imprimée"><i>⚖</i>Propriétés</button>
+        <button data-more data-cmd="props" title="Propriétés : volume, centre de gravité, masse imprimée"><i>⚖</i>Propriétés</button>
       </div><span>INSPECTER</span></div>
     </div>
     <div class="tabpanel" data-panel="sketch" hidden>

@@ -241,3 +241,67 @@ export function pressPull(d, face, loops) {
   });
   preview();
 }
+
+// ---------- Congé et chanfrein d'arête (ch. 6, Fillet / Chamfer) ----------
+// Arête droite commune à deux faces planes cliquées (fa, fb : planarFace ; la, lb : leurs
+// contours faceLoops). Outil : coin entre les deux faces, moins le disque tangent (congé) ou
+// triangle (chanfrein) ; arête vive (convexe) : Couper ; arête rentrante : Joindre.
+export function sharedEdge(fa, la, fb) {
+  const w = (f, p) => f.frame.origin.clone().addScaledVector(f.frame.x, p.x).addScaledVector(f.frame.y, p.y);
+  const onB = (q) => Math.abs(q.clone().sub(fb.frame.origin).dot(fb.frame.z)) < 1e-3;
+  const pts = la.flat().map((p) => w(fa, p)).filter(onB);
+  if (pts.length < 2) return null;
+  let best = [pts[0], pts[1]], len = 0;
+  for (const p of pts) for (const q of pts) if (p.distanceTo(q) > len) { len = p.distanceTo(q); best = [p, q]; }
+  if (len < 1e-6) return null;
+  const e = best[1].clone().sub(best[0]).normalize();
+  // Direction dans chaque face, perpendiculaire à l'arête, vers l'intérieur de la face.
+  const inward = (f, loops) => {
+    let d = e.clone().cross(f.frame.z).normalize();
+    const c = loops[0].reduce((s, p) => s.add(w(f, p)), new THREE.Vector3()).multiplyScalar(1 / loops[0].length);
+    if (c.sub(best[0]).dot(d) < 0) d.negate();
+    return d;
+  };
+  return { p0: best[0], len, e, inward };
+}
+
+export function edgeFinish(d, kind, fa, la, fb, lb, mesh) {
+  const edge = sharedEdge(fa, la, fb);
+  if (!edge) { d.ctx.notify('Ces deux faces n’ont pas d’arête droite commune.', true); return; }
+  const d1 = edge.inward(fa, la), d2 = edge.inward(fb, lb);
+  let e = edge.e.clone(), p0 = edge.p0.clone();
+  const y = e.clone().cross(d1);
+  if (y.dot(d2) < 0) { e.negate(); p0 = p0.addScaledVector(edge.e, edge.len); } // d2 du côté y > 0
+  const theta = Math.acos(Math.max(-1, Math.min(1, d1.dot(d2))));
+  const convex = d2.dot(fa.frame.z) < 0;
+  const P = { r: 2 };
+  const fillet = kind === 'fillet';
+  d.open(fillet ? 'CONGÉ D’ARÊTE' : 'CHANFREIN', [
+    row('Arête', el('span', { className: 'hint', textContent: `${fmt(Math.round(edge.len * 100) / 100)} mm, ${fmt(Math.round((theta * 180) / Math.PI))}°, ${convex ? 'vive' : 'rentrante'}` })),
+    row(fillet ? 'Rayon' : 'Distance', num(P.r, (v) => { P.r = v; }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+  ], {
+    key: kind,
+    ok: () => {
+      if (!(P.r > 0) || theta < 1e-3 || theta > Math.PI - 1e-3) return false;
+      const n = d.ctx.nextIndex(), name = `${fillet ? 'conge' : 'chanfrein'}${n}`, eps = 0.01;
+      const t = fillet ? P.r / Math.tan(theta / 2) : P.r;
+      const v2 = (x, y) => `Geom.V2.v ${litp(Math.round(x * 1e4) / 1e4 + 0)} ${litp(Math.round(y * 1e4) / 1e4 + 0)}`;
+      // Coin et côtés un peu poussés hors de la matière (pas de faces confondues avec la pièce).
+      const B = [t * Math.cos(theta) - eps * Math.sin(theta), t * Math.sin(theta) + eps * Math.cos(theta)];
+      const O = [-2 * eps * Math.cos(theta / 2), -2 * eps * Math.sin(theta / 2)];
+      const prof = fillet
+        ? `Profile.difference (Profile.polygon [ ${v2(...O)}; ${v2(t, -eps)}; ${v2(t, P.r)}; ${v2(...B)} ]) (Profile.translate (${v2(t, P.r)}) (Profile.circle ~r:${lit(P.r)}))`
+        : `Profile.polygon [ ${v2(...O)}; ${v2(t, -eps)}; ${v2(...B)} ]`;
+      // Arête vive : l'outil est prolongé jusqu'au bout de la pièce le long de l'arête (il
+      // traverse un congé voisin au lieu de s'arrêter à la face raccourcie).
+      let z0 = -eps, h = edge.len + 2 * eps;
+      if (convex && mesh) {
+        const V = mesh.vertices; let lo = Infinity, hi = -Infinity;
+        for (let i = 0; i < V.length; i += 3) { const s = (V[i] - p0.x) * e.x + (V[i + 1] - p0.y) * e.y + (V[i + 2] - p0.z) * e.z; lo = Math.min(lo, s); hi = Math.max(hi, s); }
+        z0 = Math.min(z0, lo - 1); h = Math.max(edge.len, hi) + 1 - z0;
+      }
+      const code = `  let%feat ${name} =\n    let repere = Geom.Frame.make ~origin:${v3(p0)} ~x:${v3n(d1)} ~z:${v3n(e)} in\n    Shape.(extrude ~h:${lit(Math.round(h * 100) / 100)} (${prof}) |> translate (Geom.V3.v 0. 0. ${litp(Math.round(z0 * 100) / 100)}) |> place repere)\n  in\n`;
+      d.ctx.insert(code, name, convex ? 'cut' : 'join', n);
+    },
+  });
+}

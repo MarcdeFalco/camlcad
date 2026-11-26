@@ -1,7 +1,7 @@
 // Black Book, chapitre 4 (Hole « Tapped », Thread) : perçage taraudé M6 dans un bloc et tige
 // filetée M6 à côté, pour visser deux pièces imprimées.
 import { test, expect } from './fixtures.js';
-import { open, shot, worldPoint, clickAt, code, triangles } from './lib.js';
+import { open, shot, worldPoint, clickAt, code, triangles, cmd } from './lib.js';
 
 const field = (page, label) => page.locator('#dialog .drow', { hasText: label }).locator('input, select').first();
 const bbox = (page) => page.evaluate(() => {
@@ -26,7 +26,7 @@ test('taraudage et tige filetée', async ({ page }) => {
   await expect.poll(() => triangles(page)).toBeGreaterThan(1000);
   expect(await code(page)).toContain('Cad_parts.Thread.tap ~d:6. ~pitch:1.');
 
-  await page.getByRole('button', { name: 'Filetage' }).click();
+  await cmd(page, 'Filetage');
   await expect(page.locator('#dialog')).toContainText('TIGE FILETÉE');
   await field(page, 'Taille').selectOption('M6');
   await field(page, 'Longueur').fill('20');

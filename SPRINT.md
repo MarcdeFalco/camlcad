@@ -66,6 +66,11 @@ du cache Playwright).
   l'esquisse sur une face était cachée par la pièce (matériaux transparents dessinés après),
   la feature cliquée restait surlignée pendant l'esquisse. `sketch_delete.js`.
   Scénario `esquisse_supprimer.spec.js`.
+- Lot 15, chapitre 6 (Fillet, Chamfer) : congé et chanfrein d'une arête droite choisie par ses
+  deux faces planes (arête commune relue des contours ; vive : Couper, rentrante : Joindre ;
+  l'outil traverse la pièce le long de l'arête). Barre d'outils à menus ▾ par groupe (commandes
+  secondaires), comme Fusion ; `cmd()` des scénarios ouvre le menu au besoin.
+  `face_commands.js`, `toolbar.js`. Scénario `conge.spec.js` (volumes vérifiés).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

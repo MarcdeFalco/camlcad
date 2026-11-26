@@ -1,7 +1,7 @@
 // Black Book, chapitre 2 (Offset) : décalage d'un contour vers l'intérieur ; la boucle
 // intérieure devient un trou, l'extrusion donne une paroi (cadre) d'épaisseur choisie.
 import { test, expect } from './fixtures.js';
-import { open, shot, clickSketch, worldPoint, clickAt, code, triangles } from './lib.js';
+import { open, shot, clickSketch, worldPoint, clickAt, code, triangles, cmd } from './lib.js';
 
 test('décalage de contour : paroi', async ({ page }) => {
   await open(page, 'nouveau');
@@ -23,7 +23,7 @@ test('décalage de contour : paroi', async ({ page }) => {
   await expect.poll(() => triangles(page)).toBeGreaterThan(12);
   expect(await code(page)).toMatch(/loop \[[^\]]*\] - loop \[/);
   // Volume du cadre : (35 × 30 − 29 × 24) × 10 = 3540 mm³.
-  await page.getByRole('button', { name: 'Propriétés' }).click();
+  await cmd(page, 'Propriétés');
   const vol = Number((await page.locator('#props-volume').textContent()).match(/([\d.]+) cm³/)[1]);
   expect(vol).toBeCloseTo(3.54, 2);
   await page.getByRole('button', { name: 'Fermer' }).click();
