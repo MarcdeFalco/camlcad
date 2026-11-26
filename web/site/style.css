@@ -174,3 +174,5 @@ button { font:inherit; color:inherit; }
 #viewcube .cubearrow:hover { opacity:1; color:var(--accent); }
 #viewcube .cubearrow.up { top:-12px; left:40px; } #viewcube .cubearrow.down { bottom:-12px; left:40px; }
 #viewcube .cubearrow.left { left:-14px; top:40px; } #viewcube .cubearrow.right { right:-14px; top:40px; }
+#toolbar .sides { display:flex; flex-direction:column; align-items:center; font-size:11px; color:#555; padding:0 4px; }
+#toolbar .sides input { width:42px; }
