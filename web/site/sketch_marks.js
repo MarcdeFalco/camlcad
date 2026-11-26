@@ -2,6 +2,7 @@
 // pour modifier), symboles de contraintes, élastique du tracé en cours, noms affichés.
 // Classe de base de SketchEditor (sketch.js), qui fournit plane, pts, lines, circles, cons…
 import * as THREE from 'three';
+import { TWO_CLICK, rubberShape } from './sketch_tools.js';
 
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
 
@@ -98,11 +99,7 @@ export class SketchMarks {
     const snap = this.tool !== 'select' ? this.nearest(q) : null;
     const at = snap && snap.kind === 'p' ? this.pts[snap.i] : q;
     if (this.tool === 'poly' && this.chain) line([this.pts[this.chain[this.chain.length - 1]], at]);
-    if (this.tool === 'rect' && this.pending != null) { const A = this.pts[this.pending]; line([A, { x: at.x, y: A.y }, at, { x: A.x, y: at.y }, A]); }
-    if (this.tool === 'circle' && this.pending != null) {
-      const C = this.pts[this.pending], r = Math.hypot(at.x - C.x, at.y - C.y);
-      line(Array.from({ length: 65 }, (_, k) => ({ x: C.x + r * Math.cos((k / 64) * 2 * Math.PI), y: C.y + r * Math.sin((k / 64) * 2 * Math.PI) })));
-    }
+    if (TWO_CLICK[this.tool] && this.pending != null) line(rubberShape(this.tool, this.pts[this.pending], at, this.sides()));
     if (snap && snap.kind === 'p') {
       const m = new THREE.Mesh(new THREE.RingGeometry(this.tol() * 0.45, this.tol() * 0.7, 16), new THREE.MeshBasicMaterial({ color: 0xff8a3d, depthTest: false }));
       m.position.set(at.x, at.y, 0); m.renderOrder = 6; g.add(m);
@@ -112,8 +109,7 @@ export class SketchMarks {
     if (!live.isConnected) this.labels().after(live);
     let txt = '';
     if (this.tool === 'poly' && this.chain) { const A = this.pts[this.chain[this.chain.length - 1]]; txt = fmt(Math.hypot(at.x - A.x, at.y - A.y)) + ' mm'; }
-    if (this.tool === 'rect' && this.pending != null) { const A = this.pts[this.pending]; txt = `${fmt(Math.abs(at.x - A.x))} × ${fmt(Math.abs(at.y - A.y))} mm`; }
-    if (this.tool === 'circle' && this.pending != null) { const C = this.pts[this.pending]; txt = 'R ' + fmt(Math.hypot(at.x - C.x, at.y - C.y)) + ' mm'; }
+    if (TWO_CLICK[this.tool] && this.pending != null) txt = TWO_CLICK[this.tool][1](this.pts[this.pending], at);
     live.hidden = !txt; live.textContent = txt;
     if (txt) {
       const { camera, renderer } = this.ctx, r = renderer.domElement.getBoundingClientRect(), f = this.plane;

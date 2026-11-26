@@ -3,6 +3,7 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
+import { TWO_CLICK } from './sketch_tools.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
@@ -104,22 +105,18 @@ export class SketchEditor extends SketchMarks {
     this.drawRubber();
   }
 
-  // Rectangle par deux coins : quatre lignes fermées, horizontales et verticales (comme un modeleur).
-  rect(a, q) {
-    const A = this.pts[a];
-    if (Math.abs(q.x - A.x) < 1e-6 || Math.abs(q.y - A.y) < 1e-6) return;
-    const c = this.pointAt(q), add = (x, y) => (this.pts.push({ x, y, fixed: false }), this.pts.length - 1);
-    const b = add(q.x, A.y), d = add(A.x, q.y), l = this.lines.length;
-    this.lines.push([a, b], [b, c], [c, d], [d, a]);
-    this.loops.push([a, b, c, d]);
-    this.cons.push({ kind: 'horizontal', refs: [l] }, { kind: 'vertical', refs: [l + 1] }, { kind: 'horizontal', refs: [l + 2] }, { kind: 'vertical', refs: [l + 3] });
-  }
+  // Nombre de côtés du polygone (champ de la barre d'outils).
+  sides() { return Math.max(3, Math.min(24, Math.round(Number($('poly-sides')?.value) || 6))); }
 
   click(e) {
     const q = this.local(e); if (!q) return;
-    if (this.tool === 'rect') {
+    if (TWO_CLICK[this.tool]) {
       if (this.pending == null) { this.pending = this.pointAt(q); this.redraw(); }
-      else { const a = this.pending; this.pending = null; this.rect(a, q); this.changed(); }
+      else { const a = this.pending; this.pending = null; if (TWO_CLICK[this.tool][0](this, a, q, this.sides())) this.changed(); else this.redraw(); }
+    } else if (this.tool === 'point') {
+      this.pointAt(q); this.changed();
+    } else if (this.tool === 'dim') {
+      this.dimClick(q, e);
     } else if (this.tool === 'poly') {
       const first = this.chain ? this.chain[0] : null;
       const i = this.pointAt(q);
@@ -137,13 +134,6 @@ export class SketchEditor extends SketchMarks {
         else this.chain.push(i);
       } else this.chain = [i];
       this.changed();
-    } else if (this.tool === 'circle') {
-      if (this.pending == null) { this.pending = this.pointAt(q); this.redraw(); }
-      else {
-        const C = this.pts[this.pending];
-        this.circles.push({ c: this.pending, r: Math.max(0.5, Math.hypot(q.x - C.x, q.y - C.y)) });
-        this.pending = null; this.changed();
-      }
     } else {
       const n = this.nearest(q);
       if (!n) this.sel = [];
@@ -156,12 +146,24 @@ export class SketchEditor extends SketchMarks {
     }
   }
 
+  // Outil Cote (D) : ligne → longueur, cercle → rayon, deux points → distance, deux lignes → angle.
+  dimClick(q) {
+    const n = this.nearest(q);
+    if (!n) { this.sel = []; this.redraw(); return; }
+    this.sel = [...this.sel.filter((x) => !(x.kind === n.kind && x.i === n.i)), { kind: n.kind, i: n.i }].slice(-2);
+    const kinds = this.sel.map((x) => x.kind).join('');
+    const want = { l: 'length', c: 'radius', pp: 'distance', ll: 'angle' }[kinds];
+    // Une ligne seule attend un éventuel second élément (angle) : cote proposée tout de suite.
+    const c = want && this.candidates().find((x) => x[0] === want);
+    if (c) { this.asking = null; this.addConstraint(c); } else this.redraw();
+  }
+
   key(e) {
     if (e.target.closest('input,select,.cm-editor')) return;
     if (e.key === 'Escape') {
       if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else this.stop();
     }
-    const tools = { r: 'rect', l: 'poly', c: 'circle', s: 'select' };
+    const tools = { r: 'rect', l: 'poly', c: 'circle', p: 'polygon', d: 'dim', s: 'select' };
     if (tools[e.key]) this.setTool(tools[e.key]);
   }
   setTool(t) { this.dropPending(); this.tool = t; this.chain = null; this.redraw(); }
@@ -257,12 +259,17 @@ export class SketchEditor extends SketchMarks {
     for (const o of [...g.children]) { g.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.dispose(); }); }
     const isSel = (k, i) => this.sel.some((s) => s.kind === k && s.i === i);
     const col = (k, i) => (isSel(k, i) ? 0xff8a3d : 0x1f6feb);
-    const seg = (pts, color) => {
+    // Ligne de construction (hors de toute boucle, hors du contour en cours) : orange, pointillés.
+    const seg = (pts, color, constr) => {
       const geo = new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(p.x, p.y, 0)));
-      const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color, depthTest: false }));
+      const l = new THREE.Line(geo, constr
+        ? new THREE.LineDashedMaterial({ color: color === 0x1f6feb ? 0xe07b22 : color, dashSize: this.tol() * 0.5, gapSize: this.tol() * 0.35, depthTest: false })
+        : new THREE.LineBasicMaterial({ color, depthTest: false }));
+      if (constr) l.computeLineDistances();
       l.renderOrder = 3; g.add(l);
     };
-    this.lines.forEach(([a, b], i) => seg([this.pts[a], this.pts[b]], col('l', i)));
+    const chain = this.chain ?? [], inLoop = (a, b) => (chain.includes(a) && chain.includes(b)) || this.loops.some((l) => l.some((p, k) => { const r = l[(k + 1) % l.length]; return (p === a && r === b) || (p === b && r === a); }));
+    this.lines.forEach(([a, b], i) => seg([this.pts[a], this.pts[b]], col('l', i), !inLoop(a, b)));
     this.circles.forEach((c, i) => {
       const C = this.pts[c.c];
       seg(Array.from({ length: 65 }, (_, k) => ({ x: C.x + c.r * Math.cos((k / 64) * 2 * Math.PI), y: C.y + c.r * Math.sin((k / 64) * 2 * Math.PI) })), col('c', i));
