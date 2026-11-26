@@ -160,6 +160,18 @@ export class Viewport {
     g.setIndex(new THREE.BufferAttribute(m.triangles, 1));
     return g.toNonIndexed();
   }
+  // Coupe : plan de découpe de la pièce (null : aucune) ; l'intérieur coupé est rendu en rouge.
+  setClip(plane) {
+    this.clip = plane;
+    const planes = plane ? [plane] : [];
+    this.material.clippingPlanes = planes; this.material.needsUpdate = true;
+    if (this.edges) this.edges.material.clippingPlanes = planes;
+    if (this.inside) { this.scene.remove(this.inside); this.inside = null; }
+    if (plane && this.part) {
+      this.inside = new THREE.Mesh(this.part.geometry, new THREE.MeshBasicMaterial({ color: 0xd0453a, side: THREE.BackSide, clippingPlanes: planes }));
+      this.scene.add(this.inside);
+    }
+  }
   setPart(m) {
     this.clearPart();
     if (!m) return;
@@ -168,9 +180,11 @@ export class Viewport {
     this.edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: 0x1c2733 }));
     this.scene.add(this.part, this.edges);
     this.applyStyle();
+    if (this.clip) this.setClip(this.clip);
     if (!this.fitted) { this.fit(); this.fitted = true; }
   }
   clearPart() {
+    if (this.inside) { this.scene.remove(this.inside); this.inside = null; }
     for (const o of [this.part, this.edges]) if (o) { this.scene.remove(o); o.geometry.dispose(); }
     this.part = this.edges = null;
   }

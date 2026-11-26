@@ -57,7 +57,11 @@ export class Dialogs {
   cancel() { const c = this.current; if (typeof c?.cancel === 'function') c.cancel(); this.close(); }
   close(silent) {
     this.setPreview(null);
-    if (!this.box.hidden) { this.box.hidden = true; this.box.replaceChildren(); this.current = null; if (!silent) this.ctx.onClose?.(); }
+    if (!this.box.hidden) {
+      this.box.hidden = true; this.box.replaceChildren(); this.current = null;
+      const x = this.ctx.onCloseExtra; this.ctx.onCloseExtra = null; x?.(); // nettoyage propre au dialogue (mesure, coupe…)
+      if (!silent) this.ctx.onClose?.();
+    }
   }
   setPreview(obj, color = 0x2ecc71) {
     if (this.preview) { this.ctx.scene.remove(this.preview); this.preview.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); }); }
