@@ -111,3 +111,15 @@ let%expect_test "oblong : arcs dans un contour" =
     in
     Sketch.(path [ along a0; along a1 ])
     |}]
+
+let%expect_test "symétrie : point reflété par rapport à une droite" =
+  let d : Sketch_desc.t =
+    { points = [| (0., 0., true); (0., 10., true); (3., 4., true); (-1., 5., false) |];
+      lines = [| (0, 1) |]; circles = [||]; arcs = [||];
+      constraints = [ { kind = "symmetric"; refs = [ 2; 3; 0 ]; value = None } ];
+      loops = [] }
+  in
+  (match Sketch_desc.solve d with
+  | Ok s -> Printf.printf "(%.3f, %.3f) dof %d\n" s.points.(3).x s.points.(3).y s.dof
+  | Error e -> print_endline e);
+  [%expect {| (-3.000, 4.000) dof 0 |}]

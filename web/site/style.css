@@ -179,3 +179,5 @@ button { font:inherit; color:inherit; }
 /* Frise : opération d'une étape combinée (Joindre, Couper, Intersection) */
 #timeline .feat .op { margin-left:3px; font-weight:700; font-size:11px; border-radius:3px; padding:0 3px; color:#fff; background:#2ecc71; }
 #timeline .feat .op.difference { background:#e74c3c; } #timeline .feat .op.intersection { background:#3d8bff; }
+/* Les symboles de contraintes ne doivent pas intercepter les clics du dessin */
+#sketch-dims .glyph { pointer-events:none; }
