@@ -42,8 +42,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `bin/cad` : CLI natif (résumé, export STL/3MF, mécanismes à la pose de repos).
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
-- `web/site/sketch.js` : choix de face plane, éditeur d'esquisse sur un plan.
-- `web/site/timeline.js` : frise des features, menu contextuel, panneau « Modifier ».
+- `web/site/` : `main.js` (worker, code, commandes), `viewport.js` (vue, cube de vue), `timeline.js` (frise, navigateur, menu), `dialogs.js` (dialogues de commande), `sketch.js` (plan ou face, éditeur d'esquisse), `mech.js`.
 - À venir : réédition graphique d'une esquisse existante, plan de face paramétrique, arcs.
 
 ## Environnement local (Mac de Marc)
