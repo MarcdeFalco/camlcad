@@ -16,6 +16,7 @@ import { Mech } from './mech.js';
 import { codeEdits } from './code_edit.js';
 import { Bodies } from './bodies.js';
 import { Inspect } from './inspect.js';
+import { Print3D } from './print.js';
 import * as feats from './dialogs_features.js';
 
 const $ = (id) => document.getElementById(id);
@@ -142,6 +143,7 @@ const dialogs = new Dialogs({
   onClose: () => { if (picking) stopPicking(); },
 });
 const inspect = new Inspect({ viewport: vp, dialogs, notify, mesh: () => (rollbackAt == null ? lastMesh : null) });
+const print = new Print3D({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download: (b, ext, name) => download(b, ext, name) });
 const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] }) });
 
 // Clic (sans glisser) : plan d'esquisse, face plane, ou feature sous la souris.
@@ -152,6 +154,7 @@ canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pi
 canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
   if (sketch.active) { sketch.click(e); return; }
+  if (print.active) { const h = vp.ray(e).intersectObject(print.preview)[0]; if (h) print.pickFace(planarFace(lastMesh, h.faceIndex)); return; }
   const plane = picking && vp.pickPlane(e);
   if (plane) { const P = allPlanes()[plane]; stopPicking(); startSketch(P.frame, P.code); return; }
   const hit = vp.part && !mech.active ? vp.ray(e).intersectObject(vp.part)[0] : null;
@@ -344,11 +347,11 @@ function onResult(m) {
   }
   if (m.ok && m.mode === 'mech') {
     mech.show(m); lastMesh = null;
-    $('export-stl').disabled = true; $('export-3mf').disabled = false;
+    $('export-stl').disabled = $('print3d').disabled = true; $('export-3mf').disabled = false;
   } else if (m.ok) {
     mech.clear();
     lastMesh = m;
-    $('export-stl').disabled = $('export-3mf').disabled = false;
+    $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = false;
     if (rollbackAt == null) vp.setPart(m); else timeline.setMarker(rollbackAt);
     if (selected != null) featureMesh(selected, 0);
   }
@@ -357,10 +360,11 @@ function onResult(m) {
 }
 // ---------- Export ----------
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
-function download(blob, ext) {
+$('print3d').onclick = () => print.open();
+function download(blob, ext, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${$('example').value || 'piece'}.${ext}`; a.click();
+  a.download = `${name ?? ($('example').value || 'piece')}.${ext}`; a.click();
 }
 $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, overrides: [] });
 
@@ -371,7 +375,7 @@ async function loadExample(name) {
   if (sketch.active) sketch.stop();
   dialogs.close(true); stopPicking();
   $("status").textContent = lastStatus = `ouverture de « ${name} »…`; $('status').classList.remove('err');
-  $('export-stl').disabled = $('export-3mf').disabled = true; // rien à exporter avant le premier résultat
+  $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = true; // rien à exporter avant le premier résultat
   const code = name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text();
   if (journal) selectFeature(null, false);
   timeline.setMarker(null); // avant de vider : remettrait l'ancienne pièce
