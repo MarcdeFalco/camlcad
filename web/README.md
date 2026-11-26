@@ -52,7 +52,7 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   YZ vu de droite. L'onglet ESQUISSE apparaît : rectangle (R, deux coins, lignes
   horizontales et verticales contraintes), contour (L, cliquer le premier point
   pour fermer ; lignes presque horizontales ou verticales contraintes), cercle
-  (C, centre puis rayon), rectangle par le centre, polygone régulier (P, nombre
+  (C, centre puis rayon), arc par le centre (A), oblong, congé d'esquisse (sommet entre deux lignes), rectangle par le centre, polygone régulier (P, nombre
   de côtés dans la barre), point, Cote (D : ligne, cercle, deux points, deux lignes),
   lignes de construction (hors boucle) en pointillés orange, sélection (S, Maj pour plusieurs), avec élastique et
   mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,

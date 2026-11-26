@@ -1,38 +1,47 @@
 type constr = { kind : string; refs : int list; value : float option }
+type item = P of int | A of int | Rev of int
 
 type t = {
   points : (float * float * bool) array;
   lines : (int * int) array;
   circles : (int * float) array;
+  arcs : (int * int * int) array;
   constraints : constr list;
-  loops : int list list;
+  loops : item list list;
 }
 
 (* Signature d'une contrainte : sortes des références et présence d'une valeur. *)
-type sort = P | L | C
+type sort = Sp | Sl | Sc | Sa
 
 let signature = function
-  | "horizontal" | "vertical" -> Some ([ L ], false)
-  | "length" -> Some ([ L ], true)
-  | "parallel" | "perpendicular" | "equal_length" -> Some ([ L; L ], false)
-  | "angle" -> Some ([ L; L ], true)
-  | "coincident" -> Some ([ P; P ], false)
-  | "distance" | "hdistance" | "vdistance" -> Some ([ P; P ], true)
-  | "radius" -> Some ([ C ], true)
-  | "equal_radius" | "concentric" -> Some ([ C; C ], false)
-  | "tangent" -> Some ([ L; C ], false)
-  | "on_line" | "midpoint" -> Some ([ P; L ], false)
-  | "on_circle" -> Some ([ P; C ], false)
+  | "horizontal" | "vertical" -> Some ([ Sl ], false)
+  | "length" -> Some ([ Sl ], true)
+  | "parallel" | "perpendicular" | "equal_length" -> Some ([ Sl; Sl ], false)
+  | "angle" -> Some ([ Sl; Sl ], true)
+  | "coincident" -> Some ([ Sp; Sp ], false)
+  | "distance" | "hdistance" | "vdistance" -> Some ([ Sp; Sp ], true)
+  | "radius" -> Some ([ Sc ], true)
+  | "equal_radius" | "concentric" -> Some ([ Sc; Sc ], false)
+  | "tangent" -> Some ([ Sl; Sc ], false)
+  | "on_line" | "midpoint" -> Some ([ Sp; Sl ], false)
+  | "on_circle" -> Some ([ Sp; Sc ], false)
+  | "arc_radius" -> Some ([ Sa ], true)
+  | "tangent_arc" -> Some ([ Sl; Sa ], false)
   | _ -> None
 
 let check d =
-  let n = function P -> Array.length d.points | L -> Array.length d.lines | C -> Array.length d.circles in
+  let n = function
+    | Sp -> Array.length d.points | Sl -> Array.length d.lines | Sc -> Array.length d.circles | Sa -> Array.length d.arcs
+  in
   let ok s i = i >= 0 && i < n s in
   let err = ref None in
   let fail m = if !err = None then err := Some m in
-  Array.iter (fun (a, b) -> if not (ok P a && ok P b) then fail "ligne : point inconnu") d.lines;
-  Array.iter (fun (c, _) -> if not (ok P c) then fail "cercle : centre inconnu") d.circles;
-  List.iter (fun l -> if List.length l < 3 || not (List.for_all (ok P) l) then fail "boucle invalide") d.loops;
+  Array.iter (fun (a, b) -> if not (ok Sp a && ok Sp b) then fail "ligne : point inconnu") d.lines;
+  Array.iter (fun (c, _) -> if not (ok Sp c) then fail "cercle : centre inconnu") d.circles;
+  Array.iter (fun (c, a, b) -> if not (ok Sp c && ok Sp a && ok Sp b) then fail "arc : point inconnu") d.arcs;
+  let item = function P i -> ok Sp i | A k | Rev k -> ok Sa k in
+  let size l = List.fold_left (fun n i -> n + match i with P _ -> 1 | _ -> 2) 0 l in
+  List.iter (fun l -> if size l < 3 || not (List.for_all item l) then fail "boucle invalide") d.loops;
   List.iter
     (fun c ->
       match signature c.kind with
@@ -60,6 +69,8 @@ let build d =
          let ls = Array.of_list ls in
          let* cs = mapm (fun (c, r) -> Sketch.circle ps.(c) r) (Array.to_list d.circles) in
          let cs = Array.of_list cs in
+         let* arcs = mapm (fun (c, a, b) -> Sketch.arc ps.(c) ps.(a) ps.(b)) (Array.to_list d.arcs) in
+         let arcs = Array.of_list arcs in
          let v c = Option.get c.value in
          let one c =
            match (c.kind, c.refs) with
@@ -81,10 +92,13 @@ let build d =
            | "on_line", [ a; b ] -> Sketch.on_line ps.(a) ls.(b)
            | "midpoint", [ a; b ] -> Sketch.midpoint ps.(a) ls.(b)
            | "on_circle", [ a; b ] -> Sketch.on_circle ps.(a) cs.(b)
+           | "arc_radius", [ a ] -> Sketch.arc_radius arcs.(a) (v c)
+           | "tangent_arc", [ a; b ] -> Sketch.tangent_arc ls.(a) arcs.(b)
            | _ -> assert false (* exclu par [check] *)
          in
          let+ () = Sketch.constrain (List.map one d.constraints) in
-         let loops = List.map (fun l -> Sketch.loop (List.map (fun i -> ps.(i)) l)) d.loops in
+         let edge = function P i -> Sketch.pt ps.(i) | A k -> Sketch.along arcs.(k) | Rev k -> Sketch.back arcs.(k) in
+         let loops = List.map (fun l -> Sketch.path (List.map edge l)) d.loops in
          let disks = Array.to_list (Array.map Sketch.disk cs) in
          match (loops, disks) with
          | l :: rest, _ -> List.fold_left Sketch.( - ) (List.fold_left Sketch.( + ) l rest) disks
@@ -107,6 +121,7 @@ let to_code ?(indent = 4) d =
   let b = Buffer.create 512 in
   let line fmt = Printf.ksprintf (fun s -> Buffer.add_string b (pad ^ s ^ "\n")) fmt in
   let p i = Printf.sprintf "p%d" i and l i = Printf.sprintf "l%d" i and c i = Printf.sprintf "c%d" i in
+  let a i = Printf.sprintf "a%d" i in
   line "let open Sketch.Syntax in";
   let group items =
     match items with
@@ -123,9 +138,10 @@ let to_code ?(indent = 4) d =
           d.points));
   group (Array.to_list (Array.mapi (fun i (a, b') -> Printf.sprintf "%s = Sketch.line %s %s" (l i) (p a) (p b')) d.lines));
   group (Array.to_list (Array.mapi (fun i (k, r) -> Printf.sprintf "%s = Sketch.circle %s %s" (c i) (p k) (num r)) d.circles));
+  group (Array.to_list (Array.mapi (fun i (k, s, e) -> Printf.sprintf "%s = Sketch.arc %s %s %s" (a i) (p k) (p s) (p e)) d.arcs));
   let ref_name kind i r =
     match signature kind with
-    | Some (sorts, _) -> ( match List.nth sorts i with P -> p r | L -> l r | C -> c r)
+    | Some (sorts, _) -> ( match List.nth sorts i with Sp -> p r | Sl -> l r | Sc -> c r | Sa -> a r)
     | None -> assert false
   in
   let constr k =
@@ -139,7 +155,13 @@ let to_code ?(indent = 4) d =
       line "  Sketch.constrain";
       line "    Sketch.[ %s ]" (String.concat (";\n" ^ pad ^ "             ") (List.map constr cs));
       line "in");
-  let loop ls = Printf.sprintf "loop [ %s ]" (String.concat "; " (List.map p ls)) in
+  let loop ls =
+    let pts = List.filter_map (function P i -> Some i | _ -> None) ls in
+    if List.length pts = List.length ls then Printf.sprintf "loop [ %s ]" (String.concat "; " (List.map p pts))
+    else
+      Printf.sprintf "path [ %s ]"
+        (String.concat "; " (List.map (function P i -> "pt " ^ p i | A k -> "along " ^ a k | Rev k -> "back " ^ a k) ls))
+  in
   let disks = Array.to_list (Array.mapi (fun i _ -> Printf.sprintf "disk %s" (c i)) d.circles) in
   let region =
     match (List.map loop d.loops, disks) with

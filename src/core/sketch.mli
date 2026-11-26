@@ -48,6 +48,16 @@ val start_ : line -> point
 val end_ : line -> point
 val center : circle -> point
 
+type arc
+
+val arc : point -> point -> point -> arc t
+(** [arc c a b] : arc de centre [c], de [a] vers [b] dans le sens trigonométrique.
+    Ajoute la contrainte |ca| = |cb| (deux points sur le même cercle). *)
+
+val arc_center : arc -> point
+val arc_start : arc -> point
+val arc_end : arc -> point
+
 (** {2 Contraintes} *)
 
 type constr
@@ -78,6 +88,11 @@ val tangent : line -> circle -> constr
 (** Distance du centre à la droite support = rayon. *)
 
 val concentric : circle -> circle -> constr
+val arc_radius : arc -> float -> constr
+val tangent_arc : line -> arc -> constr
+(** Distance du centre de l'arc à la droite support = rayon de l'arc ; si la ligne s'arrête
+    à une extrémité de l'arc, rayon perpendiculaire à la ligne en ce point. *)
+
 val hdistance : point -> point -> float -> constr
 (** [x q - x p = d] (signée). *)
 
@@ -92,6 +107,19 @@ val loop : point list -> region
 (** Polygone fermé par ses sommets (l'orientation est corrigée au besoin). *)
 
 val disk : circle -> region
+
+type edge
+
+val pt : point -> edge
+val along : arc -> edge
+val back : arc -> edge
+(** L'arc parcouru de sa fin à son début (sens horaire). *)
+
+val path : edge list -> region
+(** Contour fermé fait de sommets ([pt]) et d'arcs ([along], parcourus de leur début à
+    leur fin, facettes d'au plus 5°) ; les points consécutifs confondus sont fusionnés.
+    [loop ps = path (List.map pt ps)]. *)
+
 val ( + ) : region -> region -> region
 val ( - ) : region -> region -> region
 

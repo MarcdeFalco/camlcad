@@ -22,6 +22,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 |---|---|
 | `esquisse.spec.js` | Esquisse sur le plan XY, rectangle et cercle (élastique), longueur et rayon, cote modifiée par double-clic sur le dessin, extrusion Joindre ; esquisse sur la face du dessus, cercle, extrusion Couper |
 | `esquisse_outils.spec.js` | Black Book ch. 2 : rectangle par le centre, polygone régulier, point, outil Cote (D), cote modifiée, extrusion |
+| `esquisse_arcs.spec.js` | Black Book ch. 2 : congé d'esquisse sur un coin, oblong, arc par le centre, cotes d'arcs, extrusion |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

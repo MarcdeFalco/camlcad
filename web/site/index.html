@@ -59,11 +59,16 @@
         <button data-tool="poly" title="Contour fermé, ligne par ligne (L)"><i>⟋</i>Contour</button>
         <button data-tool="crect" title="Rectangle par le centre : centre puis coin"><i>⊡</i>Rect. centre</button>
         <button data-tool="circle" title="Cercle : centre puis rayon (C)"><i>◯</i>Cercle</button>
+ <button data-tool="arc" title="Arc par le centre : centre, début, fin (A)"><i>◠</i>Arc</button>
+        <button data-tool="slot" title="Oblong centre à centre : premier centre, second centre"><i>⊂⊃</i>Oblong</button>
         <button data-tool="polygon" title="Polygone régulier inscrit : centre puis sommet (P)"><i>⬡</i>Polygone</button>
         <label class="sides" title="Nombre de côtés du polygone">côtés <input id="poly-sides" type="number" value="6" min="3" max="24"></label>
         <button data-tool="point" title="Point (construction, accroche)"><i>·</i>Point</button>
         <button data-tool="select" title="Sélection (Maj : plusieurs)"><i>↖</i>Sélection</button>
       </div><span>CRÉER</span></div>
+      <div class="group"><div class="tools">
+        <button data-tool="fillet" title="Congé : cliquez un sommet entre deux lignes, puis le rayon"><i>◜</i>Congé</button>
+      </div><span>MODIFIER</span></div>
       <div class="group"><div class="tools">
         <button data-tool="dim" title="Cote : cliquez une ligne, un cercle, deux points ou deux lignes (D)"><i>↔</i>Cote</button>
       </div><span>COTER</span></div>

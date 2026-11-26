@@ -43,9 +43,9 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `bin/cad` : CLI natif (résumé, export STL/3MF, mécanismes à la pose de repos).
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
-- `web/site/` : `main.js` (worker, code, commandes), `viewport.js` (vue, cube de vue), `timeline.js` (frise, navigateur, menu), `dialogs.js` (dialogues de commande), `sketch.js` (éditeur d'esquisse), `sketch_marks.js` (cotes, symboles, élastique), `planes.js` (plans d'origine, faces planes), `mech.js`.
+- `web/site/` : `main.js` (worker, code, commandes), `viewport.js` (vue, cube de vue), `timeline.js` (frise, navigateur, menu), `dialogs.js` (dialogues de commande), `sketch.js` (éditeur d'esquisse), `sketch_marks.js` (cotes, symboles, élastique), `sketch_tools.js` (outils à deux clics), `sketch_arcs.js` (arcs, oblong, congé), `planes.js` (plans d'origine, faces planes), `mech.js`.
 - `test_ui/` : scénarios Playwright sur la vraie UI (souris, clavier), captures dans `test_ui/shots/`.
-- À venir : réédition graphique d'une esquisse existante, plan de face paramétrique, arcs.
+- À venir : réédition graphique d'une esquisse existante, plan de face paramétrique. Suivi du sprint : `SPRINT.md`.
 
 ## Environnement local (Mac de Marc)
 OCaml 5.4 (opam `default`), Node 22. Manifold compilé dans `_manifold/` par `scripts/build-manifold.sh`

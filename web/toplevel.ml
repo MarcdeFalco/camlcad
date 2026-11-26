@@ -311,6 +311,9 @@ let sketch id (o : Js.Unsafe.any) =
     { points = Array.map (fun p -> (fl (get p 0), fl (get p 1), Js.to_bool (Js.Unsafe.coerce (get p 2)))) (arr "points");
       lines = Array.map (fun l -> (it (get l 0), it (get l 1))) (arr "lines");
       circles = Array.map (fun c -> (it (get c 0), fl (get c 1))) (arr "circles");
+      arcs =
+        (if Js.Optdef.test (Js.Unsafe.get o "arcs") then Array.map (fun a -> (it (get a 0), it (get a 1), it (get a 2))) (arr "arcs")
+         else [||]);
       constraints =
         Array.to_list
           (Array.map
@@ -320,7 +323,14 @@ let sketch id (o : Js.Unsafe.any) =
                  refs = Array.to_list (Array.map it (Js.to_array (Js.Unsafe.get c "refs")));
                  value = Js.Optdef.to_option (Js.Optdef.map v (fun x -> x)) |> Option.map fl })
              (arr "constraints"));
-      loops = Array.to_list (Array.map (fun l -> Array.to_list (Array.map it (Js.to_array (Js.Unsafe.coerce l)))) (arr "loops")) }
+      (* élément de boucle : nombre = point, {a:k} = arc k, {r:k} = arc k à l'envers *)
+      loops =
+        (let item (v : Js.Unsafe.any) : Cad.Sketch_desc.item =
+           if Js.to_string (Js.typeof v) = "number" then P (it v)
+           else if Js.Optdef.test (Js.Unsafe.get v "a") then A (it (Js.Unsafe.get v "a"))
+           else Rev (it (Js.Unsafe.get v "r"))
+         in
+         Array.to_list (Array.map (fun l -> Array.to_list (Array.map item (Js.to_array (Js.Unsafe.coerce l)))) (arr "loops"))) }
   in
   let kvs =
     match Cad.Sketch_desc.solve desc with
