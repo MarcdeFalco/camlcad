@@ -28,7 +28,7 @@ export function choice(options, value, onchange) {
   s.value = value; s.onchange = () => onchange(s.value);
   return s;
 }
-const row = (label, ...ctrl) => el('div', { className: 'drow' }, el('label', { textContent: label }), el('div', { className: 'dctrl' }, ...ctrl));
+export const row = (label, ...ctrl) => el('div', { className: 'drow' }, el('label', { textContent: label }), el('div', { className: 'dctrl' }, ...ctrl));
 const xyz = (p, on) => el('span', { className: 'xyz' }, ...['x', 'y', 'z'].map((k) => num(p[k], (v) => { p[k] = v; on(); })));
 
 // ---------- Cadre de dialogue ----------
