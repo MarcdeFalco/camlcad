@@ -34,6 +34,8 @@ export class Viewport {
     this.style = 0; // 0 ombré + arêtes, 1 ombré, 2 filaire
     this.part = null; this.edges = null; this.highlight = null; this.planes = null; this.fitted = false;
     new ResizeObserver(() => this.resize()).observe(el);
+    // La page ne défile jamais (un défilement du code la décalait vers le haut).
+    addEventListener('scroll', () => { if (scrollX || scrollY) scrollTo(0, 0); });
     this.initCube();
     renderer.setAnimationLoop(() => this.frame());
   }

@@ -10,6 +10,7 @@ import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 import { SketchEditor, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
 import { faceLoops } from './planes.js';
+import { jointDialog } from './mech_joint.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
 import { Dialogs } from './dialogs.js';
@@ -249,6 +250,7 @@ const COMMANDS = {
   look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
   fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
   motion: () => mech.panel(),
+  joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }),
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
 $('animate').onclick = () => mech.toggle();
@@ -327,7 +329,6 @@ function openParams() {
     revert: () => { overrides = saved; evalParams(); },
   });
 }
-
 // ---------- Résultats ----------
 function onResult(m) {
   const t = m.timings || {};
