@@ -13,7 +13,7 @@ type constr = {
       ["coincident" | "distance" | "hdistance" | "vdistance"] : sur des points ;
       ["radius" | "equal_radius" | "concentric"] : sur des cercles ;
       ["tangent"] : ligne, cercle ; ["on_line" | "midpoint"] : point, ligne ;
-      ["on_circle"] : point, cercle ; ["arc_radius"] : arc ; ["tangent_arc"] : ligne, arc. *)
+      ["on_circle"] : point, cercle ; ["symmetric"] : point, point, ligne ; ["arc_radius"] : arc ; ["tangent_arc"] : ligne, arc. *)
   refs : int list;  (** indices dans [lines], [points], [circles] ou [arcs] selon [kind] *)
   value : float option;  (** longueur, distance, angle (degrés) ou rayon *)
 }

@@ -37,16 +37,21 @@ du cache Playwright).
 - Lot 7, chapitre 1 (« 3D Print ») : bouton Impression 3D : face cliquée posée sur le plateau,
   volume de l'imprimante (MK4, Bambu, Ender 3, Mini), appui, surplombs > 45° en rouge, STL exporté
   dans l'orientation d'impression. `print.js`. Scénario `impression.spec.js`.
+- Lot 8, chapitre 2 : symétrie d'esquisse (contrainte `Sketch.symmetric`, copie associative ;
+  boucles entièrement choisies recopiées) et réseau rectangulaire d'esquisse (écarts cotés),
+  depuis la sélection (Maj). Les symboles de contraintes ne captent plus les clics.
+  `sketch_copy.js`. Scénario `esquisse_copies.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
   remettre la branche sur origin/main, cherry-pick du lot, fusion neutre de l'ancienne branche
-  distante, push). Puis lot 8 : chapitre 2 (miroir, réseaux et décalage d'esquisse).
+  distante, push). Puis lot 9 : chapitre 7 (assemblage : liaisons à la souris).
 
 ## Suivant
 
 ## Écarts connus avec Fusion (pas encore traités)
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Pas d'échelle (`Shape.scale` absent du noyau).
+- Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
 - Pas de flèche de distance dans la vue pour l'extrusion, pas de choix de régions de profil.
 - Esquisse non rééditable à la souris après insertion.

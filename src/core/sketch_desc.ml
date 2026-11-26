@@ -26,6 +26,7 @@ let signature = function
   | "on_line" | "midpoint" -> Some ([ Sp; Sl ], false)
   | "on_circle" -> Some ([ Sp; Sc ], false)
   | "arc_radius" -> Some ([ Sa ], true)
+  | "symmetric" -> Some ([ Sp; Sp; Sl ], false)
   | "tangent_arc" -> Some ([ Sl; Sa ], false)
   | _ -> None
 
@@ -92,6 +93,7 @@ let build d =
            | "on_line", [ a; b ] -> Sketch.on_line ps.(a) ls.(b)
            | "midpoint", [ a; b ] -> Sketch.midpoint ps.(a) ls.(b)
            | "on_circle", [ a; b ] -> Sketch.on_circle ps.(a) cs.(b)
+           | "symmetric", [ a; b; l ] -> Sketch.symmetric ps.(a) ps.(b) ls.(l)
            | "arc_radius", [ a ] -> Sketch.arc_radius arcs.(a) (v c)
            | "tangent_arc", [ a; b ] -> Sketch.tangent_arc ls.(a) arcs.(b)
            | _ -> assert false (* exclu par [check] *)

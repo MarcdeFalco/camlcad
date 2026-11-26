@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK } from './sketch_tools.js';
+import { mirror, patternX } from './sketch_copy.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -234,11 +235,21 @@ export class SketchEditor extends SketchMarks {
     if (kinds === 'cc') out.push(['equal_radius', 'Même rayon', L('c')], ['concentric', 'Concentriques', L('c')]);
     if (kinds === 'lc' || kinds === 'cl') out.push(['tangent', 'Tangente', [L('l')[0], L('c')[0]]]);
     if (kinds === 'pl' || kinds === 'lp') out.push(['on_line', 'Sur la droite', [L('p')[0], L('l')[0]]], ['midpoint', 'Milieu', [L('p')[0], L('l')[0]]]);
+    // Copies : réseau des éléments choisis, symétrie (la dernière ligne choisie est l'axe).
+    if (s.length >= 1) out.push(['patternx', 'Réseau x', s.slice(), 3]);
+    if (s.length >= 2 && s[s.length - 1].kind === 'l') out.push(['mirror', `Symétrie / L${s[s.length - 1].i + 1}`, s.slice()]);
     if (kinds === 'pc' || kinds === 'cp') out.push(['on_circle', 'Sur le cercle', [L('p')[0], L('c')[0]]]);
     return out;
   }
 
   addConstraint([kind, label, refs, dflt]) {
+    if (kind === 'mirror') { this.sel = []; const err = mirror(this, refs.slice(0, -1), refs[refs.length - 1].i); if (err) { this.error = err; this.redraw(); } else this.changed(); return; }
+    if (kind === 'patternx' && this.asking) { const n = Math.round(this.asking.value); this.asking = { kind: 'patternx_d', label: `Pas (${n} exemplaires)`, refs, value: 10, n }; this.redraw(); return; }
+    if (kind === 'patternx_d' && this.asking) {
+      const { n, value } = this.asking; this.asking = null; this.sel = [];
+      const err = patternX(this, refs, n, value); if (err) { this.error = err; this.redraw(); } else this.changed();
+      return;
+    }
     if (kind === 'fillet' && this.asking) {
       const r = this.asking.value; this.asking = null; this.sel = [];
       const err = Number.isFinite(r) && r > 0 ? fillet(this, refs[0], r) : 'Congé : rayon invalide.';

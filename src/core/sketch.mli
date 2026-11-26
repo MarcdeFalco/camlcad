@@ -93,6 +93,10 @@ val tangent_arc : line -> arc -> constr
 (** Distance du centre de l'arc à la droite support = rayon de l'arc ; si la ligne s'arrête
     à une extrémité de l'arc, rayon perpendiculaire à la ligne en ce point. *)
 
+val symmetric : point -> point -> line -> constr
+(** [symmetric p q l] : [q] est le symétrique de [p] par rapport à la droite support de [l]
+    (milieu de [pq] sur la droite, [pq] perpendiculaire à la droite). *)
+
 val hdistance : point -> point -> float -> constr
 (** [x q - x p = d] (signée). *)
 

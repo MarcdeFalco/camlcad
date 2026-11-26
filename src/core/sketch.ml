@@ -105,6 +105,11 @@ let tangent_arc l a v =
   match List.find_opt (fun p -> p.id = l.a.id || p.id = l.b.id) [ a.as_; a.ae ] with
   | Some p -> [ (((px v a.ac -. px v p) *. dx v l) +. ((py v a.ac -. py v p) *. dy v l)) /. safe (len v l) ]
   | None -> ( match on_line a.ac l v with [ d ] -> [ Float.abs d -. arc_r v a ] | _ -> assert false)
+let symmetric p q l v =
+  let mx = (px v p +. px v q) /. 2. and my = (py v p +. py v q) /. 2. in
+  [ ((dx v l *. (my -. py v l.a)) -. (dy v l *. (mx -. px v l.a))) /. safe (len v l);
+    (((px v q -. px v p) *. dx v l) +. ((py v q -. py v p) *. dy v l)) /. safe (len v l) ]
+
 let hdistance p q d v = [ px v q -. px v p -. d ]
 let vdistance p q d v = [ py v q -. py v p -. d ]
 
