@@ -25,7 +25,10 @@
 </header>
 <main>
   <section id="code"></section>
-  <section id="view"></section>
+  <section id="view">
+    <div id="notice" hidden></div>
+    <nav id="timeline" hidden aria-label="Frise des features"></nav>
+  </section>
   <aside>
     <h2>Esquisse</h2>
     <div id="sketch-start">
@@ -40,6 +43,7 @@
       <ol id="sketch-list"></ol>
       <div class="tools"><button id="sketch-ok-add">Extruder (+)</button> <button id="sketch-ok-cut">Enlever (−)</button> <button id="sketch-cancel">Annuler</button></div>
     </div>
+    <div id="feature-panel" hidden></div>
     <h2>Paramètres</h2>
     <div id="params"></div>
     <div id="motion" hidden>
@@ -47,11 +51,12 @@
       <div id="coords"></div>
       <div id="inter"></div>
     </div>
-    <h2>Features</h2>
+    <h2>Features <span class="hint">clic droit : actions</span></h2>
     <ol id="tree"></ol>
     <pre id="error" hidden></pre>
   </aside>
 </main>
+<div id="ctxmenu" hidden></div>
 <script type="module" src="main.js"></script>
 </body>
 </html>

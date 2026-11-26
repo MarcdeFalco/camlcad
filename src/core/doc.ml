@@ -13,6 +13,7 @@ type feature_info = {
   f_loc : Loc.t;
   f_deps : int list;
   f_shape : Shape.t;
+  f_suppressed : bool;
 }
 
 type journal = { params : param_info list; features : feature_info list }
@@ -55,7 +56,7 @@ let param ?(loc = Loc.none) ?range ?unit_ name default env st =
         in
         Ok (value, { st with params_rev = p :: st.params_rev })
 
-let feature ?(loc = Loc.none) ~name shape _ st =
+let feature ?(loc = Loc.none) ?(suppressed = false) ~name shape _ st =
   if List.exists (fun f -> f.f_name = name) st.features_rev then
     Error ("feature en double : " ^ name, loc, st)
   else
@@ -66,8 +67,11 @@ let feature ?(loc = Loc.none) ~name shape _ st =
         st.features_rev
       |> List.sort compare
     in
-    let f = { f_id = List.length st.features_rev; f_name = name; f_loc = loc; f_deps = deps; f_shape = shape } in
-    Ok (shape, { st with features_rev = f :: st.features_rev })
+    let f =
+      { f_id = List.length st.features_rev; f_name = name; f_loc = loc; f_deps = deps; f_shape = shape;
+        f_suppressed = suppressed }
+    in
+    Ok ((if suppressed then Shape.empty else shape), { st with features_rev = f :: st.features_rev })
 
 let run ?(overrides = []) m =
   match m overrides { params_rev = []; features_rev = [] } with

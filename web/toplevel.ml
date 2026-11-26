@@ -7,6 +7,9 @@
            {kind:"pose", id, overrides}       (mécanisme : pilotes → pose résolue)
            {kind:"pick", id, point:[x,y,z]}   (feature sous un point de la surface)
            {kind:"export3mf", id}             (dernier résultat ; mécanisme : pièces à la pose courante)
+           {kind:"edit", id, code, op, fid, index?, value?, name?, on?}
+             (réécrit [code] pour la feature [fid] du dernier journal, voir Cad.Source_edit ;
+              op : "literals" | "set_literal" | "promote" | "suppress" | "rename" | "delete")
            {kind:"sketch", id, sketch}         (résout une esquisse décrite comme Cad.Sketch_desc.t :
              {points:[[x,y,fixe]], lines:[[i,j]], circles:[[c,r]],
               constraints:[{kind, refs:[...], value?}], loops:[[i...]]})
@@ -19,6 +22,7 @@
            {kind:"pick", id, fid}             (fid = -1 si aucune)
            {kind:"export3mf", id, data}       (Uint8Array, paquet 3MF)
            {kind:"sketch", id, ok, points:[[x,y]], radii, dof, redundant, code, error}
+           {kind:"edit", id, op, ok, code, error, literals:[{value, int, label, before, text, after}]}
    [journal] est la chaîne JSON de [Cad.Journal_json] ; [error] vaut null ou
    {message, line, col, end_line, end_col} (lignes à partir de 1). *)
 
@@ -256,6 +260,47 @@ let export3mf id =
   String.iteri (fun i c -> Js.Unsafe.set u i (Char.code c)) bytes;
   post (obj [ ("kind", str "export3mf"); ("id", id); ("data", Js.Unsafe.inject u) ]) (jsarr [ Js.Unsafe.get u "buffer" ])
 
+(* ---------- Réécritures depuis la frise et le panneau « Modifier » ---------- *)
+let edit id (d : Js.Unsafe.any) =
+  let module S = Cad.Source_edit in
+  let code = Js.to_string (Js.Unsafe.get d "code") and op = Js.to_string (Js.Unsafe.get d "op") in
+  let fnum k = Js.float_of_number (Js.Unsafe.get d k) in
+  let fstr k = Js.to_string (Js.Unsafe.get d k) in
+  let feature =
+    match !last_journal with
+    | None -> None
+    | Some j -> List.find_opt (fun (f : Cad.Doc.feature_info) -> float f.f_id = fnum "fid") j.features
+  in
+  let kvs =
+    match feature with
+    | None -> [ ("ok", Js.Unsafe.inject Js._false); ("error", str "feature inconnue : réévaluez le code") ]
+    | Some f -> (
+        let loc = f.f_loc in
+        let result r =
+          match r with
+          | Ok c -> [ ("ok", Js.Unsafe.inject Js._true); ("code", str c) ]
+          | Error e -> [ ("ok", Js.Unsafe.inject Js._false); ("error", str e) ]
+        in
+        match op with
+        | "literals" ->
+            let lit (l : S.literal) =
+              Js.Unsafe.inject
+                (obj
+                   [ ("value", num l.value); ("int", Js.Unsafe.inject (Js.bool l.int));
+                     ("label", match l.label with Some s -> str s | None -> Js.Unsafe.inject Js.null);
+                     ("before", str l.before); ("after", str l.after);
+                     ("text", str (String.sub code l.range.start (l.range.stop - l.range.start))) ])
+            in
+            [ ("ok", Js.Unsafe.inject Js._true); ("literals", jsarr (List.map lit (S.literals code loc))) ]
+        | "set_literal" -> result (S.set_literal code loc (int_of_float (fnum "index")) (fnum "value"))
+        | "promote" -> result (S.promote code loc (int_of_float (fnum "index")) ~name:(fstr "name"))
+        | "suppress" -> result (S.set_suppressed code loc (Js.to_bool (Js.Unsafe.get d "on")))
+        | "rename" -> result (S.rename code loc (fstr "name"))
+        | "delete" -> result (S.delete code loc)
+        | _ -> [ ("ok", Js.Unsafe.inject Js._false); ("error", str ("opération inconnue : " ^ op)) ])
+  in
+  post (obj (("kind", str "edit") :: ("id", id) :: ("op", str op) :: kvs)) (jsarr [])
+
 (* ---------- Esquisses ---------- *)
 let sketch id (o : Js.Unsafe.any) =
   let arr k : Js.Unsafe.any array = Js.to_array (Js.Unsafe.get o k) in
@@ -307,7 +352,9 @@ let pick id (p : Geom.V3.t) =
           (Float.round (d *. 100.), List.length f.f_deps, f.f_id)
         in
         List.fold_left
-          (fun best f -> match best with Some (k, _) when k <= key f -> best | _ -> Some (key f, f.f_id))
+          (fun best (f : Cad.Doc.feature_info) ->
+            if f.f_suppressed then best
+            else match best with Some (k, _) when k <= key f -> best | _ -> Some (key f, f.f_id))
           None j.features
         |> Option.fold ~none:(-1) ~some:(fun ((d, _, _), fid) -> if d > 50. then -1 else fid)
   in
@@ -325,6 +372,7 @@ let () =
          | "pose" -> pose id (overrides_of d)
          | "export3mf" -> export3mf id
          | "sketch" -> sketch id (Js.Unsafe.get d "sketch")
+         | "edit" -> edit id d
          | "pick" ->
              let c i = Js.float_of_number (Js.Unsafe.get (Js.Unsafe.get d "point") i) in
              pick id (Geom.V3.v (c 0) (c 1) (c 2))

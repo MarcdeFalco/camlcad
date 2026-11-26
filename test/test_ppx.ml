@@ -35,7 +35,7 @@ let%expect_test "JSON" =
   print_endline (Journal_json.of_result (Doc.run ~overrides:[ ("l", 50.) ] model));
   print_endline (Journal_json.of_result (Doc.run ~overrides:[ ("l", 500.) ] model));
   [%expect {|
-    {"ok":true,"params":[{"name":"l","default":40,"value":50,"range":[10,100],"unit":"mm","loc":{"file":"test/test_ppx.ml","line":6,"start_col":16,"end_col":19}}],"features":[{"id":0,"name":"base","loc":{"file":"test/test_ppx.ml","line":7,"start_col":2,"end_col":44},"deps":[],"shape":6},{"id":1,"name":"trou","loc":{"file":"test/test_ppx.ml","line":8,"start_col":2,"end_col":60},"deps":[],"shape":2},{"id":2,"name":"p","loc":{"file":"test/test_ppx.ml","line":9,"start_col":2,"end_col":28},"deps":[],"shape":3},{"id":3,"name":"piece","loc":{"file":"test/test_ppx.ml","line":10,"start_col":2,"end_col":39},"deps":[0,1,2],"shape":8}]}
+    {"ok":true,"params":[{"name":"l","default":40,"value":50,"range":[10,100],"unit":"mm","loc":{"file":"test/test_ppx.ml","line":6,"start_col":16,"end_col":19}}],"features":[{"id":0,"name":"base","loc":{"file":"test/test_ppx.ml","line":7,"start_col":2,"end_col":44},"deps":[],"shape":6,"op":"cube","suppressed":false},{"id":1,"name":"trou","loc":{"file":"test/test_ppx.ml","line":8,"start_col":2,"end_col":60},"deps":[],"shape":2,"op":"cylinder","suppressed":false},{"id":2,"name":"p","loc":{"file":"test/test_ppx.ml","line":9,"start_col":2,"end_col":28},"deps":[],"shape":3,"op":"sphere","suppressed":false},{"id":3,"name":"piece","loc":{"file":"test/test_ppx.ml","line":10,"start_col":2,"end_col":39},"deps":[0,1,2],"shape":8,"op":"union","suppressed":false}]}
     {"ok":false,"error":{"message":"l : 500 hors de [10, 100]","loc":{"file":"test/test_ppx.ml","line":6,"start_col":16,"end_col":19}},"params":[],"features":[]}
     |}]
 
@@ -53,3 +53,25 @@ let%expect_test "let%sketch : échec localisé" =
   | Ok _ -> print_endline "ok ?"
   | Error e -> Printf.printf "%s @ %s\n" e.message (pp_loc e.loc));
   [%expect {| esquisse : contraintes incompatibles (résidu 0.5 après 3 itérations) @ test/test_ppx.ml:44:4-234 |}]
+
+let%expect_test "[@@suppress] : la feature reste au journal et rend le vide" =
+  let m =
+    let%feat a = Shape.cube (V3.v 10. 10. 10.) in
+    let%feat t = Shape.cylinder ~r:2. ~h:10. () [@@suppress] in
+    let%feat r = Shape.(a - t) in
+    Doc.return r
+  in
+  match Doc.run m with
+  | Error e -> print_endline e.message
+  | Ok (r, j) ->
+      List.iter
+        (fun (f : Doc.feature_info) ->
+          Printf.printf "%s %s supprimée=%b deps=[%s]\n" f.f_name (pp_loc f.f_loc) f.f_suppressed
+            (String.concat ";" (List.map string_of_int f.f_deps)))
+        j.features;
+      Printf.printf "r = a - vide : %b\n" (Shape.equal r Shape.((List.hd j.features).f_shape - empty));
+  [%expect {|
+    a test/test_ppx.ml:59:4-46 supprimée=false deps=[]
+    t test/test_ppx.ml:60:4-60 supprimée=true deps=[]
+    r test/test_ppx.ml:61:4-30 supprimée=false deps=[0]
+    r = a - vide : true |}]

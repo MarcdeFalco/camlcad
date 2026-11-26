@@ -24,3 +24,12 @@ clic dans le vide : feature -1
 esquisse : true dof 0 points 0.00,0.00 40.00,0.00 40.00,20.00 0.00,20.00 20.00,10.00 rayon 4.00
 esquisse incompatible : false esquisse : contraintes incompatibles
 code inséré : true extrusion1@34 resultat1@35
+frise : semelle:cube aile:cube trous_semelle:union trou_aile:cylinder support:difference
+cotes de trou_aile : 2. -90.(~deg) 2. 0. 0.6
+supprimer temporairement trou_aile : true ; params 5 ; semelle aile trous_semelle trou_aile(supprimée) support
+supprimer trou_aile : true ; params 5 ; semelle aile trous_semelle support
+supprimer semelle : true ; params 5 ; aile trous_semelle trou_aile support
+supprimer support : refus (« support » est le résultat du modèle (ligne 24))
+angle de trou_aile à 0 : true ; params 5 ; semelle aile trous_semelle trou_aile support
+hauteur de trou_aile en paramètre : true ; params 6 ; semelle aile trous_semelle trou_aile support
+renommer trous_semelle : true ; params 5 ; semelle aile percages trou_aile support

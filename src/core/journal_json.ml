@@ -38,10 +38,25 @@ let param (p : Doc.param_info) =
       ("range", opt (fun (a, b) -> arr [ num a; num b ]) p.p_range);
       ("unit", opt escape p.p_unit); ("loc", loc p.p_loc) ]
 
+let rec op s =
+  match Shape.view s with
+  | Empty -> "empty"
+  | Cube _ -> "cube"
+  | Cylinder _ -> "cylinder"
+  | Sphere _ -> "sphere"
+  | Extrude _ -> "extrude"
+  | Revolve _ -> "revolve"
+  | Union _ -> "union"
+  | Difference _ -> "difference"
+  | Intersection _ -> "intersection"
+  | Mirror _ -> "mirror"
+  | Place (_, s) -> op s
+
 let feature (f : Doc.feature_info) =
   obj
     [ ("id", string_of_int f.f_id); ("name", escape f.f_name); ("loc", loc f.f_loc);
-      ("deps", arr (List.map string_of_int f.f_deps)); ("shape", string_of_int (Shape.id f.f_shape)) ]
+      ("deps", arr (List.map string_of_int f.f_deps)); ("shape", string_of_int (Shape.id f.f_shape));
+      ("op", escape (op f.f_shape)); ("suppressed", string_of_bool f.f_suppressed) ]
 
 let body (j : Doc.journal) =
   [ ("params", arr (List.map param j.params)); ("features", arr (List.map feature j.features)) ]

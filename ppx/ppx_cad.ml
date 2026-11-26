@@ -35,9 +35,10 @@ let feat_binding (vb : value_binding) k =
     | None -> Ast_builder.Default.estring ~loc (var_name vb)
   in
   let e = { e with pexp_attributes = strip e.pexp_attributes [ "name" ] } in
+  let suppressed = Ast_builder.Default.ebool ~loc (find_attr "suppress" vb.pvb_attributes <> None) in
   [%expr
     Cad.Doc.bind
-      (Cad.Doc.feature ~loc:[%e loc_expr loc] ~name:[%e name] [%e e])
+      (Cad.Doc.feature ~loc:[%e loc_expr loc] ~suppressed:[%e suppressed] ~name:[%e name] [%e e])
       (fun [%p vb.pvb_pat] -> [%e k])]
 
 let param_binding (vb : value_binding) k =

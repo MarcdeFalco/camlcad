@@ -17,6 +17,10 @@
       feature. [~loc] couvre la liaison entière (motif et expression), pour
       sauter au code et surligner la feature. Un attribut [[@name "…"]] sur
       l'expression (ou [[@@name "…"]] sur la liaison) remplace le nom.
+      [[@@suppress]] sur la liaison ([let%feat x = e [@@suppress] in]) passe
+      [~suppressed:true] : la feature est supprimée temporairement (voir
+      [Cad.Doc.feature]). La liaison étant couverte par [~loc], l'éditeur
+      ajoute ou retire l'attribut à la fin de cette plage.
     - [let%param] : [~loc] couvre l'expression de la valeur par défaut, pour que
       l'éditeur puisse la remplacer en validant un curseur. Attributs
       facultatifs sur cette expression : [[@range lo, hi]] et [[@unit "…"]].
