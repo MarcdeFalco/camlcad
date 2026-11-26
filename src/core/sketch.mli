@@ -80,6 +80,9 @@ val angle : line -> line -> float -> constr
 val on_line : point -> line -> constr
 (** Sur la droite support (pas forcément sur le segment). *)
 
+val point_line_distance : point -> line -> float -> constr
+(** Distance (non signée) du point à la droite support. *)
+
 val midpoint : point -> line -> constr
 val radius : circle -> float -> constr
 val equal_radius : circle -> circle -> constr

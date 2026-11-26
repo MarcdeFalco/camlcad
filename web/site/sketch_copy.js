@@ -73,3 +73,29 @@ export function patternX(ed, items, n, d) {
   }
   return null;
 }
+
+// Décalage (Offset) d'un contour de lignes : nouveau contour aux côtés parallèles, à la distance
+// d (> 0 : vers l'intérieur). Dans une boucle, le contour intérieur est un trou (paroi d'épaisseur d).
+export function offsetLoop(ed, line, d) {
+  const loop = ed.loops.find((l) => l.every((it) => typeof it === 'number') && l.some((p, k) => { const q = l[(k + 1) % l.length]; const [a, b] = ed.lines[line]; return (p === a && q === b) || (p === b && q === a); }));
+  if (!loop) return 'Décalage : cliquez une ligne d’un contour fermé fait de lignes.';
+  const n = loop.length, P = loop.map((i) => ed.pts[i]);
+  const area = P.reduce((s, p, k) => s + p.x * P[(k + 1) % n].y - P[(k + 1) % n].x * p.y, 0);
+  const sgn = area > 0 ? 1 : -1; // normale intérieure : à gauche si le contour tourne dans le sens direct
+  const edges = loop.map((p, k) => {
+    const q = loop[(k + 1) % n], li = ed.lines.findIndex(([a, b]) => (a === p && b === q) || (a === q && b === p));
+    const A = ed.pts[p], B = ed.pts[q], L = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+    return { li, nx: (-sgn * (B.y - A.y)) / L, ny: (sgn * (B.x - A.x)) / L };
+  });
+  if (edges.some((e) => e.li < 0)) return 'Décalage : contour sans ses lignes.';
+  const q = loop.map((p, k) => {
+    const e0 = edges[(k - 1 + n) % n], e1 = edges[k], c = 1 + e0.nx * e1.nx + e0.ny * e1.ny;
+    ed.pts.push({ x: P[k].x + (d * (e0.nx + e1.nx)) / c, y: P[k].y + (d * (e0.ny + e1.ny)) / c, fixed: false });
+    return ed.pts.length - 1;
+  });
+  const l0 = ed.lines.length;
+  q.forEach((p, k) => ed.lines.push([p, q[(k + 1) % n]]));
+  edges.forEach((e, k) => { cons(ed, 'parallel', [l0 + k, e.li]); cons(ed, 'point_line_distance', [q[k], e.li], Math.abs(d)); });
+  ed.loops.push(q);
+  return null;
+}

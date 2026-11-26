@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK } from './sketch_tools.js';
-import { mirror, patternX } from './sketch_copy.js';
+import { mirror, patternX, offsetLoop } from './sketch_copy.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -127,6 +127,10 @@ export class SketchEditor extends SketchMarks {
       else if (this.pending2 == null) this.pending2 = this.pointAt(q);
       else { centerArc(this, this.pending, this.pending2, q); this.pending = this.pending2 = null; this.changed(); return; }
       this.redraw();
+    } else if (this.tool === 'offset') {
+      const n = this.nearest(q);
+      if (n && n.kind === 'l') { this.asking = { kind: 'offset', label: 'Décalage (> 0 : intérieur)', refs: [n.i], value: 2 }; this.sel = [{ kind: 'l', i: n.i }]; }
+      this.redraw();
     } else if (this.tool === 'fillet') {
       const n = this.nearest(q);
       if (n && n.kind === 'p') { this.asking = { kind: 'fillet', label: 'Rayon du congé', refs: [n.i], value: 3 }; this.sel = [{ kind: 'p', i: n.i }]; }
@@ -244,6 +248,12 @@ export class SketchEditor extends SketchMarks {
     if (kind === 'patternx_d' && this.asking) {
       const { n, value } = this.asking; this.asking = null; this.sel = [];
       const err = patternX(this, refs, n, value); if (err) { this.error = err; this.redraw(); } else this.changed();
+      return;
+    }
+    if (kind === 'offset' && this.asking) {
+      const d = this.asking.value; this.asking = null; this.sel = [];
+      const err = Number.isFinite(d) && d !== 0 ? offsetLoop(this, refs[0], d) : 'Décalage : distance nulle.';
+      if (err) { this.error = err; this.redraw(); } else this.changed();
       return;
     }
     if (kind === 'fillet' && this.asking) {

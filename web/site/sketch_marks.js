@@ -13,14 +13,14 @@ export class SketchMarks {
     horizontal: 'Horizontale', vertical: 'Verticale', length: 'Longueur', parallel: 'Parallèles', perpendicular: 'Perpendiculaires',
     equal_length: 'Même longueur', angle: 'Angle', coincident: 'Confondus', distance: 'Distance', hdistance: 'Écart x', vdistance: 'Écart y',
     radius: 'Rayon', equal_radius: 'Même rayon', concentric: 'Concentriques', tangent: 'Tangente', on_line: 'Sur la droite',
-    midpoint: 'Milieu', on_circle: 'Sur le cercle', arc_radius: 'Rayon', tangent_arc: 'Tangente', symmetric: 'Symétrie',
+    midpoint: 'Milieu', on_circle: 'Sur le cercle', arc_radius: 'Rayon', tangent_arc: 'Tangente', symmetric: 'Symétrie', point_line_distance: 'Distance au côté',
   };
   static GLYPH = { horizontal: 'H', vertical: 'V', parallel: '∥', perpendicular: '⊥', equal_length: '=', equal_radius: '=', concentric: '◎', tangent: 'T', coincident: '•', on_line: '⋯', midpoint: 'M', on_circle: '○', tangent_arc: 'T', symmetric: '⇋' };
   // Types des références de chaque contrainte : p point, l ligne, c cercle.
   static REFS = {
     horizontal: 'l', vertical: 'l', length: 'l', parallel: 'll', perpendicular: 'll', equal_length: 'll', angle: 'll',
     coincident: 'pp', distance: 'pp', hdistance: 'pp', vdistance: 'pp', radius: 'c', equal_radius: 'cc', concentric: 'cc',
-    tangent: 'lc', on_line: 'pl', midpoint: 'pl', on_circle: 'pc', arc_radius: 'a', tangent_arc: 'la', symmetric: 'ppl',
+    tangent: 'lc', on_line: 'pl', midpoint: 'pl', on_circle: 'pc', arc_radius: 'a', tangent_arc: 'la', symmetric: 'ppl', point_line_distance: 'pl',
   };
   refName(kind, k, i) { return ({ p: 'P', l: 'L', c: 'C', a: 'A' }[SketchMarks.REFS[kind]?.[k]] ?? '#') + (i + 1); }
   consText(c) {

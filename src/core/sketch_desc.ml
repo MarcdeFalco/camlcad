@@ -27,6 +27,7 @@ let signature = function
   | "on_circle" -> Some ([ Sp; Sc ], false)
   | "arc_radius" -> Some ([ Sa ], true)
   | "symmetric" -> Some ([ Sp; Sp; Sl ], false)
+  | "point_line_distance" -> Some ([ Sp; Sl ], true)
   | "tangent_arc" -> Some ([ Sl; Sa ], false)
   | _ -> None
 
@@ -53,6 +54,22 @@ let check d =
           else if v && c.value = None then fail ("contrainte " ^ c.kind ^ " : valeur manquante"))
     d.constraints;
   match !err with Some m -> Error m | None -> Ok ()
+
+(* Boucles ordonnées par profondeur d'imbrication, avec leur signe (true : ajoutée). *)
+let nested d =
+  let pt i = let x, y, _ = d.points.(i) in (x, y) in
+  let corners l = List.concat_map (function P i -> [ pt i ] | A k | Rev k -> let _, a, b = d.arcs.(k) in [ pt a; pt b ]) l in
+  let inside (x, y) poly =
+    let n = List.length poly and a = Array.of_list poly in
+    let c = ref false in
+    for i = 0 to n - 1 do
+      let xi, yi = a.(i) and xj, yj = a.((i + n - 1) mod n) in
+      if yi > y <> (yj > y) && x < ((xj -. xi) *. (y -. yi) /. (yj -. yi)) +. xi then c := not !c
+    done;
+    !c
+  in
+  let depth l = match corners l with [] -> 0 | p :: _ -> List.length (List.filter (fun m -> m != l && inside p (corners m)) d.loops) in
+  List.map (fun l -> (depth l, l)) d.loops |> List.stable_sort (fun (a, _) (b, _) -> compare a b) |> List.map (fun (k, l) -> (k mod 2 = 0, l))
 
 let rec mapm f = function
   | [] -> Sketch.return []
@@ -93,6 +110,7 @@ let build d =
            | "on_line", [ a; b ] -> Sketch.on_line ps.(a) ls.(b)
            | "midpoint", [ a; b ] -> Sketch.midpoint ps.(a) ls.(b)
            | "on_circle", [ a; b ] -> Sketch.on_circle ps.(a) cs.(b)
+           | "point_line_distance", [ a; l ] -> Sketch.point_line_distance ps.(a) ls.(l) (v c)
            | "symmetric", [ a; b; l ] -> Sketch.symmetric ps.(a) ps.(b) ls.(l)
            | "arc_radius", [ a ] -> Sketch.arc_radius arcs.(a) (v c)
            | "tangent_arc", [ a; b ] -> Sketch.tangent_arc ls.(a) arcs.(b)
@@ -100,10 +118,12 @@ let build d =
          in
          let+ () = Sketch.constrain (List.map one d.constraints) in
          let edge = function P i -> Sketch.pt ps.(i) | A k -> Sketch.along arcs.(k) | Rev k -> Sketch.back arcs.(k) in
-         let loops = List.map (fun l -> Sketch.path (List.map edge l)) d.loops in
+         let loops = List.map (fun (plus, l) -> (plus, Sketch.path (List.map edge l))) (nested d) in
          let disks = Array.to_list (Array.map Sketch.disk cs) in
          match (loops, disks) with
-         | l :: rest, _ -> List.fold_left Sketch.( - ) (List.fold_left Sketch.( + ) l rest) disks
+         | (_, l) :: rest, _ ->
+             let r = List.fold_left (fun r (plus, x) -> if plus then Sketch.( + ) r x else Sketch.( - ) r x) l rest in
+             List.fold_left Sketch.( - ) r disks
          | [], d :: rest -> List.fold_left Sketch.( + ) d rest
          | [], [] -> Sketch.loop [])
 
@@ -166,8 +186,10 @@ let to_code ?(indent = 4) d =
   in
   let disks = Array.to_list (Array.mapi (fun i _ -> Printf.sprintf "disk %s" (c i)) d.circles) in
   let region =
-    match (List.map loop d.loops, disks) with
-    | l :: rest, ds -> String.concat " - " (String.concat " + " (l :: rest) :: ds)
+    match (nested d, disks) with
+    | (_, l) :: rest, ds ->
+        String.concat "" (loop l :: List.map (fun (plus, x) -> (if plus then " + " else " - ") ^ loop x) rest)
+        ^ String.concat "" (List.map (fun x -> " - " ^ x) ds)
     | [], ds when ds <> [] -> String.concat " + " ds
     | _ -> "loop []"
   in

@@ -114,7 +114,15 @@ export class Dialogs {
     const P = { h: 10, dir: 'one', op: empty ? 'join' : 'join' };
     const shapes = () => {
       const out = [], holes = sk.circles.map((c) => { const p = new THREE.Path(); p.absarc(c.x, c.y, c.r, 0, 2 * Math.PI, true); return p; });
-      for (const l of sk.loops) { const s = new THREE.Shape(l.map((p) => new THREE.Vector2(p.x, p.y))); s.holes.push(...holes); out.push(s); }
+      // Boucle dans une boucle : trou (profondeur impaire), comme Cad.Sketch_desc.
+      const inside = (p, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; };
+      const depth = (l) => sk.loops.filter((m) => m !== l && inside(l[0], m)).length;
+      for (const l of sk.loops) {
+        if (depth(l) % 2) continue;
+        const s = new THREE.Shape(l.map((p) => new THREE.Vector2(p.x, p.y)));
+        for (const h of sk.loops) if (h !== l && depth(h) % 2 && inside(h[0], l)) s.holes.push(new THREE.Path(h.map((p) => new THREE.Vector2(p.x, p.y))));
+        s.holes.push(...holes); out.push(s);
+      }
       if (!sk.loops.length) for (const c of sk.circles) { const s = new THREE.Shape(); s.absarc(c.x, c.y, c.r, 0, 2 * Math.PI, false); out.push(s); }
       return out;
     };

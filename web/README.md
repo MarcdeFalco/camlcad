@@ -54,7 +54,7 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   pour fermer ; lignes presque horizontales ou verticales contraintes), cercle
   (C, centre puis rayon), arc par le centre (A), oblong, congé d'esquisse (sommet entre deux lignes), rectangle par le centre, polygone régulier (P, nombre
   de côtés dans la barre), point, Cote (D : ligne, cercle, deux points, deux lignes),
-  lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe) et réseau en x de la sélection, sélection (S, Maj pour plusieurs), avec élastique et
+  lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe) et réseau en x de la sélection, décalage d'un contour (une boucle dans une boucle est un trou), sélection (S, Maj pour plusieurs), avec élastique et
   mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,
   double-clic sur une cote pour la modifier ; les contraintes proposées dépendent de la sélection et sont
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
