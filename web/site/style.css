@@ -187,3 +187,5 @@ button { font:inherit; color:inherit; }
 .more-menu button { display:flex; align-items:center; gap:8px; padding:5px 8px; border:none; background:none; text-align:left; font-size:12px; cursor:pointer; border-radius:4px; }
 .more-menu button i { font-style:normal; width:18px; text-align:center; color:var(--accent); }
 .more-menu button:hover { background:var(--accent-soft); }
+#dialog:has(.drawing-preview) { width:440px; }
+.drawing-preview { width:100%; border:1px solid var(--line); background:#fff; margin-bottom:6px; }

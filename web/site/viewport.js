@@ -155,6 +155,9 @@ export class Viewport {
   }
   toggleGrid() { this.grid.visible = !this.grid.visible; this.axes.visible = this.grid.visible; return this.grid.visible; }
 
+  // Capture d'image (Black Book ch. 1, Capture Image) : la vue telle qu'affichée, en PNG.
+  capture() { this.renderer.render(this.scene, this.camera); return this.renderer.domElement.toDataURL('image/png'); }
+
   // ---------- Pièce affichée ----------
   static geometry(m) {
     const g = new THREE.BufferGeometry();
