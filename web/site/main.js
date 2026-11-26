@@ -159,7 +159,7 @@ canvas.addEventListener('pointerup', (e) => {
     if (inspect.measuring) { inspect.pick(hit); return; }
     const f = planarFace(lastMesh, hit.faceIndex);
     if (facePick) { if (f) { const act = facePick; stopFacePick(); act(hit, f); } return; }
-    if (picking) { if (f) { stopPicking(); startSketch(f.frame, frameCode(f.frame)); } return; }
+    if (picking) { if (f) { stopPicking(); startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); } return; }
     worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
     showFace(f);
   } else if (!picking) { selectFeature(null, false); showFace(null); }
@@ -184,7 +184,7 @@ const sketch = new SketchEditor({
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
-function startSketch(frame, code, data, editing) { dialogs.close(true); showFace(null); sketch.start(frame, code, data, editing); }
+function startSketch(frame, code, data, editing, loops) { dialogs.close(true); showFace(null); if (selected != null) selectFeature(null, false); sketch.start(frame, code, data, editing, loops); }
 // « Modifier l'esquisse » : relue du code, vérifiée (le solveur doit réécrire exactement le même texte).
 let verify = null;
 function editSketch(name) {
@@ -199,7 +199,7 @@ function openVerified(v, m) {
 }
 function startPicking() {
   if (sketch.active) return;
-  if (face) { const f = face; startSketch(f.frame, frameCode(f.frame)); return; }
+  if (face) { const f = face; startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); return; }
   picking = true; vp.showPlanes(allPlanes());
   if (!lastMesh || !lastMesh.triangles.length) { vp.planes.updateMatrixWorld(true); vp.fit([vp.planes]); } // document vide : les trois plans entiers à l'écran
   hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
@@ -218,7 +218,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve');
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project();
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {

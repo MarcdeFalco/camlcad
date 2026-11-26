@@ -95,7 +95,7 @@ export class SketchMarks {
     if (!q) return;
     const line = (pts) => {
       const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(p.x, p.y, 0))),
-        new THREE.LineDashedMaterial({ color: 0x1f6feb, dashSize: this.tol() * 0.6, gapSize: this.tol() * 0.4, depthTest: false }));
+        new THREE.LineDashedMaterial({ color: 0x1f6feb, dashSize: this.tol() * 0.6, gapSize: this.tol() * 0.4, depthTest: false, transparent: true }));
       l.computeLineDistances(); l.renderOrder = 5; g.add(l);
     };
     const snap = this.tool !== 'select' ? this.nearest(q) : null;
@@ -103,7 +103,7 @@ export class SketchMarks {
     if (this.tool === 'poly' && this.chain) line([this.pts[this.chain[this.chain.length - 1]], at]);
     if (TWO_CLICK[this.tool] && this.pending != null) line(rubberShape(this.tool, this.pts[this.pending], at, this.sides()));
     if (snap && snap.kind === 'p') {
-      const m = new THREE.Mesh(new THREE.RingGeometry(this.tol() * 0.45, this.tol() * 0.7, 16), new THREE.MeshBasicMaterial({ color: 0xff8a3d, depthTest: false }));
+      const m = new THREE.Mesh(new THREE.RingGeometry(this.tol() * 0.45, this.tol() * 0.7, 16), new THREE.MeshBasicMaterial({ color: 0xff8a3d, depthTest: false, transparent: true }));
       m.position.set(at.x, at.y, 0); m.renderOrder = 6; g.add(m);
     }
     // Longueur ou rayon en cours, à côté du curseur.
