@@ -14,6 +14,7 @@ import { Viewport } from './viewport.js';
 import { Dialogs } from './dialogs.js';
 import { Mech } from './mech.js';
 import { codeEdits } from './code_edit.js';
+import { Bodies } from './bodies.js';
 import * as feats from './dialogs_features.js';
 
 const $ = (id) => document.getElementById(id);
@@ -54,7 +55,7 @@ worker.onmessage = ({ data: m }) => {
     return;
   }
   if (m.kind === 'feature') {
-    if (m.id === -1) { if (bodies && bodies.want.has(m.fid)) { bodies.got.set(m.fid, m); if (bodies.got.size === bodies.want.size) showBodies(); } }
+    if (m.id === -1) bodies.onMesh(m);
     else if (m.fid === selected) vp.setHighlight(m);
     return;
   }
@@ -125,7 +126,7 @@ function toggleCode() {
 }
 $('toggle-code').onclick = toggleCode;
 
-const { insertFeature, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode } = codeEdits({
+const { insertFeature, insertResult, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode } = codeEdits({
   view, notify, changed: () => { clearTimeout(debounce); evalCode(); },
   beforeInsert: () => { if (selected != null) selectFeature(null, false); showFace(null); },
 });
@@ -133,8 +134,9 @@ const { insertFeature, insertPlane, constructionPlanes, allPlanes, nextIndex, sk
 // ---------- Vue 3D ----------
 const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
+const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, insert: insertFeature, nextIndex, edit, notify, journal: () => journal,
+  scene: vp.scene, insert: insertFeature, insertResult, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });
@@ -218,6 +220,7 @@ const COMMANDS = {
   hole: startHolePick,
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
+  combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
   edit: () => needSel() && dialogs.feature(selected),
@@ -255,39 +258,17 @@ const timeline = new Timeline({
   sketchOn: (k) => { const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
   gotoLine, toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
   rollback: (k) => {
-    rollbackAt = k; bodies = null;
+    rollbackAt = k; bodies.cancel();
     vp.setHighlight(null);
     if (k == null) { if (lastMesh) vp.setPart(lastMesh); }
     else if (k === 0) vp.clearPart();
-    else requestBodies(k);
-    $('status').textContent = k == null ? lastStatus : `retour à l’étape ${k} / ${journal.features.length}`;
+    else bodies.request(journal, k);
+    const b = timeline.boundaries(); // étapes visibles de la frise
+    $('status').textContent = k == null ? lastStatus : `retour à l’étape ${b.indexOf(k)} / ${b.length - 1}`;
   },
 });
 window.camlcadTimeline = timeline; // inspection (tests)
 
-// Retour arrière : comme dans un modeleur, on voit tous les corps présents à l'étape k,
-// c'est-à-dire les features d'avant le marqueur qu'aucune autre d'avant n'a consommées.
-let bodies = null;
-function requestBodies(k) {
-  const fs = journal.features.filter((f) => f.id < k);
-  const used = new Set(fs.flatMap((f) => f.deps));
-  const want = new Set(fs.filter((f) => !used.has(f.id) && !f.suppressed).map((f) => f.id));
-  bodies = { want, got: new Map() };
-  if (!want.size) { vp.clearPart(); return; }
-  for (const id of want) featureMesh(id, -1);
-}
-function showBodies() {
-  const ms = [...bodies.got.values()];
-  const nv = ms.reduce((n, m) => n + m.vertices.length, 0), nt = ms.reduce((n, m) => n + m.triangles.length, 0);
-  const vertices = new Float32Array(nv), triangles = new Uint32Array(nt);
-  let ov = 0, ot = 0;
-  for (const m of ms) {
-    vertices.set(m.vertices, ov);
-    for (let i = 0; i < m.triangles.length; i++) triangles[ot + i] = m.triangles[i] + ov / 3;
-    ov += m.vertices.length; ot += m.triangles.length;
-  }
-  vp.setPart({ vertices, triangles });
-}
 
 function selectFeature(fid, moveCursor) {
   selected = fid;

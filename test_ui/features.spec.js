@@ -28,13 +28,14 @@ test('perçage, réseau, symétrie', async ({ page }) => {
   await field(page, 'Diamètre').fill('6');
   await shot(page, '60-percage-apercu');
   await page.getByRole('button', { name: 'OK' }).click();
-  await expect(page.locator('#timeline .feat')).toHaveCount(3);
+  await expect(page.locator('#timeline .feat')).toHaveCount(2); // boîte, perçage (Couper)
   expect(await code(page)).toContain('~h:11.01'); // traversant : épaisseur 10 + 1 mm (+ 0,01 au-dessus)
   const t1 = await triangles(page);
   expect(t1).toBeGreaterThan(12);
 
   // Réseau 4 × 2 du perçage (pas 13 et 20), opération Couper proposée.
   await page.locator('#timeline .feat', { hasText: 'percage' }).click();
+  await expect(page.locator('#timeline .feat', { hasText: 'percage' })).toHaveClass(/sel/);
   await page.getByRole('button', { name: 'Réseau' }).click();
   await expect(page.locator('#dialog')).toContainText('RÉSEAU');
   await expect(field(page, 'Opération')).toHaveValue('cut');
@@ -42,13 +43,14 @@ test('perçage, réseau, symétrie', async ({ page }) => {
   await field(page, 'Nombre 2').fill('2'); await field(page, 'Pas 2').fill('20');
   await shot(page, '61-reseau-apercu');
   await page.getByRole('button', { name: 'OK' }).click();
-  await expect(page.locator('#timeline .feat')).toHaveCount(5);
+  await expect(page.locator('#timeline .feat')).toHaveCount(3);
   await expect.poll(() => triangles(page)).toBeGreaterThan(4 * t1);
   expect(await code(page)).toContain('List.init 4');
   await shot(page, '62-reseau');
 
   // Symétrie de la boîte par rapport au plan YZ, jointe : la pièce va de -60 à 60 en x.
   await page.locator('#timeline .feat', { hasText: 'boite' }).click();
+  await expect(page.locator('#timeline .feat', { hasText: 'boite' })).toHaveClass(/sel/);
   await page.getByRole('button', { name: 'Symétrie' }).click();
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => bbox(page)).toEqual([[-60, 0, 0], [60, 40, 10]]);

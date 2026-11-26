@@ -20,7 +20,7 @@ vue cliquable, flèches vers la face voisine, ⌂ vue de départ, barre de navig
 ajuster, regarder une face, style, grille), dialogues de commande à droite,
 frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
 
-- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé (construction, listé dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, traversant), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Boîte, Cylindre, Sphère ; Feature
+- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé (construction, listé dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, traversant), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
   (modifier la sélection), Paramètres (tableau, OK écrit les valeurs dans le
   code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F). Boîte,
   cylindre et sphère ouvrent un dialogue avec aperçu (opération Joindre,
@@ -29,7 +29,7 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
 - **Navigateur** : dossiers Paramètres, Origine (œil : grille et axes ; un plan
   cliqué ouvre une esquisse dessus), Esquisses (`let%sketch` du code), Features
   (œil : suppression temporaire), Pièces d'un mécanisme.
-- **Frise** : une icône par opération ; clic : sélection (ligne du code, pièce
+- **Frise** : une icône par opération (un outil et sa combinaison au résultat, écrite par l'éditeur, font une seule étape marquée + / − / ∩) ; clic : sélection (ligne du code, pièce
   en surbrillance) ; double-clic : dialogue « Modifier » (nom, cotes littérales,
   ƒx pour en faire un `let%param`) ; clic droit : modifier, renommer, supprimer
   temporairement, revenir avant cette étape, aller au code, supprimer. Le

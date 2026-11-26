@@ -70,7 +70,9 @@ test('esquisse, contraintes, extrusion Joindre puis Couper', async ({ page }) =>
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('8');
   await shot(page, '07-couper-apercu');
   await page.getByRole('button', { name: 'OK' }).click();
-  await expect(page.locator('#timeline .feat')).toHaveCount(3);
+  // Une seule étape pour la poche, marquée Couper (la combinaison resultatN n'est pas une étape).
+  await expect(page.locator('#timeline .feat')).toHaveCount(2);
+  await expect(page.locator('#timeline .feat', { hasText: 'poche' }).locator('.op.difference')).toBeVisible();
   await expect.poll(() => triangles(page)).not.toBe(t1);
   expect(await code(page)).toMatch(/poche\d+/);
   await shot(page, '08-couper');

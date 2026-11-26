@@ -38,12 +38,33 @@ export class Timeline {
   get count() { return this.journal ? this.journal.features.length : 0; }
 
   // ---------- Frise ----------
-  chip(f) {
+  // Combinaisons écrites par l'éditeur (« let%feat resultatN = Shape.(X - outil) ») : comme dans
+  // un modeleur, l'outil et sa combinaison ne font qu'une étape de la frise. Rend outil.id → combinaison.
+  merged() {
+    const out = new Map(), fs = this.journal?.features ?? [];
+    for (const r of fs)
+      if (/^resultat\d+$/.test(r.name) && ['union', 'difference', 'intersection'].includes(r.op) && r.id > 0 && r.deps.includes(r.id - 1)) out.set(r.id - 1, r);
+    return out;
+  }
+  // Positions possibles du marqueur : avant chaque étape visible, et la fin.
+  boundaries() {
+    const hidden = new Set([...this.merged().values()].map((r) => r.id));
+    return [...(this.journal?.features ?? []).filter((f) => !hidden.has(f.id)).map((f) => f.id), this.count];
+  }
+
+  chip(f, comb) {
     const future = this.marker != null && f.id >= this.marker;
     const e = el('button', { className: 'feat' + (f.suppressed ? ' off' : '') + (f.id === this.selected ? ' sel' : '') + (future ? ' future' : '') });
     const deps = f.deps.map((d) => this.journal.features[d].name).join(', ');
     e.title = `${f.name} · ${KIND[f.op] ?? f.op}${deps ? '\nutilise : ' + deps : ''}${f.suppressed ? '\n(supprimée temporairement)' : ''}\nDouble-clic : modifier · clic droit : actions`;
     e.append(el('span', { className: 'icon', textContent: ICONS[f.op] ?? '◇' }), el('span', { className: 'name', textContent: f.name }));
+    if (comb) {
+      const op = { union: ['+', 'Joindre'], difference: ['−', 'Couper'], intersection: ['∩', 'Intersection'] }[comb.op];
+      e.append(el('span', { className: 'op ' + comb.op, textContent: op[0] }));
+      e.title += `\nOpération : ${op[1]} (${comb.name})`;
+      e.classList.add('comb');
+    }
+    e.dataset.id = f.id;
     this.bindFeature(e, f);
     return e;
   }
@@ -56,11 +77,12 @@ export class Timeline {
   renderBar() {
     this.bar.replaceChildren();
     if (!this.journal) return;
-    const n = this.count, m = this.marker ?? n;
-    this.journal.features.forEach((f, i) => {
-      if (i === m) this.bar.append(this.markerEl());
-      this.bar.append(this.chip(f));
-    });
+    const n = this.count, m = this.marker ?? n, comb = this.merged(), hidden = new Set([...comb.values()].map((r) => r.id));
+    for (const f of this.journal.features) {
+      if (hidden.has(f.id)) continue;
+      if (f.id === m) this.bar.append(this.markerEl());
+      this.bar.append(this.chip(f, comb.get(f.id)));
+    }
     if (m === n) this.bar.append(this.markerEl());
   }
 
@@ -71,10 +93,10 @@ export class Timeline {
       e.preventDefault();
       const move = (ev) => {
         const chips = [...this.bar.querySelectorAll('.feat')];
-        let k = chips.length;
-        for (let i = 0; i < chips.length; i++) {
-          const r = chips[i].getBoundingClientRect();
-          if (ev.clientX < r.left + r.width / 2) { k = i; break; }
+        let k = this.count;
+        for (const c of chips) {
+          const r = c.getBoundingClientRect();
+          if (ev.clientX < r.left + r.width / 2) { k = Number(c.dataset.id); break; }
         }
         if (k !== (this.marker ?? this.count)) this.setMarker(k);
       };
@@ -90,15 +112,15 @@ export class Timeline {
     this.ctx.rollback(this.marker);
   }
   player(cmd) {
-    const n = this.count, m = this.marker ?? n;
-    if (cmd === 'first') this.setMarker(0);
+    const n = this.count, m = this.marker ?? n, b = this.boundaries();
+    if (cmd === 'first') this.setMarker(b[0]);
     else if (cmd === 'last') this.setMarker(null);
-    else if (cmd === 'prev') this.setMarker(Math.max(0, m - 1));
-    else if (cmd === 'next') this.setMarker(m + 1);
+    else if (cmd === 'prev') this.setMarker([...b].reverse().find((k) => k < m) ?? b[0]);
+    else if (cmd === 'next') this.setMarker(b.find((k) => k > m) ?? n);
     else if (cmd === 'play') {
       clearInterval(this.playing);
-      let k = 0; this.setMarker(0);
-      this.playing = setInterval(() => { k++; this.setMarker(k); if (k >= n) clearInterval(this.playing); }, 600);
+      let i = 0; this.setMarker(b[0]);
+      this.playing = setInterval(() => { i++; this.setMarker(b[i]); if (i >= b.length - 1) clearInterval(this.playing); }, 600);
     }
   }
 

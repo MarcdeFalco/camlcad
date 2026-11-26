@@ -130,3 +130,52 @@ export function mirror(d, f, geo) {
   });
   preview();
 }
+
+// ---------- Chapitre 6 (Solid Editing) ----------
+
+// Combiner : le résultat courant (cible) et un autre corps du document (outil).
+export function combine(d, journal) {
+  const fs = journal?.features ?? [];
+  if (fs.length < 2) { d.ctx.notify('Il faut au moins deux corps à combiner.', true); return; }
+  const P = { tool: fs[0].name, op: 'join' };
+  const names = Object.fromEntries(fs.slice(0, -1).map((f) => [f.name, f.name]));
+  d.open('COMBINER', [
+    row('Corps cible', el('span', { className: 'hint', textContent: 'résultat courant' })),
+    row('Corps outil', choice(names, P.tool, (v) => { P.tool = v; })),
+    row('Opération', choice(OPS, P.op, (v) => { P.op = v; })),
+  ], {
+    key: 'combine',
+    ok: () => { const n = d.ctx.nextIndex(), name = `combinaison${n}`; d.ctx.insertResult(name, (x) => `Shape.(${x} ${{ join: '+', cut: '-', intersect: '*' }[P.op]} ${P.tool})`); },
+  });
+}
+
+// Déplacer : rotation autour d'un axe d'origine puis translation du résultat courant.
+export function move(d) {
+  const part = d.ctx.part();
+  if (!part) { d.ctx.notify('Pas de pièce à déplacer.', true); return; }
+  const P = { dx: 0, dy: 0, dz: 0, axis: 'Z', deg: 0 };
+  const preview = () => {
+    const o = new THREE.Mesh(part.geometry.clone());
+    o.applyMatrix4(new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(...AXES[P.axis]), (P.deg * Math.PI) / 180));
+    o.applyMatrix4(new THREE.Matrix4().makeTranslation(P.dx, P.dy, P.dz));
+    d.setPreview(o, 0x3d8bff);
+  };
+  const n3 = (k) => num(P[k], (v) => { P[k] = v; preview(); });
+  d.open('DÉPLACER', [
+    row('Translation x', n3('dx'), el('span', { className: 'unit', textContent: 'mm' })),
+    row('Translation y', n3('dy'), el('span', { className: 'unit', textContent: 'mm' })),
+    row('Translation z', n3('dz'), el('span', { className: 'unit', textContent: 'mm' })),
+    row('Axe de rotation', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.axis, (v) => { P.axis = v; preview(); })),
+    row('Angle', n3('deg'), el('span', { className: 'unit', textContent: '°' })),
+  ], {
+    key: 'move',
+    ok: () => {
+      const n = d.ctx.nextIndex(), name = `deplacement${n}`;
+      const rot = P.deg ? ` |> rotate ~axis:${AXIS_CODE[P.axis]} ~deg:${litp(P.deg)}` : '';
+      const tr = P.dx || P.dy || P.dz ? ` |> translate ${v3({ x: P.dx, y: P.dy, z: P.dz })}` : '';
+      if (!rot && !tr) return false;
+      d.ctx.insertResult(name, (x) => `Shape.(${x}${rot}${tr})`);
+    },
+  });
+  preview();
+}
