@@ -14,6 +14,7 @@ import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus } from './toolbar.js';
 import { markingMenu } from './marking.js';
+import { initFiles, saveBlob } from './files.js';
 import { jointDialog } from './mech_joint.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -373,21 +374,18 @@ function onResult(m) {
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
 $('print3d').onclick = () => print.open(); $('undo').onclick = () => undo(view); $('redo').onclick = () => redo(view);
 $('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download });
-function download(blob, ext, name) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${name ?? ($('example').value || 'piece')}.${ext}`; a.click();
-}
+const download = (blob, ext, name) => saveBlob(blob, `${name ?? ($('example').value || 'piece')}.${ext}`);
 $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, overrides: [] });
 // ---------- Exemples ----------
 for (const e of EXAMPLES) $('example').append(new Option(e, e));
 const BLANK = 'open Cad\n\n(* Commencez par « Esquisse » ou « Boîte » dans la barre d\'outils. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';
-async function loadExample(name) {
+async function loadExample(name, text) {
   if (sketch.active) sketch.stop();
   dialogs.close(true); stopPicking();
   $("status").textContent = lastStatus = `ouverture de « ${name} »…`; $('status').classList.remove('err');
   $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = $('drawing').disabled = true; // rien à exporter avant le premier résultat
-  const code = name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text();
+  const code = text ?? (name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text());
+  if (![...$('example').options].some((o) => o.value === name)) $('example').append(new Option(name, name));
   if (journal) selectFeature(null, false);
   timeline.setMarker(null); // avant de vider : remettrait l'ancienne pièce
   overrides = new Map(); vp.fitted = false; journal = null; lastMesh = null; vp.clearPart();
@@ -396,4 +394,4 @@ async function loadExample(name) {
 }
 $('example').onchange = () => loadExample($('example').value);
 if (innerWidth < 1100) toggleCode();
-loadExample('engrenage');
+if (!initFiles({ view, load: loadExample, name: () => $('example').value || 'piece', download, notify })()) loadExample('engrenage');

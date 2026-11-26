@@ -98,6 +98,9 @@ du cache Playwright).
 - Lot 23, chapitre 3 (Extrude) : flèche de distance dans la vue, à tirer à la souris (pas de
   0,5 mm ; vers l'arrière : côté opposé), le champ et l'aperçu suivent. `gizmo.js`.
   Scénario `fleche.spec.js`.
+- Lot 24, chapitre 1 (File) : Ouvrir… (fichier .ml), Enregistrer (le code), reprise
+  automatique du dernier document après rechargement (stockage du navigateur). `files.js`.
+  Scénario `fichier.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
