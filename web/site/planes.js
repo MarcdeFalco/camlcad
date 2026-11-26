@@ -69,3 +69,27 @@ export const frameCode = (f) => `Geom.Frame.make ~origin:${v3(f.origin)} ~x:${v3
 
 // Repère à partir de neuf nombres (origine, x, z), comme « Geom.Frame.make » littéral.
 export const frameFromNumbers = (n) => frameOf(new THREE.Vector3(n[0], n[1], n[2]), new THREE.Vector3(n[3], n[4], n[5]), new THREE.Vector3(n[6], n[7], n[8]));
+
+// Contours d'une face plane (planarFace) dans son repère : arêtes vues une seule fois,
+// chaînées en boucles ; la plus grande d'abord (contour extérieur), puis les trous.
+export function faceLoops(mesh, face) {
+  const V = mesh.vertices, T = mesh.triangles, count = new Map();
+  const key = (i, j) => (i < j ? `${i},${j}` : `${j},${i}`);
+  for (const t of face.tris) for (let k = 0; k < 3; k++) {
+    const i = T[3 * t + k], j = T[3 * t + ((k + 1) % 3)], kk = key(i, j);
+    count.set(kk, count.has(kk) ? null : [i, j]);
+  }
+  const next = new Map();
+  for (const e of count.values()) if (e) next.set(e[0], e[1]);
+  const f = face.frame, loops = [];
+  // Sommets confondus (maillage indexé par Manifold : normalement uniques) : on suit next.
+  const seen = new Set();
+  for (const start of next.keys()) {
+    if (seen.has(start)) continue;
+    const loop = []; let i = start;
+    while (i != null && !seen.has(i)) { seen.add(i); const p = new THREE.Vector3(V[3 * i], V[3 * i + 1], V[3 * i + 2]).sub(f.origin); loop.push({ x: p.dot(f.x), y: p.dot(f.y) }); i = next.get(i); }
+    if (loop.length >= 3) loops.push(loop);
+  }
+  const area = (l) => Math.abs(l.reduce((s, p, k) => s + p.x * l[(k + 1) % l.length].y - l[(k + 1) % l.length].x * p.y, 0)) / 2;
+  return loops.sort((a, b) => area(b) - area(a));
+}

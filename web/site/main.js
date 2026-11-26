@@ -9,6 +9,7 @@ import { setDiagnostics } from '@codemirror/lint';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 import { SketchEditor, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
+import { faceLoops } from './planes.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
 import { Dialogs } from './dialogs.js';
@@ -156,7 +157,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (hit && rollbackAt == null) {
     if (inspect.measuring) { inspect.pick(hit); return; }
     const f = planarFace(lastMesh, hit.faceIndex);
-    if (holePick) { if (f) { stopHolePick(); feats.hole(dialogs, hit.point.clone(), f.frame, throughDepth(hit.point, f.frame.z)); } return; }
+    if (facePick) { if (f) { const act = facePick; stopFacePick(); act(hit, f); } return; }
     if (picking) { if (f) { stopPicking(); startSketch(f.frame, frameCode(f.frame)); } return; }
     worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
     showFace(f);
@@ -203,12 +204,12 @@ function startPicking() {
   hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
 }
 // Perçage : un clic sur une face plane donne la position et la direction (Black Book ch. 4).
-let holePick = false;
-function startHolePick() {
-  if (!lastMesh || !lastMesh.triangles.length) { notify('Pas de pièce à percer.', true); return; }
-  holePick = true; hint('Cliquez sur une face plane, à l’endroit du perçage (Échap pour annuler).');
+let facePick = null; // action sur la prochaine face plane cliquée (perçage, pousser/tirer)
+function startFacePick(text, act) {
+  if (!lastMesh || !lastMesh.triangles.length) { notify('Pas de pièce.', true); return; }
+  facePick = act; hint(`${text} (Échap pour annuler).`);
 }
-function stopHolePick() { holePick = false; hint(null); }
+function stopFacePick() { facePick = null; hint(null); }
 // « Traversant » : jusqu'au point de la pièce le plus loin sous la face, plus 1 mm.
 const throughDepth = (p, n) => { const V = lastMesh.vertices; let d = 0; for (let i = 0; i < V.length; i += 3) d = Math.max(d, (p.x - V[i]) * n.x + (p.y - V[i + 1]) * n.y + (p.z - V[i + 2]) * n.z); return Math.ceil(d + 1); };
 const selGeo = () => vp.highlight?.geometry;
@@ -232,7 +233,9 @@ const COMMANDS = {
   sketch: startPicking,
   extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : (notify('Choisissez le plan de l’esquisse à extruder.'), startPicking())),
   revolve: () => (sketch.active ? sketch.finish('revolve') || notify('Fermez un contour ou tracez un cercle avant la révolution.', true) : (notify('Esquissez d’abord le profil, puis « Révolution ».'), startPicking())),
-  hole: startHolePick, thread: () => feats.threadRod(dialogs),
+  hole: () => startFacePick('Cliquez sur une face plane, à l’endroit du perçage', (hit, f) => feats.hole(dialogs, hit.point.clone(), f.frame, throughDepth(hit.point, f.frame.z))),
+  presspull: () => startFacePick('Cliquez la face plane à pousser ou tirer', (hit, f) => feats.pressPull(dialogs, f, faceLoops(lastMesh, f))),
+  torus: () => dialogs.primitive('torus'), coil: () => dialogs.primitive('coil'), thread: () => feats.threadRod(dialogs),
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
   measure: () => inspect.startMeasure(), section: () => inspect.section(), props: () => inspect.properties(),
@@ -261,11 +264,10 @@ window.addEventListener('keydown', (e) => {
   if (e.target.closest('input,select,textarea,.cm-editor')) return;
   if (sketch.active) { sketch.key(e); return; }
   if (e.key === 'Escape' && picking) { stopPicking(); return; }
-  if (e.key === 'Escape' && holePick) { stopHolePick(); return; }
+  if (e.key === 'Escape' && facePick) { stopFacePick(); return; }
   const keys = { s: 'sketch', e: 'extrude', f: 'fit', Delete: 'delete' };
   if (keys[e.key] && !e.ctrlKey && !e.metaKey) { e.preventDefault(); COMMANDS[keys[e.key]](); }
 });
-
 // ---------- Frise et navigateur ----------
 const timeline = new Timeline({
   edit, notify, select: (fid, move) => selectFeature(fid, move),
@@ -304,7 +306,6 @@ function selectFeature(fid, moveCursor) {
 function renderTimeline() {
   timeline.update(journal, selected, { doc: $('example').value, sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }
-
 // ---------- Paramètres ----------
 function openParams() {
   const saved = new Map(overrides);

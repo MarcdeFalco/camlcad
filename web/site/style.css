@@ -31,10 +31,10 @@ button { font:inherit; color:inherit; }
 #toolbar .tabs button[data-tab=sketch] { color:var(--ok); }
 #toolbar .panels { display:flex; height:66px; padding:2px 6px; overflow-x:auto; }
 .tabpanel { display:flex; }
-.group { display:flex; flex-direction:column; align-items:center; padding:0 8px; border-right:1px solid var(--line); }
+.group { display:flex; flex-direction:column; align-items:center; padding:0 4px; border-right:1px solid var(--line); }
 .group > span { font-size:10px; font-weight:600; letter-spacing:.06em; color:var(--muted); }
 .group .tools { display:flex; gap:2px; flex:1; align-items:center; }
-.group .tools button { display:flex; flex-direction:column; align-items:center; gap:1px; min-width:54px; padding:3px 6px; border:1px solid transparent; border-radius:5px; background:none; font-size:11px; cursor:pointer; white-space:nowrap; }
+.group .tools button { display:flex; flex-direction:column; align-items:center; gap:1px; min-width:44px; padding:3px 3px; border:1px solid transparent; border-radius:5px; background:none; font-size:10.5px; cursor:pointer; white-space:nowrap; }
 .group .tools button i { font-style:normal; font-size:19px; line-height:22px; color:var(--accent); }
 .group .tools button:hover { background:var(--accent-soft); border-color:var(--line); }
 .group .tools button.on { background:var(--accent-soft); border-color:var(--accent); }
