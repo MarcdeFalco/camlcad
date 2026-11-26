@@ -184,7 +184,7 @@ const sketch = new SketchEditor({
   mode: (on) => showTab(on ? 'sketch' : null),
   finish: (data) => {
     vp.threeQuarter(data.frame);
-    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](data, () => sketch.resume()); },
+    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (data.kind === 'rib' ? (d, b) => feats.rib(dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
@@ -215,7 +215,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project();
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project();
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {

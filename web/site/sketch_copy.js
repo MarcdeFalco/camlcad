@@ -121,3 +121,16 @@ export function patternCirc(ed, items, center, n, total = 360) {
   }
   return null;
 }
+
+// Projeter (Black Book ch. 3, Project) : le contour de la face d'appui (ed.faceLoops) devient
+// des points fixes et des lignes de construction, pour s'y accrocher.
+export function projectFace(ed) {
+  if (!ed.faceLoops) return false;
+  for (const l of ed.faceLoops) {
+    const first = ed.pts.length;
+    l.forEach((p) => ed.pts.push({ x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100, fixed: true }));
+    l.forEach((_, k) => ed.lines.push([first + k, first + ((k + 1) % l.length)]));
+  }
+  ed.faceLoops = null;
+  return true;
+}

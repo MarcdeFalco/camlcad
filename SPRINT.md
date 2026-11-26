@@ -101,6 +101,9 @@ du cache Playwright).
 - Lot 24, chapitre 1 (File) : Ouvrir… (fichier .ml), Enregistrer (le code), reprise
   automatique du dernier document après rechargement (stockage du navigateur). `files.js`.
   Scénario `fichier.spec.js`.
+- Lot 25, chapitre 4 (Rib) : Nervure depuis l'esquisse : les lignes ouvertes épaissies et
+  extrudées (épaisseur, hauteur, côté), Joindre ; esquisse sur une face : vue cadrée sur la
+  face, à gauche de la palette (la palette cachait la zone de dessin). Scénario `nervure.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

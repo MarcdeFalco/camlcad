@@ -71,7 +71,7 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
     notify(`Plan de construction « ${name} » : cliquez-le dans le navigateur pour y esquisser.`);
   }
   // Numéro libre : un de plus que le plus grand suffixe des noms générés.
-  const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\b(?:esquisse|plan|resultat|boite|cylindre|sphere|extrusion|poche|revolution|percage|reseau|symetrie|combinaison|deplacement|filetage|tore|ressort|poussee|conge|chanfrein|division)(\d+)\b/g)].map((m) => Number(m[1])));
+  const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\b(?:esquisse|plan|resultat|boite|cylindre|sphere|extrusion|poche|revolution|percage|reseau|symetrie|combinaison|deplacement|filetage|tore|ressort|poussee|conge|chanfrein|division|nervure)(\d+)\b/g)].map((m) => Number(m[1])));
   const sketchesInCode = () => [...view.state.doc.toString().matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => ({ name: m[1], line: view.state.doc.lineAt(m.index).number }));
   const allPlanes = () => ({ ...basePlanes, ...constructionPlanes() });
   return { insertFeature, insertResult, insertParam, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };

@@ -45,6 +45,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `interferences.spec.js` | Black Book ch. 8 : bras qui pénètre le bâti, interférence de 240 mm³ signalée et rougie |
 | `fleche.spec.js` | Black Book ch. 3 : distance d'extrusion réglée en tirant la flèche dans la vue |
 | `fichier.spec.js` | Black Book ch. 1 : Enregistrer (.ml), rechargement (document repris), Ouvrir… un fichier |
+| `nervure.spec.js` | Black Book ch. 4 : deux nervures en croix sur une plaque (hauteur, volume) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |
