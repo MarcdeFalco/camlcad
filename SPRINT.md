@@ -92,6 +92,9 @@ du cache Playwright).
 - Lot 21, chapitre 6 (Split Body) : Diviser le corps par un plan (origine ou construction) :
   garder le dessus, le dessous, ou les deux séparées le long de la normale (impression en
   deux parties). Scénario `diviser.spec.js` (volume conservé).
+- Lot 22, chapitre 8 (Interference) : MÉCANISME, Interférences : paires de pièces qui se
+  chevauchent à la pose courante (volume), pièces rougies tant que le dialogue est ouvert.
+  La page ne défile plus du tout (racine et corps remis à zéro). Scénario `interferences.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

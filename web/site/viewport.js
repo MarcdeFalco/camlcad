@@ -35,7 +35,8 @@ export class Viewport {
     this.part = null; this.edges = null; this.highlight = null; this.planes = null; this.fitted = false;
     new ResizeObserver(() => this.resize()).observe(el);
     // La page ne défile jamais (un défilement du code la décalait vers le haut).
-    addEventListener('scroll', () => { if (scrollX || scrollY) scrollTo(0, 0); });
+    // (la racine ou le corps, défilés par CodeMirror malgré overflow:hidden).
+    addEventListener('scroll', () => { for (const e of [document.documentElement, document.body]) if (e.scrollTop || e.scrollLeft) { e.scrollTop = 0; e.scrollLeft = 0; } }, true);
     this.initCube();
     renderer.setAnimationLoop(() => this.frame());
   }

@@ -44,7 +44,7 @@ export class Mech {
     this.place();
     s.pose = new Map(m.pose);
     s.inter = m.interferences;
-    this.refresh();
+    this.refresh(); this.paintInter();
   }
 
   // Vue éclatée (Black Book ch. 10, Auto Explode) : chaque pièce s'écarte du centre de
@@ -61,6 +61,25 @@ export class Mech {
     });
   }
   setExplode(f) { this.explode = f; this.place(); }
+
+  // Interférences (Black Book ch. 8, Interference) : les paires de pièces qui se chevauchent à
+  // la pose courante, listées ; les pièces en cause sont rougies tant que le dialogue est ouvert.
+  interPanel() {
+    if (!this.state) return;
+    this.showInter = true;
+    this.ctx.dialogs.open('INTERFÉRENCES', [el('ul', { id: 'inter-list', className: 'inter-list' }),
+      el('div', { className: 'hint', textContent: 'À la pose courante (Mouvement pour en changer).' })], { key: 'inter', okLabel: 'Fermer', cancel: false });
+    this.ctx.dialogs.ctx.onCloseExtra = () => { this.showInter = false; this.paintInter(); };
+    this.paintInter();
+  }
+  paintInter() {
+    const s = this.state; if (!s) return;
+    const pairs = (s.inter ?? []).map((t) => /^(.+) \/ (.+) : ([\d.]+) mm³$/.exec(t)).filter(Boolean);
+    const bad = new Set(this.showInter ? pairs.flatMap((m) => [m[1], m[2]]) : []);
+    s.meshes.forEach((o, i) => o.material.emissive?.setHex(bad.has(s.parts[i].name) ? 0x990000 : 0x000000));
+    const ul = document.getElementById('inter-list');
+    if (ul) ul.replaceChildren(...(pairs.length ? pairs.map((m) => el('li', { textContent: `${m[1]} et ${m[2]} : ${m[3]} mm³` })) : [el('li', { textContent: 'Aucune interférence.' })]));
+  }
   explodePanel() {
     if (!this.state) return;
     const input = el('input', { type: 'range', min: 0, max: 2, step: 0.05, value: this.explode ?? 0, id: 'explode' });

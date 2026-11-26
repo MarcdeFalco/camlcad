@@ -65,7 +65,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   Limites : le plan d'une face est écrit en littéral. Une esquisse insérée se rouvre à la
   souris (double-clic dans le navigateur, « Modifier l'esquisse » dans la frise) tant que son
   code est celui que l'éditeur écrit ; modifiée à la main, elle se modifie dans le code.
-- **MÉCANISME** (onglet) : une pièce par couleur ; Éclater (vue éclatée) ; Liaison (pivot, glissière, encastrement entre
+- **MÉCANISME** (onglet) : une pièce par couleur ; Interférences (pièces rougies) ; Éclater (vue éclatée) ; Liaison (pivot, glissière, encastrement entre
   deux pièces du code et leurs ports, ajoutée à `Assembly.make`) ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.
