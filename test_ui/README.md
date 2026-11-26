@@ -41,6 +41,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `parametres.spec.js` | Black Book ch. 6 : paramètre utilisateur créé au dialogue, cote d'une boîte en paramètre (ƒx), réglée : la pièce suit |
 | `reseau_circulaire.spec.js` | Black Book ch. 2 : six trous en couronne (réseau circulaire d'esquisse, volume) ; menu du clic droit → Mesurer |
 | `construction2.spec.js` | Black Book ch. 3 : plan milieu (refus si faces non parallèles), plan à un angle ; annuler (Ctrl+Z) et rétablir |
+| `diviser.spec.js` | Black Book ch. 6 : boîte divisée par un plan décalé, moitiés écartées de 6 mm, volume conservé |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

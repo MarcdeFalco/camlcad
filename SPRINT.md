@@ -89,6 +89,9 @@ du cache Playwright).
   `(* construction *)` et listés dans le navigateur ; annuler / rétablir (boutons, Ctrl+Z hors du
   code) sur l'historique du code, chaque commande de l'éditeur étant une étape à part.
   Scénario `construction2.spec.js`.
+- Lot 21, chapitre 6 (Split Body) : Diviser le corps par un plan (origine ou construction) :
+  garder le dessus, le dessous, ou les deux séparées le long de la normale (impression en
+  deux parties). Scénario `diviser.spec.js` (volume conservé).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

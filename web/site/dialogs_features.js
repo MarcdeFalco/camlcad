@@ -305,3 +305,26 @@ export function edgeFinish(d, kind, fa, la, fb, lb, mesh) {
     },
   });
 }
+
+// Diviser le corps (ch. 6, Split Body) par un plan (origine ou construction) : garder le dessus,
+// le dessous, ou les deux écartés le long de la normale (pour imprimer une pièce en deux).
+export function split(d, planes) {
+  const keys = Object.keys(planes);
+  const P = { plane: keys[0], keep: 'both', gap: 5 };
+  d.open('DIVISER LE CORPS', [
+    row('Plan', choice(Object.fromEntries(keys.map((k) => [k, planes[k].label ?? `Plan ${k}`])), P.plane, (v) => { P.plane = v; })),
+    row('Garder', choice({ both: 'Les deux, séparées', above: 'Le dessus', below: 'Le dessous' }, P.keep, (v) => { P.keep = v; })),
+    row('Écart', num(P.gap, (v) => { P.gap = v; }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+  ], {
+    key: 'split',
+    ok: () => {
+      const n = d.ctx.nextIndex(), name = `division${n}`, pc = planes[P.plane].code;
+      d.ctx.insertResult(name, (x) => {
+        const head = `\n    let p = ${pc} in\n    let demi z = Shape.(cube ~center:true (Geom.V3.v 4000. 4000. 2000.) |> translate (Geom.V3.v 0. 0. z) |> place p) in\n    `;
+        if (P.keep === 'above') return `${head}Shape.(${x} * demi 1000.)\n `;
+        if (P.keep === 'below') return `${head}Shape.(${x} * demi (-1000.))\n `;
+        return `${head}Shape.(((${x} * demi 1000.) |> translate (Geom.V3.scale ${lit(P.gap)} (Geom.Plane.normal p))) + (${x} * demi (-1000.)))\n `;
+      });
+    },
+  });
+}
