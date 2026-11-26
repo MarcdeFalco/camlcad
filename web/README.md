@@ -18,7 +18,7 @@ Disposition d'un modeleur paramétrique (commandes secondaires dans le menu ▾ 
 barre d'outils à onglets en haut, navigateur à gauche, vue 3D au centre (cube de
 vue cliquable, flèches vers la face voisine, ⌂ vue de départ, barre de navigation : orbite, panoramique,
 ajuster, regarder une face, style, grille), dialogues de commande à droite,
-frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
+menu circulaire au clic droit dans la vue, frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
 
 - **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé (construction, listé dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, taraudé M2–M12, traversant), Filetage (tige filetée ISO), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Pousser/tirer (une face plane cliquée), Congé et Chanfrein d'arête (ses deux faces cliquées), Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
   (modifier la sélection), Paramètres (tableau, OK écrit les valeurs dans le
@@ -54,7 +54,7 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   pour fermer ; lignes presque horizontales ou verticales contraintes), cercle
   (C, centre puis rayon), arc par le centre (A), oblong, congé d'esquisse (sommet entre deux lignes), rectangle par le centre, polygone régulier (P, nombre
   de côtés dans la barre), point, Cote (D : ligne, cercle, deux points, deux lignes),
-  lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe) et réseau en x de la sélection, décalage d'un contour (une boucle dans une boucle est un trou), suppression (Suppr), projection du contour de la face d'appui, sélection (S, Maj pour plusieurs), avec élastique et
+  lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe), réseau en x et réseau circulaire (dernier point choisi = centre) de la sélection, décalage d'un contour (une boucle dans une boucle est un trou), suppression (Suppr), projection du contour de la face d'appui, sélection (S, Maj pour plusieurs), avec élastique et
   mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,
   double-clic sur une cote pour la modifier ; les contraintes proposées dépendent de la sélection et sont
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre

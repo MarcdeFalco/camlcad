@@ -80,6 +80,10 @@ du cache Playwright).
 - Lot 18, chapitres 11 et 6 : mise en plan avec arêtes cachées en traits interrompus (rayon
   vers l'observateur) ; paramètres utilisateur créés depuis le dialogue Paramètres (« + Ajouter »,
   écrits en tête de `model`). Scénarios `plan.spec.js`, `parametres.spec.js`.
+- Lot 19, chapitres 2 et 1 : réseau circulaire d'esquisse (rayons de construction de même
+  longueur, angles orientés ; le dernier élément choisi est le centre) ; menu circulaire du
+  clic droit dans la vue (esquisse, extrusion, pousser/tirer, congé, perçage, mesurer,
+  ajuster, annuler). `marking.js`. Scénario `reseau_circulaire.spec.js` (volume vérifié).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
