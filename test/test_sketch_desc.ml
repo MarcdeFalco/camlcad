@@ -123,3 +123,39 @@ let%expect_test "symétrie : point reflété par rapport à une droite" =
   | Ok s -> Printf.printf "(%.3f, %.3f) dof %d\n" s.points.(3).x s.points.(3).y s.dof
   | Error e -> print_endline e);
   [%expect {| (-3.000, 4.000) dof 0 |}]
+
+(* Cadre : un carré de 20 et, dedans, son décalé de 3 (lignes parallèles à distance 3) :
+   la boucle intérieure est un trou (profondeur 1). Aire : 400 - 14² = 204. *)
+let%expect_test "boucles imbriquées et décalage" =
+  let d : Sketch_desc.t =
+    { points =
+        [| (0., 0., true); (20., 0., true); (20., 20., true); (0., 20., true);
+           (3.5, 3.5, false); (16., 3., false); (16.5, 17., false); (3., 16., false) |];
+      lines = [| (0, 1); (1, 2); (2, 3); (3, 0); (4, 5); (5, 6); (6, 7); (7, 4) |];
+      circles = [||]; arcs = [||];
+      constraints =
+        List.concat
+          (List.init 4 (fun i ->
+               Sketch_desc.
+                 [ { kind = "parallel"; refs = [ i; i + 4 ]; value = None };
+                   { kind = "point_line_distance"; refs = [ 4 + i; i ]; value = Some 3. } ]));
+      loops = Sketch_desc.[ [ P 0; P 1; P 2; P 3 ]; [ P 4; P 5; P 6; P 7 ] ] }
+  in
+  (match Sketch_desc.solve d with
+  | Error e -> print_endline e
+  | Ok s ->
+      let rec area p =
+        match Profile.view p with
+        | Polygon ps ->
+            let n = List.length ps in
+            Float.abs (List.fold_left ( +. ) 0. (List.mapi (fun i (a : Geom.V2.t) -> Geom.V2.cross a (List.nth ps ((i + 1) mod n))) ps)) /. 2.
+        | Difference (a, b) -> area a -. area b
+        | Union (a, b) -> area a +. area b
+        | _ -> nan
+      in
+      Printf.printf "dof %d, aire %.1f\n" s.dof (area s.profile));
+  print_string (String.concat "\n" (List.filter (fun l -> String.length l > 0 && l.[0] = 'S') (String.split_on_char '\n' (Sketch_desc.to_code ~indent:0 d))));
+  [%expect {|
+    dof 0, aire 204.0
+    Sketch.(loop [ p0; p1; p2; p3 ] - loop [ p4; p5; p6; p7 ])
+    |}]

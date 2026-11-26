@@ -46,12 +46,16 @@ du cache Playwright).
   (`sketch_parse.js`), vérifiée (le solveur doit réécrire exactement le même texte, sinon :
   « modifiée à la main »), sur son plan (origine, décalé, ou repère littéral d'une face) ;
   Terminer réécrit le corps du `let%sketch`, la feature suit. Scénario `esquisse_modifier.spec.js`.
+- Lot 10, chapitre 2 (Offset) : décalage d'un contour de lignes (`Sketch.point_line_distance`,
+  côtés parallèles) ; régions : une boucle dans une boucle est un trou (profondeur
+  d'imbrication, `Sketch_desc`), aperçu d'extrusion compris. Paroi / cadre en une esquisse.
+  Scénario `esquisse_decalage.spec.js` (volume vérifié), test d'expectation (aire 204).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
   remettre la branche sur origin/main, cherry-pick du lot, fusion neutre de l'ancienne branche
   distante, push). Script : `$TMPDIR/pr_lot.sh <commit>` (voir fil). Branches locales lot4…lot9.
-- Suivant : chapitre 7 (assemblage : liaisons à la souris), décalage d'esquisse, ajuster.
+- Suivant : chapitre 7 (assemblage : liaisons à la souris), ajuster/prolonger d'esquisse.
 
 ## Suivant
 

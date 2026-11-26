@@ -77,6 +77,8 @@ let angle l m deg v =
 let on_line p l v =
   [ ((dx v l *. (py v p -. py v l.a)) -. (dy v l *. (px v p -. px v l.a))) /. safe (len v l) ]
 
+let point_line_distance p l d v = match on_line p l v with [ e ] -> [ Float.abs e -. d ] | _ -> assert false
+
 let midpoint p l v =
   [ px v p -. ((px v l.a +. px v l.b) /. 2.); py v p -. ((py v l.a +. py v l.b) /. 2.) ]
 

@@ -3,8 +3,11 @@
     directement ([solve]) et se traduit en code OCaml ([to_code]) que
     l'éditeur insère dans le source sous un [let%sketch].
 
-    Région produite : l'union des boucles moins les cercles s'il y a au moins
-    une boucle (perçages), sinon l'union des disques. *)
+    Région produite : les boucles, dans l'ordre de leur profondeur d'imbrication (nombre
+    d'autres boucles qui contiennent leur premier point, d'après les positions initiales) ;
+    profondeur paire ajoutée, impaire retirée (une boucle dans une boucle est un trou, comme
+    dans un modeleur) ; puis les cercles retirés s'il y a au moins une boucle (perçages),
+    sinon l'union des disques. *)
 
 type constr = {
   kind : string;
@@ -13,7 +16,7 @@ type constr = {
       ["coincident" | "distance" | "hdistance" | "vdistance"] : sur des points ;
       ["radius" | "equal_radius" | "concentric"] : sur des cercles ;
       ["tangent"] : ligne, cercle ; ["on_line" | "midpoint"] : point, ligne ;
-      ["on_circle"] : point, cercle ; ["symmetric"] : point, point, ligne ; ["arc_radius"] : arc ; ["tangent_arc"] : ligne, arc. *)
+      ["on_circle"] : point, cercle ; ["symmetric"] : point, point, ligne ; ["point_line_distance"] : point, ligne (valeur) ; ["arc_radius"] : arc ; ["tangent_arc"] : ligne, arc. *)
   refs : int list;  (** indices dans [lines], [points], [circles] ou [arcs] selon [kind] *)
   value : float option;  (** longueur, distance, angle (degrés) ou rayon *)
 }
