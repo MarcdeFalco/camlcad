@@ -232,7 +232,7 @@ const COMMANDS = {
   sketch: startPicking,
   extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : (notify('Choisissez le plan de l’esquisse à extruder.'), startPicking())),
   revolve: () => (sketch.active ? sketch.finish('revolve') || notify('Fermez un contour ou tracez un cercle avant la révolution.', true) : (notify('Esquissez d’abord le profil, puis « Révolution ».'), startPicking())),
-  hole: startHolePick,
+  hole: startHolePick, thread: () => feats.threadRod(dialogs),
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
   measure: () => inspect.startMeasure(), section: () => inspect.section(), props: () => inspect.properties(),
