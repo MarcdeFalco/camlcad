@@ -328,39 +328,3 @@ export function split(d, planes) {
     },
   });
 }
-
-// Nervure (ch. 4, Rib) : chaque ligne ouverte de l'esquisse, épaissie de t (centrée sur la
-// ligne) et extrudée de h le long de la normale du plan ; Joindre par défaut.
-export function rib(d, sk, back) {
-  const P = { t: 2, h: 5, flip: false, op: 'join' };
-  const f = sk.frame;
-  const preview = () => {
-    const g = new THREE.Group();
-    for (const [a, b] of sk.ribs) {
-      const L = Math.hypot(b.x - a.x, b.y - a.y), m = new THREE.Mesh(new THREE.BoxGeometry(L, P.t, P.h));
-      m.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, P.flip ? -P.h / 2 : P.h / 2); m.rotation.z = Math.atan2(b.y - a.y, b.x - a.x); g.add(m);
-    }
-    g.matrixAutoUpdate = false; g.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin);
-    d.setPreview(g, P.op === 'cut' ? 0xe74c3c : 0x2ecc71);
-  };
-  d.open('NERVURE', [
-    row('Chemins', el('span', { className: 'hint', textContent: `${sk.ribs.length} ligne(s) ouverte(s)` })),
-    row('Épaisseur', num(P.t, (v) => { P.t = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
-    row('Hauteur', num(P.h, (v) => { P.h = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
-    row('Côté opposé', Object.assign(el('input', { type: 'checkbox' }), { onchange: (e) => { P.flip = e.target.checked; preview(); } })),
-    row('Opération', d.ctx.isEmpty() ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; preview(); })),
-  ], {
-    key: 'rib', cancel: back,
-    ok: () => {
-      if (!(P.t > 0 && P.h > 0)) return false;
-      const n = d.ctx.nextIndex(), name = `nervure${n}`, r = (x) => litp(Math.round(x * 100) / 100 + 0);
-      const segs = sk.ribs.map(([a, b]) => {
-        const L = Math.hypot(b.x - a.x, b.y - a.y), deg = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-        return `cube (Geom.V3.v ${r(L)} ${r(P.t)} ${r(P.h)}) |> translate (Geom.V3.v 0. ${r(-P.t / 2)} ${r(P.flip ? -P.h : 0)}) |> rotate ~axis:Geom.V3.ez ~deg:${r(deg)} |> translate (Geom.V3.v ${r(a.x)} ${r(a.y)} 0.)`;
-      });
-      const pl = /^[a-z_][\w']*$/.test(sk.planeCode) ? sk.planeCode : `(${sk.planeCode})`;
-      d.ctx.insert(`  let%feat ${name} =\n    Shape.(union [ ${segs.join(';\n      ')} ] |> place ${pl})\n  in\n`, name, P.op, n);
-    },
-  });
-  preview();
-}

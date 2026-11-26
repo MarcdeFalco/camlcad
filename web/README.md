@@ -59,7 +59,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   double-clic sur une cote pour la modifier ; les contraintes proposées dépendent de la sélection et sont
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
   les degrés de liberté, la cote demandée et la liste des contraintes.
-  « Nervure » épaissit et extrude les lignes ouvertes ; « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
+  « Nervure » épaissit et extrude les lignes ouvertes, « Tuyau » en fait un tube ; « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
   côté opposé, symétrique ; distance, aussi en tirant la flèche dans la vue ; opération), avec aperçu ; OK insère le
   plan, le `let%sketch` et la feature ; Annuler revient à l'esquisse.
   Limites : le plan d'une face est écrit en littéral. Une esquisse insérée se rouvre à la

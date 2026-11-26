@@ -107,6 +107,9 @@ du cache Playwright).
 - Lot 26, chapitres 2 et 8 : cercles cotés au diamètre (Ø, saisie et palette ; la contrainte
   reste un rayon dans le code), Mesurer donne l'angle entre deux faces non parallèles.
   Scénarios `esquisse.spec.js`, `inspecter.spec.js`.
+- Lot 27, chapitre 4 (Pipe) : Tuyau le long des lignes ouvertes d'une esquisse (cylindres,
+  coudes arrondis aux sommets partagés, extrémités ouvertes ; creux si paroi > 0).
+  `dialogs_paths.js` (nervure, tuyau). Scénario `tuyau.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

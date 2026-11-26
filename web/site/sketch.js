@@ -307,7 +307,7 @@ export class SketchEditor extends SketchMarks {
     return this.lines.filter(([a, b]) => !seqs.some((q) => q.some((p, k) => { const r = q[(k + 1) % q.length]; return (p === a && r === b) || (p === b && r === a); })));
   }
   finish(kind = 'extrude') {
-    const rib = kind === 'rib' && this.openLines().length && !this.error;
+    const rib = (kind === 'rib' || kind === 'pipe') && this.openLines().length && !this.error;
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
@@ -382,7 +382,7 @@ export class SketchEditor extends SketchMarks {
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
     $('sketch-project').disabled = !this.faceLoops;
-    $('sketch-rib').disabled = !(this.openLines().length && !this.error);
+    $('sketch-rib').disabled = $('sketch-pipe').disabled = !(this.openLines().length && !this.error);
     $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
