@@ -61,6 +61,20 @@ export class Mech {
     });
   }
   setExplode(f) { this.explode = f; this.place(); }
+  // Vidéo de l'animation (Black Book ch. 10, Publish Video) : un cycle de la première
+  // liaison (4 s), enregistré depuis la vue en WebM. done(blob) à la fin.
+  record(done) {
+    if (!this.state?.coords.length || this.recording) return false;
+    const canvas = this.ctx.viewport.renderer.domElement, stream = canvas.captureStream(30), chunks = [];
+    const rec = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    this.recording = true;
+    rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => { this.recording = false; done(new Blob(chunks, { type: 'video/webm' })); };
+    if (!this.anim) this.toggle();
+    rec.start(250);
+    setTimeout(() => { this.stop(); rec.stop(); }, 4000);
+    return true;
+  }
 
   // Interférences (Black Book ch. 8, Interference) : les paires de pièces qui se chevauchent à
   // la pose courante, listées ; les pièces en cause sont rougies tant que le dialogue est ouvert.

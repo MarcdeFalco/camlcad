@@ -68,7 +68,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
 - **MÉCANISME** (onglet) : une pièce par couleur ; Interférences (pièces rougies) ; Lien de mouvement (rapport entre deux liaisons, `~couplings`) ; Éclater (vue éclatée) ; Liaison (pivot, glissière, encastrement entre
   deux pièces du code et leurs ports, ajoutée à `Assembly.make`) ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
-  comprises) ; ▶ anime la première ; interférences listées à chaque pose.
+  comprises) ; ▶ anime la première ; Vidéo enregistre un cycle en WebM ; interférences listées à chaque pose.
 - **Impression 3D** (barre du haut) : cliquer la face à poser sur le plateau, volume de
   l'imprimante, appui, surplombs > 45° en rouge, STL exporté dans cette orientation.
 - **Plan** (barre du haut) : mise en plan A4 (vues de face, dessus, gauche en projection
