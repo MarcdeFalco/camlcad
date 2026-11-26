@@ -54,7 +54,7 @@ export function planarFace(mesh, tri) {
   return { tris, frame: frameOf(round(far ? centroid : proj, 100), round(x, 1e6), round(n0.clone(), 1e6)), area };
 }
 
-function frameOf(origin, x, z) {
+export function frameOf(origin, x, z) {
   const y = z.clone().cross(x);
   return { origin, x, y, z };
 }
@@ -66,3 +66,6 @@ export const basePlanes = {
   XZ: { frame: frameOf(new THREE.Vector3(), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0)), code: 'Geom.Plane.xz' },
 };
 export const frameCode = (f) => `Geom.Frame.make ~origin:${v3(f.origin)} ~x:${v3(f.x)} ~z:${v3(f.z)}`;
+
+// Repère à partir de neuf nombres (origine, x, z), comme « Geom.Frame.make » littéral.
+export const frameFromNumbers = (n) => frameOf(new THREE.Vector3(n[0], n[1], n[2]), new THREE.Vector3(n[3], n[4], n[5]), new THREE.Vector3(n[6], n[7], n[8]));

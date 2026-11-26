@@ -62,8 +62,9 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
   côté opposé, symétrique ; distance ; opération), avec aperçu ; OK insère le
   plan, le `let%sketch` et la feature ; Annuler revient à l'esquisse.
-  Limites : le plan d'une face est écrit en littéral ; une esquisse insérée se
-  modifie dans le code, pas encore à la souris.
+  Limites : le plan d'une face est écrit en littéral. Une esquisse insérée se rouvre à la
+  souris (double-clic dans le navigateur, « Modifier l'esquisse » dans la frise) tant que son
+  code est celui que l'éditeur écrit ; modifiée à la main, elle se modifie dans le code.
 - **MÉCANISME** (onglet) : une pièce par couleur ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.

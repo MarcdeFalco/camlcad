@@ -56,3 +56,11 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
   const allPlanes = () => ({ ...basePlanes, ...constructionPlanes() });
   return { insertFeature, insertResult, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };
 }
+
+// Positions au format __POS__ : colonnes en octets depuis le début de la ligne.
+export function locRangeIn(view, loc) {
+  const line = view.state.doc.line(loc.line);
+  const enc = new TextEncoder(), text = view.state.doc.sliceString(line.from, view.state.doc.length);
+  const toChars = (bytes) => { let b = 0, i = 0; while (b < bytes && i < text.length) { b += enc.encode(text[i]).length; i++; } return i; };
+  return { from: line.from + toChars(loc.start_col), to: line.from + toChars(loc.end_col) };
+}

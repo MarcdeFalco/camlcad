@@ -136,12 +136,13 @@ export class Timeline {
     if (this.open.has(id)) li.append(el('ul', {}, ...kids));
     return li;
   }
-  leaf(icon, label, { cls = '', title = '', onclick, eye, sub } = {}) {
+  leaf(icon, label, { cls = '', title = '', onclick, ondblclick, eye, sub } = {}) {
     const row = el('div', { className: 'row ' + cls, title });
     if (eye) row.append(eye); else row.append(el('span', { className: 'eye-space' }));
     row.append(el('span', { className: 'icon', textContent: icon }), el('span', { className: 'name', textContent: label }));
     if (sub) row.append(el('span', { className: 'sub', textContent: sub }));
     if (onclick) row.onclick = onclick;
+    if (ondblclick) row.ondblclick = ondblclick;
     return el('li', {}, row);
   }
   eye(on, title, act) {
@@ -164,7 +165,7 @@ export class Timeline {
         this.leaf('▱', k, { title: 'Nouvelle esquisse sur ce plan', onclick: () => this.ctx.sketchOn(k) }))));
     if (this.sketches.length)
       kids.push(this.folder('sketches', `Esquisses (${this.sketches.length})`, this.sketches.map((s) =>
-        this.leaf('✎', s.name, { title: 'Aller au code', onclick: () => this.ctx.gotoLine(s.line) }))));
+        this.leaf('✎', s.name, { title: 'Clic : aller au code · double-clic : modifier l’esquisse', onclick: () => this.ctx.gotoLine(s.line), ondblclick: () => this.ctx.editSketch(s.name) }))));
     if (j)
       kids.push(this.folder('features', `Features (${j.features.length})`, j.features.map((f) => {
         const li = this.leaf(ICONS[f.op] ?? '◇', f.name, {
@@ -188,6 +189,7 @@ export class Timeline {
       ['Renommer…', () => this.ctx.openEdit(f.id, true)],
       [f.suppressed ? 'Réactiver' : 'Supprimer temporairement', () => this.run({ op: 'suppress', fid: f.id, on: !f.suppressed })],
       ['Revenir avant cette étape', () => this.setMarker(f.id)],
+      ...(this.ctx.sketchOf(f) ? [[`Modifier l’esquisse (${this.ctx.sketchOf(f)})`, () => this.ctx.editSketch(this.ctx.sketchOf(f))]] : []),
       ['Aller au code', () => this.ctx.select(f.id, true)],
       ['Supprimer', () => this.remove(f.id)],
     ];

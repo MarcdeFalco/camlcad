@@ -20,11 +20,14 @@ export class SketchEditor extends SketchMarks {
     this.group = null;
   }
 
-  start(plane, planeCode) {
-    this.plane = plane; this.planeCode = planeCode;
+  // data : esquisse relue du code (sketch_parse.js) ; editing : { name } pour la réécrire.
+  start(plane, planeCode, data = null, editing = null) {
+    this.plane = plane; this.planeCode = planeCode; this.editing = editing;
     this.pts = []; this.lines = []; this.circles = []; this.arcs = []; this.cons = []; this.loops = [];
+    if (data) Object.assign(this, structuredClone(data));
     this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
     this.show();
+    if (data) this.changed();
   }
 
   // Reprend l'esquisse suspendue (extrusion annulée).
@@ -190,14 +193,7 @@ export class SketchEditor extends SketchMarks {
     if (!used) this.pts.pop();
   }
 
-  desc() {
-    return {
-      points: this.pts.map((p) => [p.x, p.y, p.fixed]),
-      lines: this.lines, circles: this.circles.map((c) => [c.c, c.r]), arcs: this.arcs.map((a) => [a.c, a.a, a.b]),
-      constraints: this.cons.map((c) => (c.value == null ? { kind: c.kind, refs: c.refs } : c)),
-      loops: this.loops,
-    };
-  }
+  desc() { return descOf(this); }
 
   changed() { this.ctx.solve(this.desc()); this.redraw(); }
 
@@ -278,7 +274,7 @@ export class SketchEditor extends SketchMarks {
     if (!(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
-      kind, loops: this.loops.map((l) => loopOutline(this, l)),
+      kind, editing: this.editing, loops: this.loops.map((l) => loopOutline(this, l)),
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })),
@@ -350,4 +346,14 @@ export class SketchEditor extends SketchMarks {
     $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
+}
+
+// Description pour le solveur (Cad.Sketch_desc) des structures de l'éditeur.
+export function descOf(ed) {
+  return {
+    points: ed.pts.map((p) => [p.x, p.y, p.fixed]),
+    lines: ed.lines, circles: ed.circles.map((c) => [c.c, c.r]), arcs: ed.arcs.map((a) => [a.c, a.a, a.b]),
+    constraints: ed.cons.map((c) => (c.value == null ? { kind: c.kind, refs: c.refs } : c)),
+    loops: ed.loops,
+  };
 }
