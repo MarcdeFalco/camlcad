@@ -60,7 +60,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
   les degrés de liberté, la cote demandée et la liste des contraintes.
   « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
-  côté opposé, symétrique ; distance ; opération), avec aperçu ; OK insère le
+  côté opposé, symétrique ; distance, aussi en tirant la flèche dans la vue ; opération), avec aperçu ; OK insère le
   plan, le `let%sketch` et la feature ; Annuler revient à l'esquisse.
   Limites : le plan d'une face est écrit en littéral. Une esquisse insérée se rouvre à la
   souris (double-clic dans le navigateur, « Modifier l'esquisse » dans la frise) tant que son
