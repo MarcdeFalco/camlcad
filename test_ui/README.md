@@ -33,6 +33,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `esquisse_decalage.spec.js` | Black Book ch. 2 (Offset) : rectangle décalé de 3 mm vers l'intérieur, cadre extrudé (volume 3,54 cm³) |
 | `filetage.spec.js` | Black Book ch. 4 : perçage taraudé M6 dans un bloc, tige filetée M6 (boîte englobante) |
 | `pousser.spec.js` | Black Book ch. 4 et 6 : tirer puis pousser la face du dessus d'une boîte ; ressort et tore (boîtes englobantes) |
+| `liaison.spec.js` | Black Book ch. 7 : deux pièces tapées dans le code, liaison pivot créée au dialogue, pilotée au curseur |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

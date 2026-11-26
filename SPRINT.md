@@ -55,13 +55,18 @@ du cache Playwright).
   taraudé M2–M12, commande Filetage (tige filetée). Scénario `filetage.spec.js`.
 - Lot 12, chapitres 4 et 6 : Pousser/tirer une face plane (contour de la face relu du maillage,
   trous compris ; tirer = Joindre, pousser = Couper), Tore, Ressort (cercle décalé extrudé avec
-  torsion). Scénario `pousser.spec.js`.
+  torsion). Scénario `pousser.spec.js`. Barre d'outils compacte (tout tient en 1440 px).
+- Lot 13, chapitre 7 (Joint) : onglet MÉCANISME, groupe ASSEMBLER : Liaison (pivot,
+  glissière, encastrement) entre deux pièces du code et leurs ports, ajoutée à la liste de
+  `Assembly.make` ; pilotable aussitôt (Mouvement). `mech_joint.js`. La page ne défile plus.
+  Scénario `liaison.spec.js` (code tapé dans l'éditeur, liaison au dialogue, curseur).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
   remettre la branche sur origin/main, cherry-pick du lot, fusion neutre de l'ancienne branche
   distante, push). Script : `$TMPDIR/pr_lot.sh <commit>` (voir fil). Branches locales lot4…lot9.
-- Suivant : chapitre 7 (assemblage : liaisons à la souris), ajuster/prolonger d'esquisse.
+- Suivant : ajuster/prolonger d'esquisse, liaisons glissière/encastrement à la souris sur
+  les ports affichés dans la vue, chapitre 8 (interférences comme commande).
 
 ## Suivant
 

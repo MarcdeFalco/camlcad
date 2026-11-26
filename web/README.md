@@ -65,7 +65,8 @@ frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
   Limites : le plan d'une face est écrit en littéral. Une esquisse insérée se rouvre à la
   souris (double-clic dans le navigateur, « Modifier l'esquisse » dans la frise) tant que son
   code est celui que l'éditeur écrit ; modifiée à la main, elle se modifie dans le code.
-- **MÉCANISME** (onglet) : une pièce par couleur ; Mouvement : un curseur par coordonnée (celui
+- **MÉCANISME** (onglet) : une pièce par couleur ; Liaison (pivot, glissière, encastrement entre
+  deux pièces du code et leurs ports, ajoutée à `Assembly.make`) ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.
 - **Impression 3D** (barre du haut) : cliquer la face à poser sur le plateau, volume de
