@@ -8,15 +8,16 @@ import { oCaml } from '@codemirror/legacy-modes/mode/mllike';
 import { setDiagnostics } from '@codemirror/lint';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
-import { SketchEditor, planarFace, basePlanes, frameCode } from './sketch.js';
+import { SketchEditor, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
 import { Dialogs } from './dialogs.js';
 import { Mech } from './mech.js';
-import { codeEdits } from './code_edit.js';
+import { codeEdits, locRangeIn } from './code_edit.js';
 import { Bodies } from './bodies.js';
 import { Inspect } from './inspect.js';
 import { Print3D } from './print.js';
+import { prepareEdit, sameCode, sketchOf, findSketch } from './sketch_parse.js';
 import * as feats from './dialogs_features.js';
 
 const $ = (id) => document.getElementById(id);
@@ -61,7 +62,7 @@ worker.onmessage = ({ data: m }) => {
     else if (m.fid === selected) vp.setHighlight(m);
     return;
   }
-  if (m.kind === 'sketch') { sketch.onSolved(m); return; }
+  if (m.kind === 'sketch') { if (verify) { const v = verify; verify = null; openVerified(v, m); } else sketch.onSolved(m); return; }
   if (m.kind === 'edit') { edits.get(m.id)?.(m); edits.delete(m.id); return; }
   if (m.kind === 'export3mf') { download(new Blob([m.data], { type: 'model/3mf' }), '3mf'); return; }
   if (m.kind === 'pick') { if (m.fid >= 0) selectFeature(m.fid, true); return; }
@@ -104,13 +105,7 @@ const view = new EditorView({
   ],
 });
 
-// Positions au format __POS__ : colonnes en octets depuis le début de la ligne.
-function locRange(loc) {
-  const line = view.state.doc.line(loc.line);
-  const enc = new TextEncoder(), text = view.state.doc.sliceString(line.from, view.state.doc.length);
-  const toChars = (bytes) => { let b = 0, i = 0; while (b < bytes && i < text.length) { b += enc.encode(text[i]).length; i++; } return i; };
-  return { from: line.from + toChars(loc.start_col), to: line.from + toChars(loc.end_col) };
-}
+const locRange = (loc) => locRangeIn(view, loc);
 function featureAtLine(line) {
   let best = null;
   for (const f of journal.features) if (f.loc && f.loc.line <= line) best = f;
@@ -181,11 +176,25 @@ const sketch = new SketchEditor({
   scene: vp.scene, camera: vp.camera, controls: vp.controls, renderer: vp.renderer,
   solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
   mode: (on) => showTab(on ? 'sketch' : null),
-  finish: (data) => { vp.threeQuarter(data.frame); dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](data, () => sketch.resume()); },
+  finish: (data) => {
+    vp.threeQuarter(data.frame);
+    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](data, () => sketch.resume()); },
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
-function startSketch(frame, code) { dialogs.close(true); showFace(null); sketch.start(frame, code); }
+function startSketch(frame, code, data, editing) { dialogs.close(true); showFace(null); sketch.start(frame, code, data, editing); }
+// « Modifier l'esquisse » : relue du code, vérifiée (le solveur doit réécrire exactement le même texte).
+let verify = null;
+function editSketch(name) {
+  if (sketch.active) return;
+  const r = prepareEdit(view.state.doc.toString(), name, allPlanes());
+  if (typeof r === 'string') { notify(r, true); return; }
+  verify = r; worker.postMessage({ kind: 'sketch', id: 0, sketch: descOf(r.data), overrides: [] });
+}
+function openVerified(v, m) {
+  if (!m.ok || !sameCode(m.code, v.text)) { notify(`Esquisse « ${v.name} » modifiée à la main : modifiez-la dans le code.`, true); return; }
+  stopPicking(); startSketch(v.frame, v.planeCode, v.data, { name: v.name });
+}
 function startPicking() {
   if (sketch.active) return;
   if (face) { const f = face; startSketch(f.frame, frameCode(f.frame)); return; }
@@ -263,7 +272,7 @@ const timeline = new Timeline({
   apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
   openEdit: (fid, rename) => dialogs.feature(fid, rename), openParams,
   sketchOn: (k) => { const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
-  gotoLine, toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
+  gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
   rollback: (k) => {
     rollbackAt = k; bodies.cancel();
     vp.setHighlight(null);

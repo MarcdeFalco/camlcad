@@ -41,11 +41,17 @@ du cache Playwright).
   boucles entièrement choisies recopiées) et réseau rectangulaire d'esquisse (écarts cotés),
   depuis la sélection (Maj). Les symboles de contraintes ne captent plus les clics.
   `sketch_copy.js`. Scénario `esquisse_copies.spec.js`.
+- Lot 9, chapitre 2 (« Edit Sketch ») : une esquisse insérée se rouvre à la souris (double-clic
+  dans le navigateur, menu de la frise « Modifier l'esquisse ») : relue du code
+  (`sketch_parse.js`), vérifiée (le solveur doit réécrire exactement le même texte, sinon :
+  « modifiée à la main »), sur son plan (origine, décalé, ou repère littéral d'une face) ;
+  Terminer réécrit le corps du `let%sketch`, la feature suit. Scénario `esquisse_modifier.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
   remettre la branche sur origin/main, cherry-pick du lot, fusion neutre de l'ancienne branche
-  distante, push). Puis lot 9 : chapitre 7 (assemblage : liaisons à la souris).
+  distante, push). Script : `$TMPDIR/pr_lot.sh <commit>` (voir fil). Branches locales lot4…lot9.
+- Suivant : chapitre 7 (assemblage : liaisons à la souris), décalage d'esquisse, ajuster.
 
 ## Suivant
 
@@ -54,4 +60,3 @@ du cache Playwright).
 - Pas d'échelle (`Shape.scale` absent du noyau).
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
 - Pas de flèche de distance dans la vue pour l'extrusion, pas de choix de régions de profil.
-- Esquisse non rééditable à la souris après insertion.
