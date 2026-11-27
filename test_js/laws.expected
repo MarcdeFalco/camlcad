@@ -9,6 +9,7 @@ tore : volume à 1 % de 2 pi^2 R r^2             ok
 extrusion d'un cadre : genre 1, volume 1500      ok
 rotation : volume conservé                      ok
 miroir : bbox réfléchie                        ok
+échelle : volume et bbox autour du centre       ok
 maillage : fermé, Euler = 2                     ok
 maillage : volume = volume noyau                 ok
 STL : aller-retour fermé                        ok
