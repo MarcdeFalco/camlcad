@@ -231,6 +231,8 @@ du cache Playwright).
   normale rentrante de chaque triangle) : épaisseur minimale, parois sous le seuil en rouge,
   sous le double en jaune, part de surface trop fine. Scénario `epaisseur.spec.js` (bac à
   parois de 1 mm).
+- Lot 67, chapitre 2 (Center Point Slot) : oblong par le centre (centre, centre d'une
+  extrémité ; centre tenu au milieu par une ligne de construction). Scénario `oblong_centre.spec.js`.
 
 ## En cours
 - Fin du sprint (27/11, 6 h) : les lots 44 à 65 partent en PR groupées de 2 à 6 lots (la CI

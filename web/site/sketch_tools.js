@@ -144,7 +144,21 @@ export const THREE_CLICK = {
   },
 };
 
+// Oblong par le centre (ch. 2, Center Point Slot) : centre, puis centre d'une extrémité ;
+// l'autre centre est symétrique, le centre reste au milieu (ligne de construction).
+function cslot(ed, o, q) {
+  const O = ed.pts[o];
+  if (Math.hypot(q.x - O.x, q.y - O.y) < 1e-6) return false;
+  const c1 = add(ed, 2 * O.x - q.x, 2 * O.y - q.y);
+  if (!slot(ed, c1, q)) return false;
+  const c2 = ed.arcs[ed.arcs.length - 1].c, l = ed.lines.length;
+  ed.lines.push([c1, c2]);
+  cons(ed, 'midpoint', [o, l]);
+  return true;
+}
+
 export const TWO_CLICK = {
+  cslot: [cslot, (A, q) => `entraxe ${fmt(2 * Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   circle2: [circle2, (A, q) => `Ø ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   rect: [rect2, (A, q) => `${fmt(Math.abs(q.x - A.x))} × ${fmt(Math.abs(q.y - A.y))} mm`],
   crect: [rectCenter, (A, q) => `${fmt(2 * Math.abs(q.x - A.x))} × ${fmt(2 * Math.abs(q.y - A.y))} mm`],
