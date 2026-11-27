@@ -50,17 +50,28 @@ export function jointDialog(d, view, changed) {
   const refresh = () => { pa.replaceChildren(portSel('a')); pb.replaceChildren(portSel('b')); };
   const partChoice = (side) => choice(Object.fromEntries(parts.map((p) => [p.id, p.name])), P[side], (v) => { P[side] = v; refresh(); });
   const name = el('input', { value: '', placeholder: 'automatique', className: 'noenter' });
+  // Limites et position initiale (ch. 7, Joint Limits ; Rest position) : vides = libres.
+  const field = (id) => el('input', { type: 'number', step: 'any', placeholder: '—', id, className: 'noenter' });
+  const lo = field('joint-lo'), hi = field('joint-hi'), init = field('joint-init');
+  const lit = (x) => { const s = String(Number(x)); return /[.e]/.test(s) ? s : s + '.'; }, litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
+  const unit = () => (P.kind === 'prismatic' ? 'mm' : '°');
   d.open('LIAISON', [
     row('Type', choice(KINDS, P.kind, (v) => { P.kind = v; })),
     row('Pièce 1', partChoice('a')), row('Port 1', pa),
     row('Pièce 2', partChoice('b')), row('Port 2', pb),
     row('Nom', name),
+    row('Limites', lo, el('span', { className: 'unit', textContent: 'à' }), hi),
+    row('Position initiale', init),
   ], {
     key: 'joint',
     ok: () => {
       if (P.a === P.b) { d.ctx.notify('Liaison : deux pièces différentes.', true); return false; }
       const nm = name.value.trim() || `${P.kind === 'fixed' ? 'encastrement' : P.kind === 'revolute' ? 'pivot' : 'glissiere'}_${parts.find((p) => p.id === P.b).name}`;
-      insert(`Joint.${P.kind} ~name:${JSON.stringify(nm)} Part.(${P.a} @: ${JSON.stringify(P.pa)}) Part.(${P.b} @: ${JSON.stringify(P.pb)})`);
+      const moving = P.kind !== 'fixed', has = (i) => i.value.trim() !== '' && Number.isFinite(Number(i.value));
+      if (moving && has(lo) !== has(hi)) { d.ctx.notify('Liaison : donnez les deux limites, ou aucune.', true); return false; }
+      if (moving && has(lo) && !(Number(lo.value) < Number(hi.value))) { d.ctx.notify(`Liaison : limite basse < limite haute (${unit()}).`, true); return false; }
+      const opts = (moving && has(lo) ? ` ~limits:(${litp(lo.value)}, ${litp(hi.value)})` : '') + (moving && has(init) ? ` ~init:${litp(init.value)}` : '');
+      insert(`Joint.${P.kind} ~name:${JSON.stringify(nm)}${opts} Part.(${P.a} @: ${JSON.stringify(P.pa)}) Part.(${P.b} @: ${JSON.stringify(P.pb)})`);
     },
   });
   refresh();

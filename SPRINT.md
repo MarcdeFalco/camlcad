@@ -214,6 +214,9 @@ du cache Playwright).
   « sur le cercle ») et un cercle cliqué devient l'arc restant entre ses intersections
   voisines, les lignes scindées à ses extrémités ; les contours se recalculent avec les arcs
   (lignes et arcs, format `{a}`/`{r}`). Scénario `trou_serrure.spec.js` (aire de l'union).
+- Lot 60, chapitre 7 (Joint Limits, Rest Position) : limites et position initiale dans le
+  dialogue Liaison (`~limits`, `~init` de `Joint.revolute` / `prismatic`), vérifiées ; le
+  curseur du mouvement les respecte. Scénario `liaison_limites.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
