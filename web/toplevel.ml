@@ -326,10 +326,11 @@ let sketch id (o : Js.Unsafe.any) =
                    (let e : Js.Unsafe.any Js.Optdef.t = Js.Unsafe.get c "expr" in
                     Js.Optdef.to_option (Js.Optdef.map e (fun x -> Js.to_string (Js.Unsafe.coerce x)))) })
              (arr "constraints"));
-      (* élément de boucle : nombre = point, {a:k} = arc k, {r:k} = arc k à l'envers *)
+      (* élément de boucle : nombre = point, {a:k} = arc k, {r:k} = arc k à l'envers, {s:[i…]} = courbe *)
       loops =
         (let item (v : Js.Unsafe.any) : Cad.Sketch_desc.item =
            if Js.to_string (Js.typeof v) = "number" then P (it v)
+           else if Js.Optdef.test (Js.Unsafe.get v "s") then S (Array.to_list (Array.map it (Js.to_array (Js.Unsafe.get v "s"))))
            else if Js.Optdef.test (Js.Unsafe.get v "a") then A (it (Js.Unsafe.get v "a"))
            else Rev (it (Js.Unsafe.get v "r"))
          in

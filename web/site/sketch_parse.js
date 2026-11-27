@@ -37,12 +37,22 @@ export function parseSketch(text, params = []) {
   }
   const reg = /Sketch\.\((.*)\)\s*$/.exec(text.trim());
   if (!reg) return null;
-  for (const m of reg[1].matchAll(/(loop|path) \[([^\]]*)\]/g)) {
-    const items = m[2].split(';').map((s) => s.trim()).filter(Boolean);
-    loops.push(m[1] === 'loop' ? items.map(idx) : items.map((s) => {
-      const [k, r] = s.split(/\s+/);
+  // Listes « loop [ … ] » et « path [ … ] » (une courbe y porte sa propre liste) : crochets appariés.
+  const src = reg[1], re = /(loop|path) \[/g; let m;
+  while ((m = re.exec(src))) {
+    let depth = 1, i = re.lastIndex, start = i;
+    for (; i < src.length && depth; i++) { if (src[i] === '[') depth++; if (src[i] === ']') depth--; }
+    const body = src.slice(start, i - 1), items = [];
+    let d = 0, cur = '';
+    for (const ch of body) { if (ch === '[') d++; if (ch === ']') d--; if (ch === ';' && d === 0) { items.push(cur.trim()); cur = ''; } else cur += ch; }
+    if (cur.trim()) items.push(cur.trim());
+    loops.push(m[1] === 'loop' ? items.map(idx) : items.map((it) => {
+      const sp = /^spline \[(.*)\]$/.exec(it);
+      if (sp) return { s: sp[1].split(';').map((x) => idx(x.trim())) };
+      const [k, r] = it.split(/\s+/);
       return k === 'pt' ? idx(r) : k === 'along' ? { a: idx(r) } : { r: idx(r) };
     }));
+    re.lastIndex = i;
   }
   const dense = (a) => a.length === [...a].filter(Boolean).length;
   if (![pts, lines, circles, arcs].every(dense)) return null;

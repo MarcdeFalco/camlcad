@@ -173,3 +173,25 @@ let%expect_test "cote liée à un paramètre : expression écrite telle quelle" 
         Sketch.[ length l0 (largeur /. 2.) ]
     Sketch.(loop [ p0; p1; p2; p3 ] - disk c0)
     |}]
+
+(* Goutte : courbe lisse fermée par quatre points ; aire proche du losange arrondi. *)
+let%expect_test "courbe lisse fermée (spline)" =
+  let d : Sketch_desc.t =
+    { points = [| (0., 0., true); (20., 0., true); (20., 20., true); (0., 20., true) |];
+      lines = [||]; circles = [||]; arcs = [||]; constraints = [];
+      loops = Sketch_desc.[ [ S [ 0; 1; 2; 3; 0 ] ] ] }
+  in
+  (match Sketch_desc.solve d with
+  | Error e -> print_endline e
+  | Ok s -> (
+      match Profile.view s.profile with
+      | Polygon ps ->
+          let n = List.length ps and area = ref 0. in
+          List.iteri (fun i (a : Geom.V2.t) -> area := !area +. Geom.V2.cross a (List.nth ps ((i + 1) mod n))) ps;
+          Printf.printf "%d sommets, aire %.0f\n" n (Float.abs !area /. 2.)
+      | _ -> print_endline "?"));
+  print_string (List.nth (String.split_on_char '\n' (Sketch_desc.to_code ~indent:0 d)) 7);
+  [%expect {|
+    32 sommets, aire 544
+    Sketch.(path [ spline [ p0; p1; p2; p3; p0 ] ])
+    |}]

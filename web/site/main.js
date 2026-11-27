@@ -12,7 +12,7 @@ import { Decoration } from '@codemirror/view';
 import { SketchEditor, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
 import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
-import { groupMenus } from './toolbar.js';
+import { groupMenus, shortcutsHelp } from './toolbar.js';
 import { markingMenu } from './marking.js';
 import { initFiles, saveBlob } from './files.js';
 import { jointDialog, linkDialog } from './mech_joint.js';
@@ -238,7 +238,7 @@ const COMMANDS = {
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
   measure: () => inspect.startMeasure(), zebra: () => notify(vp.toggleZebra() ? 'Analyse zébrée : bandes réfléchies.' : 'Analyse zébrée retirée.'), draft: () => notify(vp.toggleDraft() ? 'Dépouille (démoulage selon +z) : vert en dépouille, jaune vertical, rouge en contre-dépouille.' : 'Analyse de dépouille retirée.'), section: () => inspect.section(), props: () => inspect.properties(),
-  shell: () => needSel() && paths.shell(dialogs, journal.features[selected], featureDef(journal.features[selected].name)), split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
+  help: () => shortcutsHelp(dialogs), shell: () => needSel() && paths.shell(dialogs, journal.features[selected], featureDef(journal.features[selected].name)), split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }), angleplane: () => dialogs.anglePlane((f) => insertPlane(`(* construction *) ${frameCode(f)}`)),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
   edit: () => needSel() && dialogs.feature(selected),
@@ -258,7 +258,7 @@ $('animate').onclick = () => mech.toggle();
 for (const b of document.querySelectorAll('[data-nav]')) b.onclick = () => {
   const n = b.dataset.nav;
   if (n === 'orbit' || n === 'pan') { vp.setMode(n); for (const x of document.querySelectorAll('[data-nav=orbit],[data-nav=pan]')) x.classList.toggle('on', x === b); }
-  else if (n === 'style') vp.cycleStyle();
+  else if (n === 'style') notify(['Ombré avec arêtes', 'Ombré', 'Filaire', 'Rendu (éclairage d’ambiance, ombre portée)'][vp.cycleStyle()]);
   else if (n === 'grid') b.classList.toggle('on', vp.toggleGrid());
   else COMMANDS[n]();
 };
@@ -270,7 +270,7 @@ window.addEventListener('keydown', (e) => {
   if (sketch.active) { sketch.key(e); return; }
   if (e.key === 'Escape' && picking) { stopPicking(); return; }
   if (e.key === 'Escape' && faces.active) { faces.cancel(); return; }
-  const keys = { s: 'sketch', e: 'extrude', f: 'fit', Delete: 'delete' };
+  const keys = { s: 'sketch', e: 'extrude', f: 'fit', q: 'presspull', h: 'hole', m: 'measure', j: 'joint', Delete: 'delete', '?': 'help' };
   if (keys[e.key] && !e.ctrlKey && !e.metaKey) { e.preventDefault(); COMMANDS[keys[e.key]](); }
 });
 // ---------- Frise et navigateur ----------

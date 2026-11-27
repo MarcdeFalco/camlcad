@@ -136,6 +136,15 @@ du cache Playwright).
   dans le code (`length l0 (largeur /. 2.)`), évaluée dans l'éditeur (`expr.js`) ; cote marquée
   ƒ ; l'esquisse suit le paramètre et se rouvre (la vérification ignore désormais les positions
   de départ, qui changent avec les paramètres). Scénario `cotes_parametres.spec.js`.
+- Lot 38, chapitre 1 (raccourcis) : Q pousser/tirer, H perçage, M mesurer, J liaison, « ? » (et
+  bouton ?) pour la liste des raccourcis. Scénario `raccourcis.spec.js`.
+- Lot 39, chapitre 10 (In-canvas Render) : quatrième style de la barre de navigation,
+  « Rendu » : éclairage d'ambiance (RoomEnvironment), tons ACES, matière satinée, ombre portée
+  sur le plan de travail. Scénario `rendu.spec.js`.
+- Lot 40, chapitre 2 (Spline) : `Sketch.spline` (Catmull-Rom uniforme, fermée si le premier et
+  le dernier point sont le même ; contrat, test d'expectation), élément `S` des boucles de
+  `Sketch_desc` ; outil Courbe (cliquer le premier point ferme), relue à la réouverture.
+  Scénario `courbe.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

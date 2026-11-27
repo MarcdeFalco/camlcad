@@ -17,7 +17,7 @@ et `let%param` sont disponibles.
 Disposition d'un modeleur paramétrique (commandes secondaires dans le menu ▾ de leur groupe) (inspirée de Fusion 360, visuels propres) :
 barre d'outils à onglets en haut, navigateur à gauche, vue 3D au centre (cube de
 vue cliquable, flèches vers la face voisine, ⌂ vue de départ, barre de navigation : orbite, panoramique,
-ajuster, regarder une face, style, grille), dialogues de commande à droite,
+ajuster, regarder une face, style : ombré avec arêtes, ombré, filaire, rendu ; grille), dialogues de commande à droite,
 menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (↶ ↷, Ctrl+Z : historique du code), code repliable à droite (`</> Code`, Ctrl+E).
 
 - **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé, Plan milieu, Plan à un angle, Plan par 3 points (construction, listés dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, taraudé M2–M12, traversant), Filetage (tige filetée ISO), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Pousser/tirer (une face plane cliquée), Congé et Chanfrein d'arête (ses deux faces cliquées), Coque (d'une extrusion : parois et fond, dessus ouvert), Diviser (par un plan, moitiés séparées pour l'impression), Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
@@ -52,7 +52,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   YZ vu de droite. L'onglet ESQUISSE apparaît : rectangle (R, deux coins, lignes
   horizontales et verticales contraintes), contour (L, cliquer le premier point
   pour fermer ; lignes presque horizontales ou verticales contraintes ; un point posé sur une ligne, son milieu ou un cercle y est contraint), cercle
-  (C, centre puis rayon), arc par le centre (A), oblong, congé et chanfrein d'esquisse (sommet entre deux lignes), échelle de l'esquisse, rectangle par le centre, polygone régulier (P, nombre
+  (C, centre puis rayon), arc par le centre (A), courbe lisse (spline, fermée en cliquant le premier point), oblong, congé et chanfrein d'esquisse (sommet entre deux lignes), échelle de l'esquisse, rectangle par le centre, polygone régulier (P, nombre
   de côtés dans la barre), point, Cote (D : ligne, cercle, deux points, deux lignes),
   lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe), réseau en x et réseau circulaire (dernier point choisi = centre) de la sélection, décalage d'un contour (une boucle dans une boucle est un trou), suppression (Suppr), projection du contour de la face d'appui, sélection (S, Maj pour plusieurs), avec élastique et
   mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,
@@ -73,6 +73,8 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   l'imprimante, appui, surplombs > 45° en rouge, STL exporté dans cette orientation.
 - **Plan** (barre du haut) : mise en plan A4 (vues de face, dessus, gauche en projection
   européenne, coupe A-A hachurée, cotes d'encombrement, cartouche) en SVG ; capture PNG de la vue.
+- **Raccourcis** : S esquisse, E extrusion, Q pousser/tirer, H perçage, M mesurer, J liaison,
+  F ajuster, ? la liste.
 - **Fichier** : Ouvrir… un .ml, Enregistrer le code ; le dernier document est repris au
   rechargement de la page.
 - **Export** STL (solide) et 3MF (solide, ou pièces d'un mécanisme placées à la pose

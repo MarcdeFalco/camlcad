@@ -122,6 +122,11 @@ val along : arc -> edge
 val back : arc -> edge
 (** L'arc parcouru de sa fin à son début (sens horaire). *)
 
+val spline : point list -> edge
+(** Courbe lisse passant par les points, dans l'ordre (Catmull-Rom uniforme, 8 facettes par
+    intervalle) ; fermée si le premier et le dernier point sont le même. Lève
+    [Invalid_argument] pour moins de deux points. *)
+
 val path : edge list -> region
 (** Contour fermé fait de sommets ([pt]) et d'arcs ([along], parcourus de leur début à
     leur fin, facettes d'au plus 5°) ; les points consécutifs confondus sont fusionnés.

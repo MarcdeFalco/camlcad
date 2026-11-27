@@ -3,7 +3,7 @@
 // Classe de base de SketchEditor (sketch.js), qui fournit plane, pts, lines, circles, cons…
 import * as THREE from 'three';
 import { TWO_CLICK, rubberShape } from './sketch_tools.js';
-import { arcPoints } from './sketch_arcs.js';
+import { arcPoints, loopPoints } from './sketch_arcs.js';
 import { parseDim } from './expr.js';
 
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
@@ -133,5 +133,13 @@ export class SketchMarks {
     // Une ligne seule attend un éventuel second élément (angle) : cote proposée tout de suite.
     const c = want && this.candidates().find((x) => x[0] === want);
     if (c) { this.asking = null; this.addConstraint(c); } else this.redraw();
+  }
+
+  // Points isolés (outil Point) : centres de perçages.
+  freePoints() { return this.pts.map((_, i) => i).filter((i) => !this.lines.some((l) => l.includes(i)) && !this.circles.some((c) => c.c === i) && !this.arcs.some((a) => [a.c, a.a, a.b].includes(i))); }
+  // Lignes hors de toute boucle (construction) : chemins d'une nervure.
+  openLines() {
+    const seqs = this.loops.map((l) => loopPoints(this, l));
+    return this.lines.filter(([a, b]) => !seqs.some((q) => q.some((p, k) => { const r = q[(k + 1) % q.length]; return (p === a && r === b) || (p === b && r === a); })));
   }
 }

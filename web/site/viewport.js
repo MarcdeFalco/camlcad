@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,7 +27,7 @@ export class Viewport {
     el.prepend(renderer.domElement);
     this.controls = new OrbitControls(camera, renderer.domElement);
     scene.add(new THREE.HemisphereLight(0xffffff, 0x666677, 2.2));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(1, -2, 3); scene.add(sun);
+    const sun = (this.sun = new THREE.DirectionalLight(0xffffff, 1.6)); sun.position.set(1, -2, 3); scene.add(sun);
     this.grid = new THREE.GridHelper(200, 20, 0x8a8f99, 0xc9ccd2); this.grid.rotation.x = Math.PI / 2; scene.add(this.grid);
     this.axes = this.makeAxes(); scene.add(this.axes);
     this.material = new THREE.MeshStandardMaterial({ color: 0x8c9aa8, roughness: 0.5, metalness: 0.1, flatShading: true, transparent: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
@@ -149,10 +150,33 @@ export class Viewport {
   setMode(mode) {
     this.controls.mouseButtons.LEFT = mode === 'pan' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
   }
-  cycleStyle() { this.style = (this.style + 1) % 3; this.applyStyle(); }
+  // Styles : 0 ombré + arêtes, 1 ombré, 2 filaire, 3 rendu (Black Book ch. 10, In-canvas Render :
+  // éclairage d'ambiance, matière satinée, ombre portée sur le plan de travail).
+  cycleStyle() { this.style = (this.style + 1) % 4; this.applyStyle(); return this.style; }
   applyStyle() {
+    const render = this.style === 3, r = this.renderer;
     this.material.wireframe = this.style === 2;
     if (this.edges) this.edges.visible = this.style === 0;
+    if (render && !this.env) this.env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environment = render ? this.env : null;
+    r.toneMapping = render ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; r.toneMappingExposure = 0.8;
+    this.material.envMapIntensity = 0.6; if (render) { this.gridWas = this.grid.visible; this.grid.visible = this.axes.visible = false; } else if (this.gridWas != null) { this.grid.visible = this.axes.visible = this.gridWas; this.gridWas = null; }
+    Object.assign(this.material, render ? { roughness: 0.45, metalness: 0.3, color: new THREE.Color(0x7d8fa3) } : { roughness: 0.5, metalness: 0.1, color: new THREE.Color(0x8c9aa8) }); this.material.needsUpdate = true;
+    r.shadowMap.enabled = render; this.sun.castShadow = render;
+    if (this.part) this.part.castShadow = render;
+    if (render && !this.ground) {
+      this.ground = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShadowMaterial({ opacity: 0.35 })); this.ground.receiveShadow = true;
+      this.scene.add(this.ground);
+    }
+    if (this.ground) {
+      this.ground.visible = render;
+      if (render && this.part) {
+        const b = new THREE.Box3().setFromObject(this.part), c = b.getCenter(new THREE.Vector3()), sz = b.getSize(new THREE.Vector3()), k = 4 * Math.max(sz.x, sz.y, 10);
+        this.ground.scale.set(k, k, 1); this.ground.position.set(c.x, c.y, b.min.z - 0.01);
+        Object.assign(this.sun.shadow.camera, { left: -k, right: k, top: k, bottom: -k, far: 10 * k }); this.sun.position.copy(c).add(new THREE.Vector3(1, -2, 3).multiplyScalar(k)); this.sun.target.position.copy(c); this.sun.target.updateMatrixWorld();
+        this.sun.shadow.camera.updateProjectionMatrix(); this.sun.shadow.mapSize.set(2048, 2048);
+      }
+    }
   }
   toggleGrid() { this.grid.visible = !this.grid.visible; this.axes.visible = this.grid.visible; return this.grid.visible; }
 

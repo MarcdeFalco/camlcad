@@ -97,3 +97,13 @@ export function rubberShape(tool, A, q, n) {
   const r = Math.hypot(q.x - A.x, q.y - A.y), a0 = Math.atan2(q.y - A.y, q.x - A.x), m = tool === 'polygon' ? n : 64;
   return Array.from({ length: m + 1 }, (_, k) => ({ x: A.x + r * Math.cos(a0 + (2 * Math.PI * k) / m), y: A.y + r * Math.sin(a0 + (2 * Math.PI * k) / m) }));
 }
+
+// Outil Courbe (spline, ch. 2) : chaque clic ajoute un point de passage ; cliquer le premier
+// ferme la courbe, qui devient un contour. Rend vrai si l'esquisse a changé.
+export function splineClick(ed, q) {
+  const i = ed.pointAt(q);
+  if (!ed.spl) { ed.spl = [i]; return false; }
+  if (i === ed.spl[0] && ed.spl.length >= 3) { ed.loops.push([{ s: [...ed.spl, i] }]); ed.spl = null; return true; }
+  if (i !== ed.spl[ed.spl.length - 1]) ed.spl.push(i);
+  return false;
+}
