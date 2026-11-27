@@ -2,4 +2,4 @@
 ; suite et imprime son rapport, comparé au même fichier .expected.
 (library
  (name kernel_suites)
- (libraries geom cad cad_parts cad_export cad_examples cad_mech))
+ (libraries geom cad cad_parts cad_export cad_examples cad_mech camlcad_skill_examples))

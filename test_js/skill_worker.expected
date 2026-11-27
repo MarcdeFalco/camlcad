@@ -1,0 +1,4 @@
+boite : true ; params longueur=80 largeur=50 hauteur=30 paroi=2 rayon=5 jeu=0.2 levre=4 ; features coque@22 cavite@24 boite@25 plaque@28 levre@29 couvercle@35
+equerre : true ; params longueur=50 hauteur=40 largeur=30 epaisseur=5 renfort=3 vis=4 ; features corps@39 gousset@42 trous_semelle@57 trous_aile@64 equerre@65
+molette : true ; params diametre=30 hauteur=10 chanfrein=1 crans=18 filetage=6 gravure=0.6 ; features disque@16 crantage@23 taraudage@27 marquage@31 molette@36
+cremaillere : mécanisme ; params module_=2 dents=20 jeu=0.15 ; pièces bati,pignon,cremaillere ; coordonnées pignon,cremaillere ; interférences 0
