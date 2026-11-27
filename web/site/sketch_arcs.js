@@ -46,10 +46,12 @@ export function loopOutline(ed, l) {
 
 // Oblong centre à centre : deux demi-cercles reliés par deux segments tangents et
 // parallèles ; largeur initiale : un tiers de l'entraxe (cote modifiable).
-export function slot(ed, c1, q) {
+export function slot(ed, c1, q, avoid = []) {
   const A = ed.pts[c1], L = Math.hypot(q.x - A.x, q.y - A.y);
   if (L < 1e-6) return false;
-  const c2 = ed.pointAt(q), ux = (q.x - A.x) / L, uy = (q.y - A.y) / L, r = L / 6, nx = -uy * r, ny = ux * r;
+  // Second centre accroché au premier (ou au centre d'un oblong par le centre) : point neuf, sinon l'oblong est nul.
+  let c2 = ed.pointAt(q); if (c2 === c1 || avoid.includes(c2)) c2 = add(ed, q.x, q.y);
+  const ux = (q.x - A.x) / L, uy = (q.y - A.y) / L, r = L / 6, nx = -uy * r, ny = ux * r;
   const B = ed.pts[c2];
   const p1 = add(ed, A.x + nx, A.y + ny), p2 = add(ed, A.x - nx, A.y - ny), p3 = add(ed, B.x - nx, B.y - ny), p4 = add(ed, B.x + nx, B.y + ny);
   const k = ed.arcs.length, l = ed.lines.length;

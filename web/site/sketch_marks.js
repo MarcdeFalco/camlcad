@@ -64,6 +64,14 @@ export class SketchMarks {
         el.ondblclick = (e) => { e.stopPropagation(); this.editDim(i, el); };
       } else { el.className = 'glyph'; el.textContent = SketchMarks.GLYPH[c.kind] ?? '·'; el.title = this.consText(c); }
       el.dataset.x = at.x; el.dataset.y = at.y; el.dataset.n = n;
+      // Cote de longueur : écartée de la ligne, du côté opposé au centre de l'esquisse (le clic sur la ligne reste libre).
+      if (c.value != null && c.kind === 'length') {
+        const [a, b] = this.lines[c.refs[0]], A = this.pts[a], B = this.pts[b], L = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+        let nx = -(B.y - A.y) / L, ny = (B.x - A.x) / L;
+        const g = this.pts.reduce((m, p) => ({ x: m.x + p.x / this.pts.length, y: m.y + p.y / this.pts.length }), { x: 0, y: 0 });
+        if (nx * (at.x - g.x) + ny * (at.y - g.y) < 0) { nx = -nx; ny = -ny; }
+        el.dataset.nx = nx; el.dataset.ny = ny;
+      }
       box.append(el);
     });
     this.placeLabels();
@@ -73,9 +81,14 @@ export class SketchMarks {
     const { camera, renderer } = this.ctx, r = renderer.domElement.getBoundingClientRect(), f = this.plane;
     camera.updateMatrixWorld();
     for (const el of box.children) {
-      const v = f.origin.clone().addScaledVector(f.x, Number(el.dataset.x)).addScaledVector(f.y, Number(el.dataset.y)).project(camera);
-      el.style.left = `${((v.x + 1) / 2) * r.width + (el.className === 'glyph' ? 8 + 14 * el.dataset.n : 0)}px`;
-      el.style.top = `${((1 - v.y) / 2) * r.height + (el.className === 'glyph' ? 8 : 0)}px`;
+      const w = f.origin.clone().addScaledVector(f.x, Number(el.dataset.x)).addScaledVector(f.y, Number(el.dataset.y)), v = w.clone().project(camera);
+      let ox = 0, oy = 0;
+      if (el.dataset.nx != null) { // 16 px le long de la normale à l'écran
+        const u = w.addScaledVector(f.x, Number(el.dataset.nx)).addScaledVector(f.y, Number(el.dataset.ny)).project(camera), dx = (u.x - v.x) * r.width, dy = (v.y - u.y) * r.height, d = Math.hypot(dx, dy) || 1;
+        ox = (16 * dx) / d; oy = (16 * dy) / d;
+      }
+      el.style.left = `${((v.x + 1) / 2) * r.width + (el.className === 'glyph' ? 8 + 14 * el.dataset.n : ox)}px`;
+      el.style.top = `${((1 - v.y) / 2) * r.height + (el.className === 'glyph' ? 8 : oy)}px`;
     }
   }
   editDim(i, el) {

@@ -3,7 +3,7 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
-import { TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
+import { orientAngle, polyClick, TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
 import { parseDim } from './expr.js'; import { typedDims } from './sketch_input.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
@@ -154,22 +154,7 @@ export class SketchEditor extends SketchMarks {
     } else if (this.tool === 'dim') {
       this.dimClick(q, e);
     } else if (this.tool === 'poly') {
-      const first = this.chain ? this.chain[0] : null;
-      const i = this.pointAt(q);
-      if (this.chain) {
-        const prev = this.chain[this.chain.length - 1];
-        if (i !== prev) {
-          this.lines.push([prev, i]);
-          // Contrainte implicite : ligne presque horizontale ou verticale (à 3° près).
-          const A = this.pts[prev], B = this.pts[i], ang = Math.abs(Math.atan2(B.y - A.y, B.x - A.x) * 180 / Math.PI) % 180;
-          const l = this.lines.length - 1;
-          if (ang < 3 || ang > 177) this.cons.push({ kind: 'horizontal', refs: [l] });
-          else if (Math.abs(ang - 90) < 3) this.cons.push({ kind: 'vertical', refs: [l] });
-        }
-        if (i === first && this.chain.length >= 3) { this.loops.push(this.chain.slice()); this.chain = null; }
-        else this.chain.push(i);
-      } else this.chain = [i];
-      this.changed();
+      polyClick(this, q); this.changed();
     } else {
       const n = this.nearest(q);
       if (!n) this.sel = [];
@@ -284,6 +269,7 @@ export class SketchEditor extends SketchMarks {
     this.asking = null;
     if (dflt !== undefined && !Number.isFinite(value)) { this.redraw(); return; }
     const ex = this.asked?.expr; this.asked = null; // cote en expression (paramètres)
+    if (kind === 'angle' && value != null) refs = orientAngle(this, refs, value); // angle orienté : du côté où il est déjà
     this.cons.push(value === undefined ? { kind, refs } : { kind, refs, value: kind === 'radius' ? value / 2 : value, ...(ex ? { expr: kind === 'radius' ? `(${ex}) /. 2.` : ex } : {}) });
     this.sel = []; this.changed();
   }
@@ -331,7 +317,7 @@ export class SketchEditor extends SketchMarks {
     };
     const chain = this.chain ?? [], seqs = this.loops.map((l) => loopPoints(this, l));
     const inLoop = (a, b) => (chain.includes(a) && chain.includes(b)) || seqs.some((l) => l.some((p, k) => { const r = l[(k + 1) % l.length]; return (p === a && r === b) || (p === b && r === a); }));
-    this.lines.forEach(([a, b], i) => seg([this.pts[a], this.pts[b]], col('l', i), !inLoop(a, b)));
+    this.lines.forEach(([a, b], i) => seg([this.pts[a], this.pts[b]], col('l', i), !inLoop(a, b) && !this.openProfile?.includes(a < b ? `${a},${b}` : `${b},${a}`)));
     for (const l of this.loops) for (const it of l) if (it.s) seg(splinePoints(this, it.s), 0x1f6feb, false);
     for (const e of this.ellipses) seg([...ellipseOutline(this, e), ellipseOutline(this, e)[0]], 0x1f6feb, false);
     if (this.spl?.length > 1) seg(splinePoints(this, this.spl), 0x1f6feb, true);

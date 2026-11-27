@@ -331,6 +331,17 @@ function cycles(lines, arcs = []) {
   return out;
 }
 
+// Lignes de profil ouvertes (tracées une à une) qui se referment : contour reconnu, comme
+// les régions d'un modeleur, sans avoir à cliquer le premier point.
+export function closeOpenProfile(ed) {
+  const open = ed.lines.filter(([a, b]) => ed.openProfile?.includes(key(a, b)));
+  const found = cycles(open);
+  if (!found.loops.length) return false;
+  ed.loops.push(...found.loops);
+  ed.openProfile = ed.openProfile.filter((k) => !found.lines.has(k));
+  return true;
+}
+
 // Construction (Black Book ch. 2, touche X) : les lignes sélectionnées passent de profil à
 // construction ou l'inverse ; les contours de lignes sont recalculés sur les lignes de profil.
 export function toggleConstruction(ed) {

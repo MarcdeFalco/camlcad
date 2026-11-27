@@ -157,7 +157,10 @@ type solved = {
 
 val solve : region t -> (solved, string) result
 (** [Error] si le solveur ne converge pas (contraintes incompatibles ou
-    position initiale trop lointaine). *)
+    position initiale trop lointaine). Un résidu final d'au plus [1e-6] (mm ou
+    radian, sous le micromètre) est accepté même si {!Nlsolve} n'a pas atteint sa
+    tolérance : la convergence lente des esquisses redondantes (tangences, symétries)
+    n'est pas une incompatibilité. *)
 
 val pos : solved -> point -> Geom.V2.t
 
