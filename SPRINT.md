@@ -150,6 +150,10 @@ du cache Playwright).
 - Lot 42, chapitre 2 (Ellipse) : `Sketch.ellipse c a ry` et `oval` (contrat, test d'expectation :
   aire), champ `ellipses` de `Sketch_desc` ; outil Ellipse (centre, grand axe, petit axe),
   aperçu, relecture. Scénario `ellipse.spec.js` (volume).
+- Lot 44, chapitre 3 (Extrude, choix des profils) : cases « Contours » dans le dialogue
+  d'extrusion ; un contour décoché sort de l'aperçu, et l'esquisse est réécrite par le solveur
+  sans lui avant l'insertion. Le lien `test_ui/node_modules` versionné par erreur au lot 19
+  est retiré (`.gitignore` : `node_modules` sans barre). Scénario `profils.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -159,7 +163,7 @@ du cache Playwright).
 
 ## Suivant (ordre proposé)
 - Chapitre 2 : ajuster / prolonger / couper (Trim, Extend, Break), texte d'esquisse, cote de
-  l'ellipse et de la courbe ; régions de profil choisies à la souris dans l'extrusion.
+  l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
 - Chapitre 3 : balayage (Sweep) et lissage (Loft) — demandent `Shape.sweep` / `loft` au noyau.
 - Chapitre 6 : échelle d'un corps (`Shape.scale` au noyau), coque d'un corps quelconque.
 - Chapitre 7 : liaisons choisies dans la vue (ports affichés), étude de mouvement.
@@ -169,6 +173,6 @@ du cache Playwright).
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Pas d'échelle de corps (`Shape.scale` absent du noyau) ; coque seulement pour une extrusion simple.
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
-- Pas de choix de régions de profil (toutes les boucles de l'esquisse sont extrudées).
+- Choix des profils par cases, pas encore par clic sur la région dans la vue.
 - Plans de face, nervures, tuyaux et perçages aux points : géométrie écrite en littéral
   (pas liée à la pièce si elle change).

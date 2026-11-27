@@ -300,7 +300,7 @@ export class SketchEditor extends SketchMarks {
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
-      kind, editing: this.editing, loops: this.loops.map((l) => loopOutline(this, l)),
+      kind, editing: this.editing, desc: descOf(this), loops: this.loops.map((l) => loopOutline(this, l)),
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })), ellipses: this.ellipses.map((e) => ellipseOutline(this, e)),
