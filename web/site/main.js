@@ -10,7 +10,7 @@ import { setDiagnostics } from '@codemirror/lint';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 import { SketchEditor, toggleConstruction, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
-import { faceLoops } from './planes.js';
+import { faceLoops, modelPoints } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
@@ -192,7 +192,7 @@ const sketch = new SketchEditor({
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
-function startSketch(frame, code, data, editing, loops) { dialogs.close(true); showFace(null); if (selected != null) selectFeature(null, false); sketch.start(frame, code, data, editing, loops); }
+function startSketch(frame, code, data, editing, loops) { dialogs.close(true); showFace(null); if (selected != null) selectFeature(null, false); sketch.modelPts = modelPoints(lastMesh, frame); sketch.start(frame, code, data, editing, loops); }
 // « Modifier l'esquisse » : relue du code, vérifiée (le solveur doit réécrire exactement le même texte).
 let verify = null, waiter = null; // réouverture vérifiée ; réécriture d'une esquisse (profils choisis)
 function editSketch(name, reuse = false) {

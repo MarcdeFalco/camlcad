@@ -93,3 +93,16 @@ export function faceLoops(mesh, face) {
   const area = (l) => Math.abs(l.reduce((s, p, k) => s + p.x * l[(k + 1) % l.length].y - l[(k + 1) % l.length].x * p.y, 0)) / 2;
   return loops.sort((a, b) => area(b) - area(a));
 }
+
+// Sommets de la pièce projetés sur le plan d'esquisse (repère f), sans doublons : ils
+// accrochent le curseur comme les arêtes projetées d'un modeleur (esquisse sur un plan milieu).
+export function modelPoints(mesh, f) {
+  const V = mesh?.vertices; if (!V || V.length > 3 * 20000) return [];
+  const seen = new Set(), out = [];
+  for (let i = 0; i < V.length; i += 3) {
+    const dx = V[i] - f.origin.x, dy = V[i + 1] - f.origin.y, dz = V[i + 2] - f.origin.z;
+    const x = Math.round((dx * f.x.x + dy * f.x.y + dz * f.x.z) * 100) / 100, y = Math.round((dx * f.y.x + dy * f.y.y + dz * f.y.z) * 100) / 100, k = `${x},${y}`;
+    if (!seen.has(k)) { seen.add(k); out.push({ x, y }); }
+  }
+  return out;
+}

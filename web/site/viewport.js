@@ -104,12 +104,18 @@ export class Viewport {
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q), right = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
     const snap = (v) => { const a = v.toArray().map(Math.abs), i = a.indexOf(Math.max(...a)); return a[i] > 0.97 ? new THREE.Vector3().setComponent(i, Math.sign(v.getComponent(i))) : v; };
     const [nd, nu] = { up: [up, d.clone().negate()], down: [up.clone().negate(), d], left: [right.clone().negate(), up], right: [right, up] }[k];
-    this.orient(snap(nd), snap(nu));
+    this.orient(snap(nd), snap(nu), ...this.framing());
+  }
+  // Centre et distance qui cadrent la pièce (cube de vue, vue de départ) : sinon la cible reste
+  // l'origine de la dernière esquisse et la pièce sort de l'écran.
+  framing() {
+    if (!this.part) return [];
+    const s = new THREE.Box3().setFromObject(this.part).getBoundingSphere(new THREE.Sphere()), half = THREE.MathUtils.degToRad(this.camera.fov / 2);
+    return [s.center, (1.2 * Math.max(s.radius, 5)) / Math.sin(half) / Math.min(1, this.camera.aspect)];
   }
 
   // Oriente la caméra (animation courte) : direction vers la caméra et haut d'écran.
-  orient(dir, up, target = this.controls.target.clone()) {
-    const dist = this.camera.position.distanceTo(this.controls.target);
+  orient(dir, up, target = this.controls.target.clone(), dist = this.camera.position.distanceTo(this.controls.target)) {
     const d = dir.clone().normalize();
     // Vue exactement selon z : léger décalage pour garder OrbitControls (z en haut) stable.
     if (Math.abs(d.z) > 0.999) d.add(up.clone().multiplyScalar(-1e-3)).normalize();
@@ -123,8 +129,8 @@ export class Viewport {
       if (s >= 1) this.anim = null;
     };
   }
-  view(name) { const v = VIEWS[name]; this.orient(new THREE.Vector3(...v.dir), new THREE.Vector3(...v.up)); }
-  home() { this.orient(ISO.clone(), new THREE.Vector3(0, 0, 1)); }
+  view(name) { const v = VIEWS[name]; this.orient(new THREE.Vector3(...v.dir), new THREE.Vector3(...v.up), ...this.framing()); }
+  home() { this.orient(ISO.clone(), new THREE.Vector3(0, 0, 1), ...this.framing()); }
   // Vue de trois quarts sur un plan (après une esquisse, pour voir l'extrusion).
   threeQuarter(frame) {
     const d = ISO.clone().addScaledVector(frame.z, 0.8); // vue de départ, penchée vers la normale du plan
