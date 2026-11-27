@@ -14,6 +14,7 @@ import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus } from './toolbar.js';
 import { markingMenu } from './marking.js';
+import { initFiles, saveBlob } from './files.js';
 import { jointDialog } from './mech_joint.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -138,7 +139,7 @@ const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
 const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, insert: insertFeature, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
+  scene: vp.scene, viewport: vp, insert: insertFeature, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });
@@ -183,7 +184,7 @@ const sketch = new SketchEditor({
   mode: (on) => showTab(on ? 'sketch' : null),
   finish: (data) => {
     vp.threeQuarter(data.frame);
-    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](data, () => sketch.resume()); },
+    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (data.kind === 'rib' ? (d, b) => feats.rib(dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
@@ -214,7 +215,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project();
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project();
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {
@@ -373,21 +374,18 @@ function onResult(m) {
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
 $('print3d').onclick = () => print.open(); $('undo').onclick = () => undo(view); $('redo').onclick = () => redo(view);
 $('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download });
-function download(blob, ext, name) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${name ?? ($('example').value || 'piece')}.${ext}`; a.click();
-}
+const download = (blob, ext, name) => saveBlob(blob, `${name ?? ($('example').value || 'piece')}.${ext}`);
 $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, overrides: [] });
 // ---------- Exemples ----------
 for (const e of EXAMPLES) $('example').append(new Option(e, e));
 const BLANK = 'open Cad\n\n(* Commencez par « Esquisse » ou « Boîte » dans la barre d\'outils. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';
-async function loadExample(name) {
+async function loadExample(name, text) {
   if (sketch.active) sketch.stop();
   dialogs.close(true); stopPicking();
   $("status").textContent = lastStatus = `ouverture de « ${name} »…`; $('status').classList.remove('err');
   $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = $('drawing').disabled = true; // rien à exporter avant le premier résultat
-  const code = name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text();
+  const code = text ?? (name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text());
+  if (![...$('example').options].some((o) => o.value === name)) $('example').append(new Option(name, name));
   if (journal) selectFeature(null, false);
   timeline.setMarker(null); // avant de vider : remettrait l'ancienne pièce
   overrides = new Map(); vp.fitted = false; journal = null; lastMesh = null; vp.clearPart();
@@ -396,4 +394,4 @@ async function loadExample(name) {
 }
 $('example').onchange = () => loadExample($('example').value);
 if (innerWidth < 1100) toggleCode();
-loadExample('engrenage');
+if (!initFiles({ view, load: loadExample, name: () => $('example').value || 'piece', download, notify })()) loadExample('engrenage');

@@ -95,6 +95,15 @@ du cache Playwright).
 - Lot 22, chapitre 8 (Interference) : MÉCANISME, Interférences : paires de pièces qui se
   chevauchent à la pose courante (volume), pièces rougies tant que le dialogue est ouvert.
   La page ne défile plus du tout (racine et corps remis à zéro). Scénario `interferences.spec.js`.
+- Lot 23, chapitre 3 (Extrude) : flèche de distance dans la vue, à tirer à la souris (pas de
+  0,5 mm ; vers l'arrière : côté opposé), le champ et l'aperçu suivent. `gizmo.js`.
+  Scénario `fleche.spec.js`.
+- Lot 24, chapitre 1 (File) : Ouvrir… (fichier .ml), Enregistrer (le code), reprise
+  automatique du dernier document après rechargement (stockage du navigateur). `files.js`.
+  Scénario `fichier.spec.js`.
+- Lot 25, chapitre 4 (Rib) : Nervure depuis l'esquisse : les lignes ouvertes épaissies et
+  extrudées (épaisseur, hauteur, côté), Joindre ; esquisse sur une face : vue cadrée sur la
+  face, à gauche de la palette (la palette cachait la zone de dessin). Scénario `nervure.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
@@ -109,4 +118,4 @@ du cache Playwright).
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Pas d'échelle (`Shape.scale` absent du noyau).
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
-- Pas de flèche de distance dans la vue pour l'extrusion, pas de choix de régions de profil.
+- Pas de choix de régions de profil (toutes les boucles de l'esquisse sont extrudées).

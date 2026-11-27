@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { el, fmt, KIND } from './timeline.js';
 import { basePlanes } from './planes.js';
+import { distanceHandle } from './gizmo.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(12)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
@@ -58,6 +59,7 @@ export class Dialogs {
   cancel() { const c = this.current; if (typeof c?.cancel === 'function') c.cancel(); this.close(); }
   close(silent) {
     this.setPreview(null);
+    if (this.gizmo) { this.gizmo.dispose(); this.gizmo = null; }
     if (!this.box.hidden) {
       this.box.hidden = true; this.box.replaceChildren(); this.current = null;
       const x = this.ctx.onCloseExtra; this.ctx.onCloseExtra = null; x?.(); // nettoyage propre au dialogue (mesure, coupe…)
@@ -155,10 +157,11 @@ export class Dialogs {
       preview();
     });
     dirSel = choice(DIRS, P.dir, (v) => { P.dir = v; preview(); });
+    const hIn = num(P.h, (v) => { P.h = v; preview(); this.gizmo?.set(P.dir === 'flip' ? -v : v); }, { min: 0 });
     this.open('EXTRUSION', [
       row('Profil', el('span', { className: 'hint', textContent: `esquisse (${sk.loops.length} contour${sk.loops.length > 1 ? 's' : ''}, ${sk.circles.length} cercle${sk.circles.length > 1 ? 's' : ''})` })),
       row('Direction', dirSel),
-      row('Distance', num(P.h, (v) => { P.h = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+      row('Distance', hIn, el('span', { className: 'unit', textContent: 'mm' })),
       row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : opSel),
     ], {
       key: 'extrude',
@@ -179,6 +182,17 @@ export class Dialogs {
       },
     });
     preview();
+    // Flèche de distance au centre du profil, à tirer dans la vue (négatif : côté opposé).
+    if (this.ctx.viewport) {
+      const pts = sk.loops.length ? sk.loops.flat() : sk.circles, f = sk.frame;
+      const c = pts.reduce((a, p) => ({ x: a.x + p.x / pts.length, y: a.y + p.y / pts.length }), { x: 0, y: 0 });
+      const origin = f.origin.clone().addScaledVector(f.x, c.x).addScaledVector(f.y, c.y);
+      this.gizmo = distanceHandle(this.ctx.viewport, { origin, dir: f.z, value: P.h, onChange: (v) => {
+        if (v < 0 && P.dir === 'one') { P.dir = 'flip'; dirSel.value = 'flip'; } else if (v > 0 && P.dir === 'flip') { P.dir = 'one'; dirSel.value = 'one'; }
+        P.h = Math.abs(v); hIn.value = String(P.h); preview();
+      } });
+      window.camlcadGizmo = this.gizmo; // inspection (tests)
+    }
   }
 
   // ---------- Révolution d'une esquisse ----------

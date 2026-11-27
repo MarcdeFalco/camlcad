@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK } from './sketch_tools.js';
-import { mirror, patternX, patternCirc, offsetLoop } from './sketch_copy.js';
+import { mirror, patternX, patternCirc, offsetLoop, projectFace } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
 
@@ -40,11 +40,19 @@ export class SketchEditor extends SketchMarks {
     this.group.matrixAutoUpdate = false;
     this.group.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin.clone().addScaledVector(f.z, 0.02));
     scene.add(this.group);
-    // Vue de face sur le plan.
-    const dist = Math.max(60, camera.position.distanceTo(controls.target));
-    controls.target.copy(f.origin);
+    // Vue de face sur le plan ; sur une face, cadrée sur elle, à gauche de la palette.
+    let dist = Math.max(60, camera.position.distanceTo(controls.target)), target = f.origin.clone();
+    if (this.faceLoops?.length) {
+      const P = this.faceLoops.flat(), xs = P.map((p) => p.x), ys = P.map((p) => p.y);
+      const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys), t = Math.tan((camera.fov * Math.PI) / 360);
+      const r = this.ctx.renderer.domElement.getBoundingClientRect(), free = Math.max(0.3, (r.width - 270) / r.width);
+      dist = Math.max(30, (1.25 * Math.max(h, w / (camera.aspect * free))) / (2 * t));
+      const shift = ((r.width - free * r.width) / 2 / r.height) * 2 * dist * t; // décalage de la palette, en mm
+      target.addScaledVector(f.x, (Math.max(...xs) + Math.min(...xs)) / 2 + shift).addScaledVector(f.y, (Math.max(...ys) + Math.min(...ys)) / 2);
+    }
+    controls.target.copy(target);
     camera.up.copy(f.y);
-    camera.position.copy(f.origin).addScaledVector(f.z, dist);
+    camera.position.copy(target).addScaledVector(f.z, dist);
     controls.enableRotate = false;
     controls.update();
     this.onCam = () => this.placeLabels();
@@ -190,17 +198,7 @@ export class SketchEditor extends SketchMarks {
     const tools = { r: 'rect', l: 'poly', c: 'circle', a: 'arc', p: 'polygon', d: 'dim', s: 'select' };
     if (tools[e.key]) this.setTool(tools[e.key]);
   }
-  // Projeter (Black Book ch. 3, Project) : le contour de la face d'appui devient des points
-  // fixes et des lignes de construction, pour s'y accrocher.
-  project() {
-    if (!this.faceLoops) return;
-    for (const l of this.faceLoops) {
-      const first = this.pts.length;
-      l.forEach((p) => this.pts.push({ x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100, fixed: true }));
-      l.forEach((_, k) => this.lines.push([first + k, first + ((k + 1) % l.length)]));
-    }
-    this.faceLoops = null; this.changed();
-  }
+  project() { if (projectFace(this)) this.changed(); }
   remove() { if (deleteSelection(this)) { this.asking = null; this.changed(); } }
   setTool(t) { this.dropPending(); this.tool = t; this.chain = null; this.redraw(); }
   // Premier clic d'un rectangle ou d'un cercle abandonné : retire le point s'il ne sert à rien.
@@ -302,14 +300,21 @@ export class SketchEditor extends SketchMarks {
   }
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
+  // Lignes hors de toute boucle (construction) : chemins d'une nervure.
+  openLines() {
+    const seqs = this.loops.map((l) => loopPoints(this, l));
+    return this.lines.filter(([a, b]) => !seqs.some((q) => q.some((p, k) => { const r = q[(k + 1) % q.length]; return (p === a && r === b) || (p === b && r === a); })));
+  }
   finish(kind = 'extrude') {
-    if (!(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
+    const rib = kind === 'rib' && this.openLines().length && !this.error;
+    if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
       kind, editing: this.editing, loops: this.loops.map((l) => loopOutline(this, l)),
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })),
+      ribs: this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]),
     };
     this.suspend();
     this.ctx.finish(data);
@@ -376,6 +381,7 @@ export class SketchEditor extends SketchMarks {
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
     $('sketch-project').disabled = !this.faceLoops;
+    $('sketch-rib').disabled = !(this.openLines().length && !this.error);
     $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
