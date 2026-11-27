@@ -4,13 +4,14 @@
 import * as THREE from 'three';
 import { el, fmt, stlBlob } from './timeline.js';
 import { choice, row } from './dialogs.js';
+import { Layers } from './print_layers.js';
 
 export const PRINTERS = { mk4: ['Prusa MK4', 250, 210, 220], bambu: ['Bambu Lab X1/P1', 256, 256, 256], ender: ['Creality Ender 3', 220, 220, 250], mini: ['Prusa Mini', 180, 180, 180] };
 const COS45 = Math.SQRT1_2;
 
 export class Print3D {
   // ctx : viewport, dialogs, notify, mesh() (maillage évalué), download(blob, ext, nom), name()
-  constructor(ctx) { this.ctx = ctx; this.preview = null; this.plate = null; this.q = new THREE.Quaternion(); this.printer = 'mk4'; }
+  constructor(ctx) { this.ctx = ctx; this.preview = null; this.plate = null; this.q = new THREE.Quaternion(); this.printer = 'mk4'; this.layers = new Layers(this); }
   get active() { return this.preview != null; }
 
   open() {
@@ -22,6 +23,7 @@ export class Print3D {
       row('Imprimante', choice(Object.fromEntries(Object.entries(PRINTERS).map(([k, p]) => [k, `${p[0]} (${p[1]} × ${p[2]} × ${p[3]})`])), this.printer, (v) => { this.printer = v; this.update(); })),
       el('div', { className: 'hint', textContent: 'Cliquez la face à poser sur le plateau. Rouge : surplombs de plus de 45° (supports).' }),
       info,
+      ...this.layers.rows(),
       Object.assign(el('button', { textContent: 'Exporter le STL orienté' }), { onclick: () => this.export() }),
     ], { key: 'print', okLabel: 'Fermer', cancel: false });
     this.ctx.dialogs.ctx.onCloseExtra = () => this.close();
@@ -75,6 +77,7 @@ export class Print3D {
       el('div', { id: 'print-over', textContent: `Surplombs : ${fmt(Math.round(over))} mm² (${fmt(Math.round((100 * over) / total))} % de la surface)` }));
     this.fits = fits; this.overhang = over;
     this.plate.updateMatrixWorld(true); vp.fit([this.plate]);
+    this.lastO = o; this.layers.reset();
   }
 
   // Clic sur la pièce affichée : la face plane touchée va sur le plateau (normale vers −z).
@@ -92,6 +95,7 @@ export class Print3D {
 
   clear(keepPart) {
     const vp = this.ctx.viewport;
+    this.layers.clear();
     for (const o of [this.preview, this.plate]) if (o) { vp.scene.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.dispose?.(); }); }
     this.preview = this.plate = null;
     if (!keepPart) { if (vp.part) vp.part.visible = true; if (vp.edges) vp.edges.visible = vp.style === 0; if (vp.grid) vp.grid.visible = true; }

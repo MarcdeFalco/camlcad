@@ -193,6 +193,10 @@ du cache Playwright).
   trois clics de l'esquisse (rectangle incliné : perpendiculaire et parallèles ; cercle par
   trois points : « sur le cercle » ; arc par début, fin et un point) et cercle par deux points
   (centre au milieu du diamètre), dans le menu ▾ de CRÉER. Scénario `esquisse_points.spec.js`.
+- Lot 54, chapitre 1 (3D Print, aperçu façon trancheur) : dans le dialogue Impression 3D,
+  hauteur de couche (0,1 à 0,3 mm) et curseur de couche : la pièce orientée est coupée en haut
+  de la couche, le contour de la couche (intersection du maillage) tracé en orange, sa
+  longueur affichée. Scénario `couches.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
