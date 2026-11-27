@@ -70,7 +70,7 @@ worker.onmessage = ({ data: m }) => {
     else if (m.fid === selected) vp.setHighlight(m);
     return;
   }
-  if (m.kind === 'sketch') { if (verify) { const v = verify; verify = null; openVerified(v, m); } else sketch.onSolved(m); return; }
+  if (m.kind === 'sketch') { if (waiter) { const w = waiter; waiter = null; w(m); } else if (verify) { const v = verify; verify = null; openVerified(v, m); } else sketch.onSolved(m); return; }
   if (m.kind === 'edit') { edits.get(m.id)?.(m); edits.delete(m.id); return; }
   if (m.kind === 'export3mf') { download(new Blob([m.data], { type: 'model/3mf' }), '3mf'); return; }
   if (m.kind === 'pick') { if (m.fid >= 0) selectFeature(m.fid, true); return; }
@@ -140,7 +140,7 @@ const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
 const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, viewport: vp, insert: insertFeature, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
+  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });
@@ -191,7 +191,7 @@ const sketch = new SketchEditor({
 window.camlcadSketch = sketch; // inspection (tests)
 function startSketch(frame, code, data, editing, loops) { dialogs.close(true); showFace(null); if (selected != null) selectFeature(null, false); sketch.start(frame, code, data, editing, loops); }
 // « Modifier l'esquisse » : relue du code, vérifiée (le solveur doit réécrire exactement le même texte).
-let verify = null;
+let verify = null, waiter = null; // réouverture vérifiée ; réécriture d'une esquisse (profils choisis)
 function editSketch(name) {
   if (sketch.active) return;
   const r = prepareEdit(view.state.doc.toString(), name, allPlanes(), journal?.params ?? []);
@@ -238,7 +238,7 @@ const COMMANDS = {
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
   measure: () => inspect.startMeasure(), zebra: () => notify(vp.toggleZebra() ? 'Analyse zébrée : bandes réfléchies.' : 'Analyse zébrée retirée.'), draft: () => notify(vp.toggleDraft() ? 'Dépouille (démoulage selon +z) : vert en dépouille, jaune vertical, rouge en contre-dépouille.' : 'Analyse de dépouille retirée.'), section: () => inspect.section(), props: () => inspect.properties(),
-  help: () => shortcutsHelp(dialogs), shell: () => needSel() && paths.shell(dialogs, journal.features[selected], featureDef(journal.features[selected].name)), split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
+  help: () => shortcutsHelp(dialogs), shell: () => needSel() && paths.shell(dialogs, journal.features[selected], featureDef(journal.features[selected].name)), split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs), scale: () => feats.scale(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }), angleplane: () => dialogs.anglePlane((f) => insertPlane(`(* construction *) ${frameCode(f)}`)),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
   edit: () => needSel() && dialogs.feature(selected),

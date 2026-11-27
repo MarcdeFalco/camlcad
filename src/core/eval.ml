@@ -100,6 +100,7 @@ module Make (K : Kernel.S) = struct
           | Intersection (a, b) -> K.intersection (solid c a) (solid c b)
           | Place (f, a) -> K.transform f (solid c a)
           | Mirror (n, a) -> K.mirror ~normal:n (solid c a)
+          | Scale (f, a) -> K.scale f (solid c a)
         in
         c.calls <- c.calls + 1;
         Hashtbl.replace c.solids (Shape.id s) k;

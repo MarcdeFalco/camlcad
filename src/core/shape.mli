@@ -29,6 +29,11 @@ val translate : Geom.V3.t -> t -> t
 val rotate : axis:Geom.V3.t -> deg:float -> t -> t
 val mirror : normal:Geom.V3.t -> t -> t
 
+val scale : ?about:Geom.V3.t -> Geom.V3.t -> t -> t
+(** [scale ~about f s] : affinité de centre [about] (l'origine par défaut), de facteurs
+    [f.x], [f.y], [f.z] ; [V3.v k k k] est l'homothétie de rapport [k]. Un facteur
+    négatif retourne aussi la pièce ; un facteur nul donne un solide vide. *)
+
 val id : t -> int
 val equal : t -> t -> bool
 
@@ -48,5 +53,6 @@ type view =
   | Intersection of t * t
   | Place of Geom.Frame.t * t
   | Mirror of Geom.V3.t * t
+  | Scale of Geom.V3.t * t
 
 val view : t -> view

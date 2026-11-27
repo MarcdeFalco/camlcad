@@ -7,6 +7,8 @@ import { TWO_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from
 import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
+import { trimAt, extendAt, breakAt } from './sketch_trim.js';
+const CLICK1 = { ellipse: ellipseClick, spline: splineClick, trim: trimAt, extend: extendAt, break: breakAt }; // outils à un clic
 import { arcPoints, arcRadius, loopPoints, loopOutline, splinePoints, centerArc, fillet } from './sketch_arcs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -144,10 +146,8 @@ export class SketchEditor extends SketchMarks {
       const n = this.nearest(q), ch = this.tool === 'chamfer';
       if (n && n.kind === 'p') { this.asking = { kind: this.tool, label: ch ? 'Longueur du chanfrein' : 'Rayon du congé', refs: [n.i], value: ch ? 2 : 3 }; this.sel = [{ kind: 'p', i: n.i }]; }
       this.redraw();
-    } else if (this.tool === 'ellipse') {
-      if (ellipseClick(this, q)) this.changed(); else this.redraw();
-    } else if (this.tool === 'spline') {
-      if (splineClick(this, q)) this.changed(); else this.redraw();
+    } else if (CLICK1[this.tool]) {
+      if (CLICK1[this.tool](this, q)) this.changed(); else this.redraw();
     } else if (this.tool === 'point') {
       this.pointAt(q); this.changed();
     } else if (this.tool === 'dim') {
@@ -187,7 +187,7 @@ export class SketchEditor extends SketchMarks {
       if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else this.stop();
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.sel.length) { e.preventDefault(); this.remove(); return; }
-    const tools = { r: 'rect', l: 'poly', c: 'circle', a: 'arc', p: 'polygon', d: 'dim', s: 'select' };
+    const tools = { r: 'rect', l: 'poly', c: 'circle', a: 'arc', p: 'polygon', d: 'dim', s: 'select', t: 'trim' };
     if (tools[e.key]) this.setTool(tools[e.key]);
   }
   project() { if (projectFace(this)) this.changed(); }
@@ -300,7 +300,7 @@ export class SketchEditor extends SketchMarks {
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
-      kind, editing: this.editing, loops: this.loops.map((l) => loopOutline(this, l)),
+      kind, editing: this.editing, desc: descOf(this), loops: this.loops.map((l) => loopOutline(this, l)),
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })), ellipses: this.ellipses.map((e) => ellipseOutline(this, e)),

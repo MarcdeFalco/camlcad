@@ -22,6 +22,7 @@ external difference_ : raw -> raw -> raw = "cc_difference"
 external intersection_ : raw -> raw -> raw = "cc_intersection"
 external transform_ : raw -> float array -> raw = "cc_transform"
 external mirror_ : raw -> float -> float -> float -> raw = "cc_mirror"
+external scale_ : raw -> float -> float -> float -> raw = "cc_scale"
 external is_empty_ : raw -> bool = "cc_is_empty"
 external volume_ : raw -> float = "cc_volume"
 external genus_ : raw -> int = "cc_genus"
@@ -62,6 +63,7 @@ let mirror ~(normal : Geom.V3.t) = function
   | Empty -> Empty
   | M x -> M (mirror_ x normal.x normal.y normal.z)
 
+let scale (f : Geom.V3.t) = function Empty -> Empty | M x -> M (scale_ x f.x f.y f.z)
 let is_empty = function Empty -> true | M x -> is_empty_ x
 let volume = function Empty -> 0. | M x -> volume_ x
 let genus = function Empty -> 0 | M x -> genus_ x

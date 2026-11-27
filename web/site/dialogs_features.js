@@ -135,6 +135,41 @@ export function mirror(d, f, geo) {
   preview();
 }
 
+// Échelle (ch. 6, Scale) : homothétie ou affinité par axe de la pièce courante, autour de
+// l'origine ou du centre de sa boîte englobante (Shape.scale ~about).
+export function scale(d) {
+  const part = d.ctx.part();
+  if (!part) { d.ctx.notify('Pas de pièce à mettre à l’échelle.', true); return; }
+  part.geometry.computeBoundingBox();
+  const c = part.geometry.boundingBox.getCenter(new THREE.Vector3());
+  const P = { k: 2, kx: 2, ky: 1, kz: 1, axes: false, about: 'center' };
+  const f = () => (P.axes ? [P.kx, P.ky, P.kz] : [P.k, P.k, P.k]);
+  const at = () => (P.about === 'center' ? c : new THREE.Vector3());
+  const preview = () => {
+    const o = new THREE.Mesh(part.geometry.clone()), p = at();
+    o.geometry.translate(-p.x, -p.y, -p.z); o.geometry.scale(...f()); o.geometry.translate(p.x, p.y, p.z);
+    d.setPreview(o, 0x3d8bff);
+  };
+  const uni = row('Facteur', num(P.k, (v) => { P.k = v; preview(); }));
+  const per = row('Facteurs x y z', ...['kx', 'ky', 'kz'].map((k) => num(P[k], (v) => { P[k] = v; preview(); })));
+  per.hidden = true;
+  d.open('ÉCHELLE', [
+    row('Point', choice({ center: 'Centre de la pièce', origin: 'Origine' }, P.about, (v) => { P.about = v; preview(); })),
+    row('Type', choice({ uni: 'Uniforme', axes: 'Par axe' }, 'uni', (v) => { P.axes = v === 'axes'; uni.hidden = P.axes; per.hidden = !P.axes; preview(); })),
+    uni, per,
+  ], {
+    key: 'scale',
+    ok: () => {
+      const k = f();
+      if (k.some((x) => !(x > 0)) || k.every((x) => x === 1)) return false;
+      const n = d.ctx.nextIndex(), name = `echelle${n}`, p = at();
+      const about = P.about === 'center' ? `~about:${v3(p)} ` : '';
+      d.ctx.insertResult(name, (x) => `Shape.(${x} |> scale ${about}${v3n({ x: k[0], y: k[1], z: k[2] })})`);
+    },
+  });
+  preview();
+}
+
 // ---------- Chapitre 6 (Solid Editing) ----------
 
 // Combiner : le résultat courant (cible) et un autre corps du document (outil).

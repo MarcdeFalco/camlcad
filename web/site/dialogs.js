@@ -124,10 +124,14 @@ export class Dialogs {
 
   // ---------- Extrusion d'une esquisse ----------
   // sk : { frame, planeCode, code, loops: [[{x,y}]], circles: [{x,y,r}] } ; cancel() rouvre l'esquisse.
-  extrude(sk, back) {
+  extrude(sk0, back) {
+    let sk = sk0;
     const empty = this.ctx.isEmpty();
     const P = { h: 10, dir: 'one', op: empty ? 'join' : 'join' };
+    // Profils (contours) choisis : décochés, ils restent dans l'esquisse en construction.
+    const sel = sk.loops.map(() => true), all = sk.loops;
     const shapes = () => {
+      sk = { ...sk, loops: all.filter((_, i) => sel[i]) };
       const out = [], holes = sk.circles.map((c) => { const p = new THREE.Path(); p.absarc(c.x, c.y, c.r, 0, 2 * Math.PI, true); return p; });
       // Boucle dans une boucle : trou (profondeur impaire), comme Cad.Sketch_desc.
       const inside = (p, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; };
@@ -161,6 +165,7 @@ export class Dialogs {
     const hIn = num(P.h, (v) => { P.h = v; preview(); this.gizmo?.set(P.dir === 'flip' ? -v : v); }, { min: 0 });
     this.open('EXTRUSION', [
       row('Profil', el('span', { className: 'hint', textContent: `esquisse (${sk.loops.length} contour${sk.loops.length > 1 ? 's' : ''}, ${sk.circles.length} cercle${sk.circles.length > 1 ? 's' : ''})` })),
+      ...(all.length > 1 ? [row('Contours', el('span', { className: 'profiles' }, ...all.map((_, i) => el('label', {}, Object.assign(el('input', { type: 'checkbox', checked: true }), { onchange: (e) => { sel[i] = e.target.checked; preview(); } }), ` ${i + 1} `))))] : []),
       row('Direction', dirSel),
       row('Distance', hIn, el('span', { className: 'unit', textContent: 'mm' })),
       row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : opSel),
@@ -168,7 +173,12 @@ export class Dialogs {
       key: 'extrude',
       cancel: back,
       ok: () => {
-        if (!(P.h > 0)) return false;
+        if (!(P.h > 0) || (all.length && !sel.some(Boolean))) return false;
+        // Contours retirés : l'esquisse est réécrite par le solveur sans eux, puis insérée.
+        if (!sel.every(Boolean) && sk.desc && !sk.recoded) {
+          this.ctx.resolveSketch({ ...sk.desc, loops: sk.desc.loops.filter((_, i) => sel[i]) }).then((m) => { if (m.ok) { sk.code = m.code; sk.recoded = true; this.ok(); } });
+          return false;
+        }
         const n = this.ctx.nextIndex(), plan = `plan${n}`, esq = `esquisse${n}`;
         const name = (P.op === 'cut' ? 'poche' : 'extrusion') + n;
         const eps = P.op === 'cut' && P.dir !== 'sym';

@@ -50,6 +50,7 @@ let rec op s =
   | Difference _ -> "difference"
   | Intersection _ -> "intersection"
   | Mirror _ -> "mirror"
+  | Scale (_, s) -> op s
   | Place (_, s) -> op s
 
 let feature (f : Doc.feature_info) =
