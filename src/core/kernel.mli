@@ -52,6 +52,9 @@ module type S = sig
   val transform : Geom.Frame.t -> solid -> solid
   val mirror : normal:Geom.V3.t -> solid -> solid
 
+  val scale : Geom.V3.t -> solid -> solid
+  (** Homothétie (ou affinité) de centre l'origine, facteurs selon x, y, z. *)
+
   (** {2 Requêtes} *)
 
   val is_empty : solid -> bool

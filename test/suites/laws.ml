@@ -39,6 +39,10 @@ module Make (K : Cad.Kernel.S) = struct
     check "miroir : bbox réfléchie"
       (let bb = K.bbox (solid (Shape.mirror ~normal:Geom.V3.ex cube)) in
        close bb.min.x (-10.) && close bb.max.x 0.);
+    check "échelle : volume et bbox autour du centre"
+      (let s = Shape.scale ~about:(v 5. 5. 5.) (v 2. 1. 0.5) cube in
+       let bb = K.bbox (solid s) in
+       close ~rel:1e-6 (vol s) 1000. && close bb.min.x (-5.) && close bb.max.x 15. && close bb.max.z 7.5);
     let mesh = E.mesh c Shape.(a - b) in
     check "maillage : fermé, Euler = 2" (Mesh.is_closed mesh && Mesh.euler_characteristic mesh = 2);
     check "maillage : volume = volume noyau" (close ~rel:1e-5 (Mesh.volume mesh) (vol Shape.(a - b)));

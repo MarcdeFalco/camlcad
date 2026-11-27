@@ -154,6 +154,10 @@ du cache Playwright).
   d'extrusion ; un contour décoché sort de l'aperçu, et l'esquisse est réécrite par le solveur
   sans lui avant l'insertion. Le lien `test_ui/node_modules` versionné par erreur au lot 19
   est retiré (`.gitignore` : `node_modules` sans barre). Scénario `profils.spec.js`.
+- Lot 45, chapitre 6 (Scale) : `Shape.scale ?about f` jusqu'au noyau (`Kernel.S.scale`,
+  manifold natif et JS, loi « échelle » dans les suites), commande Échelle (uniforme ou par axe,
+  autour du centre de la pièce ou de l'origine). Numéro libre des noms générés calculé sur tous
+  les `let` (le préfixe `echelle` manquait à la liste). Scénario `echelle.spec.js` (volumes).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -165,13 +169,13 @@ du cache Playwright).
 - Chapitre 2 : ajuster / prolonger / couper (Trim, Extend, Break), texte d'esquisse, cote de
   l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
 - Chapitre 3 : balayage (Sweep) et lissage (Loft) — demandent `Shape.sweep` / `loft` au noyau.
-- Chapitre 6 : échelle d'un corps (`Shape.scale` au noyau), coque d'un corps quelconque.
+- Chapitre 6 : coque d'un corps quelconque.
 - Chapitre 7 : liaisons choisies dans la vue (ports affichés), étude de mouvement.
 - Frise : réordonner les étapes par glisser (Source_edit « move »).
 
 ## Écarts connus avec Fusion (pas encore traités)
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
-- Pas d'échelle de corps (`Shape.scale` absent du noyau) ; coque seulement pour une extrusion simple.
+- Coque seulement pour une extrusion simple ; centre d'échelle écrit en littéral.
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
 - Choix des profils par cases, pas encore par clic sur la région dans la vue.
 - Plans de face, nervures, tuyaux et perçages aux points : géométrie écrite en littéral

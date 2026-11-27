@@ -113,6 +113,9 @@ CAMLprim value cc_transform(value m, value a) {
 CAMLprim value cc_mirror(value m, value x, value y, value z) {
   return wrap_m(manifold_mirror(manifold_alloc_manifold(), M_val(m), Double_val(x), Double_val(y), Double_val(z)));
 }
+CAMLprim value cc_scale(value m, value x, value y, value z) {
+  return wrap_m(manifold_scale(manifold_alloc_manifold(), M_val(m), Double_val(x), Double_val(y), Double_val(z)));
+}
 
 CAMLprim value cc_is_empty(value m) { return Val_bool(manifold_is_empty(M_val(m))); }
 CAMLprim value cc_volume(value m) { return caml_copy_double(manifold_volume(M_val(m))); }
@@ -176,6 +179,7 @@ CAMLprim value cc_difference(value a0, value a1) { MISSING; return Val_unit; }
 CAMLprim value cc_intersection(value a0, value a1) { MISSING; return Val_unit; }
 CAMLprim value cc_transform(value a0, value a1) { MISSING; return Val_unit; }
 CAMLprim value cc_mirror(value a0, value a1, value a2, value a3) { MISSING; return Val_unit; }
+CAMLprim value cc_scale(value a0, value a1, value a2, value a3) { MISSING; return Val_unit; }
 CAMLprim value cc_is_empty(value a0) { MISSING; return Val_unit; }
 CAMLprim value cc_volume(value a0) { MISSING; return Val_unit; }
 CAMLprim value cc_genus(value a0) { MISSING; return Val_unit; }

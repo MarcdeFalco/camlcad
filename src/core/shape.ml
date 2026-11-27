@@ -12,6 +12,7 @@ and view =
   | Intersection of t * t
   | Place of Geom.Frame.t * t
   | Mirror of Geom.V3.t * t
+  | Scale of Geom.V3.t * t
 
 type key =
   | KEmpty
@@ -25,6 +26,7 @@ type key =
   | KIntersection of int * int
   | KPlace of Geom.Frame.t * int
   | KMirror of Geom.V3.t * int
+  | KScale of Geom.V3.t * int
 
 let key = function
   | Empty -> KEmpty
@@ -38,6 +40,7 @@ let key = function
   | Intersection (a, b) -> KIntersection (a.id, b.id)
   | Place (f, a) -> KPlace (f, a.id)
   | Mirror (n, a) -> KMirror (n, a.id)
+  | Scale (f, a) -> KScale (f, a.id)
 
 let empty = { id = 0; v = Empty }
 let table : (key, t) Hashtbl.t = Hashtbl.create 256
@@ -75,6 +78,11 @@ let on = place
 let translate d s = place (Geom.Frame.translate d Geom.Frame.world) s
 let rotate ~axis ~deg s = place (Geom.Frame.rotate ~axis ~deg Geom.Frame.world) s
 let mirror ~normal s = mk (Mirror (Geom.V3.normalize normal, s))
+let scale ?about f s =
+  match about with
+  | None -> mk (Scale (f, s))
+  | Some p -> translate p (mk (Scale (f, translate (Geom.V3.neg p) s)))
+
 let id s = s.id
 let equal a b = a.id = b.id
 
@@ -85,7 +93,7 @@ let subterms s =
       Hashtbl.add seen s.id ();
       match s.v with
       | Union (a, b) | Difference (a, b) | Intersection (a, b) -> go a; go b
-      | Place (_, a) | Mirror (_, a) -> go a
+      | Place (_, a) | Mirror (_, a) | Scale (_, a) -> go a
       | Empty | Cube _ | Cylinder _ | Sphere _ | Extrude _ | Revolve _ -> ()
     end
   in

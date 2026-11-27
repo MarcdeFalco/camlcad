@@ -74,6 +74,7 @@ let transform f = function
       M (call x "transform" [ arr mat ])
 
 let mirror ~normal = function Empty -> Empty | M x -> M (call x "mirror" [ vec3 normal ])
+let scale f = function Empty -> Empty | M x -> M (call x "scale" [ vec3 f ])
 let is_empty = function Empty -> true | M x -> Js.to_bool (call x "isEmpty" [])
 let volume = function Empty -> 0. | M x -> to_float (call x "volume" [])
 
