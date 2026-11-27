@@ -163,6 +163,10 @@ du cache Playwright).
   (contraintes H/V recopiées, sinon parallèles), les contours de lignes sont recalculés.
   Deux rectangles qui se chevauchent deviennent un seul contour. Scénario `ajuster.spec.js`
   (volume de l'union). Lignes seulement : cercles et arcs ne coupent pas encore.
+- Lot 47, chapitre 2 (Extend, Break) : Prolonger (l'extrémité libre la plus proche du clic va
+  jusqu'à la première ligne rencontrée et y reste, « sur la droite ») et Couper (la ligne
+  cliquée et celle qui la croise sont scindées au point commun, les contours passent par lui).
+  Scénario `prolonger.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -171,7 +175,7 @@ du cache Playwright).
   le force-push), puis PR, CI, fusion.
 
 ## Suivant (ordre proposé)
-- Chapitre 2 : ajuster contre cercles et arcs, prolonger / couper (Extend, Break), texte d'esquisse, cote de
+- Chapitre 2 : ajuster, prolonger, couper contre cercles et arcs, texte d'esquisse, cote de
   l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
 - Chapitre 3 : balayage (Sweep) et lissage (Loft) — demandent `Shape.sweep` / `loft` au noyau.
 - Chapitre 6 : coque d'un corps quelconque.

@@ -2,7 +2,9 @@
 // intersections voisines du clic (ou toute la ligne s'il n'y en a pas). Les lignes coupées
 // sont scindées au point d'intersection, qui devient un sommet commun : deux rectangles qui se
 // chevauchent donnent, après ajustement des morceaux intérieurs, un seul contour.
-// Lignes seulement (les cercles et arcs ne coupent pas encore).
+// Prolonger (Extend) : l'extrémité libre la plus proche du clic va jusqu'à la première ligne
+// rencontrée. Couper (Break) : la ligne cliquée et celle qui la croise sont scindées au point
+// d'intersection le plus proche du clic. Lignes seulement (cercles et arcs : pas encore).
 import { deleteSelection } from './sketch_delete.js';
 import { SketchMarks } from './sketch_marks.js';
 
@@ -34,16 +36,67 @@ function split(ed, j, n) {
   return j2;
 }
 
-// ed : SketchEditor ; q : clic (coordonnées du plan). true si l'esquisse a changé.
-export function trimAt(ed, q) {
-  const tol = ed.tol();
-  let li = -1, best = tol, tc = 0;
+// Ligne la plus proche du clic (sous la tolérance) et paramètre du clic sur elle.
+function nearestLine(ed, q) {
+  let li = -1, best = ed.tol(), tc = 0;
   ed.lines.forEach(([a, b], i) => {
     const A = ed.pts[a], B = ed.pts[b], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1;
     const t = Math.max(0, Math.min(1, ((q.x - A.x) * dx + (q.y - A.y) * dy) / L2));
     const d = Math.hypot(A.x + t * dx - q.x, A.y + t * dy - q.y);
     if (d < best) { best = d; li = i; tc = t; }
   });
+  return { li, tc };
+}
+const degree = (ed, p) => ed.lines.filter((l) => l.includes(p)).length;
+
+// Prolonger : l'extrémité (libre) du côté du clic glisse jusqu'à la première ligne sur son
+// chemin, et y reste (contrainte « sur la ligne »).
+export function extendAt(ed, q) {
+  const { li, tc } = nearestLine(ed, q);
+  if (li < 0) return false;
+  const [a, b] = ed.lines[li], [e, o] = tc > 0.5 ? [b, a] : [a, b];
+  if (degree(ed, e) > 1 || ed.pts[e].fixed) return false;
+  const O = ed.pts[o], E = ed.pts[e], far = { x: O.x + (E.x - O.x) * 1e4, y: O.y + (E.y - O.y) * 1e4 };
+  let hit = null;
+  ed.lines.forEach(([c, d], j) => {
+    if (j === li) return;
+    const x = cross(O, far, ed.pts[c], ed.pts[d]);
+    if (x && x.t > 1e-4 * (1 + 1e-6) && (!hit || x.t < hit.t)) hit = { ...x, j };
+  });
+  if (!hit) return false;
+  E.x = O.x + hit.t * (far.x - O.x); E.y = O.y + hit.t * (far.y - O.y);
+  ed.cons = ed.cons.filter((c) => !(DROP.has(c.kind) && onLine(c, li)));
+  ed.cons.push({ kind: 'on_line', refs: [e, hit.j] });
+  return true;
+}
+
+// Couper : la ligne cliquée et la ligne qui la croise au plus près du clic sont scindées au
+// point d'intersection, sommet commun.
+export function breakAt(ed, q) {
+  const { li, tc } = nearestLine(ed, q);
+  if (li < 0) return false;
+  const [p, r] = ed.lines[li], P = ed.pts[p], R = ed.pts[r];
+  let hit = null;
+  ed.lines.forEach(([a, b], j) => {
+    if (j === li) return;
+    const x = cross(P, R, ed.pts[a], ed.pts[b]);
+    if (x && x.s > EPS && x.s < 1 - EPS && (!hit || Math.abs(x.t - tc) < Math.abs(hit.t - tc))) hit = { ...x, j };
+  });
+  if (!hit) return false;
+  const n = ed.pts.push({ x: P.x + hit.t * (R.x - P.x), y: P.y + hit.t * (R.y - P.y), fixed: false }) - 1;
+  const inLoop = (u, v) => ed.loops.some((l) => l.every((x) => typeof x === 'number') && l.some((x, k) => (x === u && l[(k + 1) % l.length] === v) || (x === v && l[(k + 1) % l.length] === u)));
+  for (const j of [li, hit.j]) {
+    const [u, v] = ed.lines[j], loopy = inLoop(u, v);
+    split(ed, j, n);
+    // Une boucle qui passait par [u, v] passe désormais par n.
+    if (loopy) ed.loops = ed.loops.map((l) => { const k = l.findIndex((x, i) => (x === u && l[(i + 1) % l.length] === v) || (x === v && l[(i + 1) % l.length] === u)); return k < 0 ? l : [...l.slice(0, k + 1), n, ...l.slice(k + 1)]; });
+  }
+  return true;
+}
+
+// ed : SketchEditor ; q : clic (coordonnées du plan). true si l'esquisse a changé.
+export function trimAt(ed, q) {
+  const { li, tc } = nearestLine(ed, q);
   if (li < 0) return false;
   // Arêtes de profil (dans une boucle de lignes) avant l'opération.
   const profile = new Set();

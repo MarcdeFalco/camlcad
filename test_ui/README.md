@@ -63,6 +63,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `profils.spec.js` | Black Book ch. 3 : deux rectangles, un seul contour coché dans l'extrusion, un seul pavé |
 | `echelle.spec.js` | Black Book ch. 6 : pièce ×2 autour de son centre (volume × 8), puis z × 0,5 |
 | `ajuster.spec.js` | Black Book ch. 2 : deux rectangles chevauchants, quatre morceaux intérieurs ajustés (T), un contour extrudé (volume de l'union) |
+| `prolonger.spec.js` | Black Book ch. 2 : ligne prolongée jusqu'au bord d'un rectangle, ligne coupée au croisement puis bout ajusté |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

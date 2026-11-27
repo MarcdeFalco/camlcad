@@ -7,7 +7,8 @@ import { TWO_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from
 import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
-import { trimAt } from './sketch_trim.js';
+import { trimAt, extendAt, breakAt } from './sketch_trim.js';
+const CLICK1 = { ellipse: ellipseClick, spline: splineClick, trim: trimAt, extend: extendAt, break: breakAt }; // outils à un clic
 import { arcPoints, arcRadius, loopPoints, loopOutline, splinePoints, centerArc, fillet } from './sketch_arcs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -145,8 +146,8 @@ export class SketchEditor extends SketchMarks {
       const n = this.nearest(q), ch = this.tool === 'chamfer';
       if (n && n.kind === 'p') { this.asking = { kind: this.tool, label: ch ? 'Longueur du chanfrein' : 'Rayon du congé', refs: [n.i], value: ch ? 2 : 3 }; this.sel = [{ kind: 'p', i: n.i }]; }
       this.redraw();
-    } else if (this.tool === 'ellipse' || this.tool === 'spline' || this.tool === 'trim') {
-      if ({ ellipse: ellipseClick, spline: splineClick, trim: trimAt }[this.tool](this, q)) this.changed(); else this.redraw();
+    } else if (CLICK1[this.tool]) {
+      if (CLICK1[this.tool](this, q)) this.changed(); else this.redraw();
     } else if (this.tool === 'point') {
       this.pointAt(q); this.changed();
     } else if (this.tool === 'dim') {
