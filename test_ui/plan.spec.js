@@ -14,6 +14,9 @@ test('mise en plan et capture', async ({ page }) => {
   expect(dl.suggestedFilename()).toBe('support-plan.svg');
   const svg = await readFile(await dl.path(), 'utf8');
   expect((svg.match(/class="view"/g) ?? []).length).toBe(3);
+  // Coupe A-A hachurée (Section View) : un contour en L, trait de coupe sur la vue de dessus.
+  expect(svg).toMatch(/data-view="coupe"><path fill="url\(#hach\)"/);
+  expect(svg).toContain('Coupe A-A');
   for (const [k, v] of [['largeur', '60'], ['hauteur', '30'], ['profondeur', '25']]) expect(svg).toMatch(new RegExp(`data-dim="${k}"[^]*?>${v}</text>`));
   expect(svg).toContain('Échelle 2:1');
   // Les trous de la semelle sont cachés en vue de face : traits interrompus.

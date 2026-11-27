@@ -72,7 +72,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
 - **Impression 3D** (barre du haut) : cliquer la face à poser sur le plateau, volume de
   l'imprimante, appui, surplombs > 45° en rouge, STL exporté dans cette orientation.
 - **Plan** (barre du haut) : mise en plan A4 (vues de face, dessus, gauche en projection
-  européenne, cotes d'encombrement, cartouche) en SVG ; capture PNG de la vue.
+  européenne, coupe A-A hachurée, cotes d'encombrement, cartouche) en SVG ; capture PNG de la vue.
 - **Fichier** : Ouvrir… un .ml, Enregistrer le code ; le dernier document est repris au
   rechargement de la page.
 - **Export** STL (solide) et 3MF (solide, ou pièces d'un mécanisme placées à la pose

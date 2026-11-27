@@ -119,6 +119,9 @@ du cache Playwright).
 - Lot 31, chapitre 2 (Chamfer, Sketch Scale) : chanfrein d'esquisse à un sommet (sommet virtuel
   gardé comme pour le congé), mise à l'échelle de toute l'esquisse (points et cotes).
   Scénario `esquisse_echelle.spec.js` (volume vérifié).
+- Lot 32, chapitre 11 (Section View) : la mise en plan ajoute la coupe A-A (plan y milieu,
+  contours chaînés, matière hachurée, échelle propre si besoin) et son trait de coupe sur la
+  vue de dessus. Scénario `plan.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
