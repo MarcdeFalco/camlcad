@@ -43,5 +43,5 @@ export function deleteSelection(ed) {
   ed.arcs = ed.arcs.filter((_, i) => !del.a.has(i)).map((x) => ({ c: M.p.get(x.c), a: M.p.get(x.a), b: M.p.get(x.b) }));
   ed.pts = ed.pts.filter((_, i) => !del.p.has(i));
   ed.sel = [];
-  return true;
+  return M; // renumérotation (vraie) : { p, l, c, a } de Map ancien → nouveau
 }
