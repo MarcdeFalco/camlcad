@@ -116,14 +116,18 @@ let hdistance p q d v = [ px v q -. px v p -. d ]
 let vdistance p q d v = [ py v q -. py v p -. d ]
 
 (* Régions *)
+type ellipse = { ec : point; ea : point; ery : float }
+
 type edge = Pt of point | Along of arc | Back of arc | Spline of point list
-type region = Path of edge list | Disk of circle | Union of region * region | Diff of region * region
+type region = Path of edge list | Disk of circle | Oval of ellipse | Union of region * region | Diff of region * region
 
 let pt p = Pt p
 let along a = Along a
 let back a = Back a
 let spline ps = if List.length ps < 2 then invalid_arg "Sketch.spline : au moins deux points" else Spline ps
 let path es = Path es
+let ellipse c a ry s = if ry <= 0. then invalid_arg "Sketch.ellipse : demi-petit axe négatif ou nul" else ({ ec = c; ea = a; ery = ry }, s)
+let oval e = Oval e
 let loop ps = Path (List.map pt ps)
 
 (* Sommets d'un contour : un arc devient des points de son début à sa fin (sens trigonométrique). *)
@@ -180,6 +184,16 @@ let rec profile v = function
       in
       Profile.polygon (if area < 0. then List.rev pts else pts)
   | Disk c -> Profile.translate (Geom.V2.v (px v c.c) (py v c.c)) (Profile.circle ~r:(get v c.r))
+  | Oval e ->
+      let cx = px v e.ec and cy = py v e.ec in
+      let ux = px v e.ea -. cx and uy = py v e.ea -. cy in
+      let rx = Float.hypot ux uy in
+      let ux, uy = if rx < 1e-12 then (1., 0.) else (ux /. rx, uy /. rx) in
+      Profile.polygon
+        (List.init 64 (fun k ->
+             let t = 2. *. Float.pi *. float_of_int k /. 64. in
+             let a = rx *. cos t and b = e.ery *. sin t in
+             Geom.V2.v (cx +. (a *. ux) -. (b *. uy)) (cy +. (a *. uy) +. (b *. ux))))
   | Union (a, b) -> Profile.union (profile v a) (profile v b)
   | Diff (a, b) -> Profile.difference (profile v a) (profile v b)
 

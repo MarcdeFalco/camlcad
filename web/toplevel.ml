@@ -314,6 +314,9 @@ let sketch id (o : Js.Unsafe.any) =
       arcs =
         (if Js.Optdef.test (Js.Unsafe.get o "arcs") then Array.map (fun a -> (it (get a 0), it (get a 1), it (get a 2))) (arr "arcs")
          else [||]);
+      ellipses =
+        (if Js.Optdef.test (Js.Unsafe.get o "ellipses") then Array.map (fun e -> (it (get e 0), it (get e 1), fl (get e 2))) (arr "ellipses")
+         else [||]);
       constraints =
         Array.to_list
           (Array.map

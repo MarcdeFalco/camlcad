@@ -115,6 +115,16 @@ val loop : point list -> region
 
 val disk : circle -> region
 
+type ellipse
+
+val ellipse : point -> point -> float -> ellipse t
+(** [ellipse c a ry] : ellipse de centre [c], dont [a] est une extrémité du grand axe (qui
+    donne la direction et le demi-axe [|ca|]) et de demi-petit axe [ry] (fixé, pas une
+    inconnue du solveur). Lève [Invalid_argument] si [ry <= 0]. *)
+
+val oval : ellipse -> region
+(** Région intérieure à l'ellipse (polygone de 64 côtés). *)
+
 type edge
 
 val pt : point -> edge

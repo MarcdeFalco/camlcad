@@ -109,3 +109,19 @@ export function splineClick(ed, q) {
   if (i !== ed.spl[ed.spl.length - 1]) ed.spl.push(i);
   return false;
 }
+
+// Ellipse (ch. 2) : centre, extrémité du grand axe, puis un point qui donne le demi-petit axe
+// (sa distance au grand axe). Rend vrai à la création.
+export function ellipseClick(ed, q) {
+  if (ed.pending == null) { ed.pending = ed.pointAt(q); return false; }
+  if (ed.pending2 == null) { ed.pending2 = ed.pointAt(q); return false; }
+  const C = ed.pts[ed.pending], A = ed.pts[ed.pending2], L = Math.hypot(A.x - C.x, A.y - C.y) || 1;
+  const ry = Math.abs(((q.x - C.x) * (A.y - C.y) - (q.y - C.y) * (A.x - C.x)) / L);
+  if (ry > 1e-3) ed.ellipses.push({ c: ed.pending, a: ed.pending2, ry: Math.round(ry * 100) / 100 });
+  ed.pending = ed.pending2 = null;
+  return ry > 1e-3;
+}
+export function ellipseOutline(ed, e) {
+  const C = ed.pts[e.c], A = ed.pts[e.a], rx = Math.hypot(A.x - C.x, A.y - C.y) || 1, ux = (A.x - C.x) / rx, uy = (A.y - C.y) / rx;
+  return Array.from({ length: 64 }, (_, k) => { const t = (2 * Math.PI * k) / 64, a = rx * Math.cos(t), b = e.ry * Math.sin(t); return { x: C.x + a * ux - b * uy, y: C.y + a * uy + b * ux }; });
+}
