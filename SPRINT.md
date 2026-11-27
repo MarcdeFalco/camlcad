@@ -60,6 +60,12 @@ du cache Playwright).
   glissière, encastrement) entre deux pièces du code et leurs ports, ajoutée à la liste de
   `Assembly.make` ; pilotable aussitôt (Mouvement). `mech_joint.js`. La page ne défile plus.
   Scénario `liaison.spec.js` (code tapé dans l'éditeur, liaison au dialogue, curseur).
+- Lot 14, chapitres 2 et 3 : supprimer des éléments d'esquisse (Suppr ou bouton : un point
+  emporte ses éléments, une ligne ouvre sa boucle, contraintes et indices remis à jour),
+  Projeter le contour de la face d'appui (points fixes, construction). Corrigés en passant :
+  l'esquisse sur une face était cachée par la pièce (matériaux transparents dessinés après),
+  la feature cliquée restait surlignée pendant l'esquisse. `sketch_delete.js`.
+  Scénario `esquisse_supprimer.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

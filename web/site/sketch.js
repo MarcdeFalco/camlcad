@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK } from './sketch_tools.js';
 import { mirror, patternX, offsetLoop } from './sketch_copy.js';
+import { deleteSelection } from './sketch_delete.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -21,8 +22,8 @@ export class SketchEditor extends SketchMarks {
   }
 
   // data : esquisse relue du code (sketch_parse.js) ; editing : { name } pour la réécrire.
-  start(plane, planeCode, data = null, editing = null) {
-    this.plane = plane; this.planeCode = planeCode; this.editing = editing;
+  start(plane, planeCode, data = null, editing = null, faceLoops = null) {
+    this.plane = plane; this.planeCode = planeCode; this.editing = editing; this.faceLoops = faceLoops;
     this.pts = []; this.lines = []; this.circles = []; this.arcs = []; this.cons = []; this.loops = [];
     if (data) Object.assign(this, structuredClone(data));
     this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
@@ -185,9 +186,22 @@ export class SketchEditor extends SketchMarks {
     if (e.key === 'Escape') {
       if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else this.stop();
     }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this.sel.length) { e.preventDefault(); this.remove(); return; }
     const tools = { r: 'rect', l: 'poly', c: 'circle', a: 'arc', p: 'polygon', d: 'dim', s: 'select' };
     if (tools[e.key]) this.setTool(tools[e.key]);
   }
+  // Projeter (Black Book ch. 3, Project) : le contour de la face d'appui devient des points
+  // fixes et des lignes de construction, pour s'y accrocher.
+  project() {
+    if (!this.faceLoops) return;
+    for (const l of this.faceLoops) {
+      const first = this.pts.length;
+      l.forEach((p) => this.pts.push({ x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100, fixed: true }));
+      l.forEach((_, k) => this.lines.push([first + k, first + ((k + 1) % l.length)]));
+    }
+    this.faceLoops = null; this.changed();
+  }
+  remove() { if (deleteSelection(this)) { this.asking = null; this.changed(); } }
   setTool(t) { this.dropPending(); this.tool = t; this.chain = null; this.redraw(); }
   // Premier clic d'un rectangle ou d'un cercle abandonné : retire le point s'il ne sert à rien.
   dropPending() {
@@ -304,8 +318,8 @@ export class SketchEditor extends SketchMarks {
     const seg = (pts, color, constr) => {
       const geo = new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(p.x, p.y, 0)));
       const l = new THREE.Line(geo, constr
-        ? new THREE.LineDashedMaterial({ color: color === 0x1f6feb ? 0xe07b22 : color, dashSize: this.tol() * 0.5, gapSize: this.tol() * 0.35, depthTest: false })
-        : new THREE.LineBasicMaterial({ color, depthTest: false }));
+        ? new THREE.LineDashedMaterial({ color: color === 0x1f6feb ? 0xe07b22 : color, dashSize: this.tol() * 0.5, gapSize: this.tol() * 0.35, depthTest: false, transparent: true })
+        : new THREE.LineBasicMaterial({ color, depthTest: false, transparent: true }));
       if (constr) l.computeLineDistances();
       l.renderOrder = constr ? 2 : 3; g.add(l);
     };
@@ -319,7 +333,7 @@ export class SketchEditor extends SketchMarks {
     });
     const t = this.tol() * 0.35;
     this.pts.forEach((p, i) => {
-      const m = new THREE.Mesh(new THREE.CircleGeometry(t, 12), new THREE.MeshBasicMaterial({ color: p.fixed ? 0x222222 : col('p', i), depthTest: false }));
+      const m = new THREE.Mesh(new THREE.CircleGeometry(t, 12), new THREE.MeshBasicMaterial({ color: p.fixed ? 0x222222 : col('p', i), depthTest: false, transparent: true }));
       m.position.set(p.x, p.y, 0); m.renderOrder = 4; g.add(m);
     });
     // Panneau
@@ -353,6 +367,7 @@ export class SketchEditor extends SketchMarks {
       li.append(x); list.append(li);
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
+    $('sketch-project').disabled = !this.faceLoops;
     $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
