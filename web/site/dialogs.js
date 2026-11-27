@@ -193,7 +193,7 @@ export class Dialogs {
       key: 'extrude',
       cancel: back,
       ok: () => {
-        if (!(P.h > 0) || !sel.some(Boolean)) return false;
+        if (!(P.h > 0) || (regs.length && !sel.some(Boolean))) return false; // ellipses seules : pas de région à choisir
         if (P.taper && sk.loops.length + sk.circles.length + (sk.ellipses?.length ?? 0) > 1) { this.ctx.notify('Dépouille : un seul contour simple (sans trou).', true); return false; }
         // Esquisse déjà dans le code (sk.existing) : réutilisée, pas réécrite.
         const n = this.ctx.nextIndex(), plan = `plan${n}`, sname = sk.existing ?? `esquisse${n}`;
