@@ -44,15 +44,14 @@ export class SketchEditor extends SketchMarks {
     this.group.matrixAutoUpdate = false;
     this.group.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin.clone().addScaledVector(f.z, 0.02));
     scene.add(this.group);
-    // Vue de face sur le plan ; sur une face, cadrée sur elle, à gauche de la palette.
+    // Vue de face sur le plan, cadrée sur la face d'appui, sinon sur la pièce projetée.
     let dist = Math.max(60, camera.position.distanceTo(controls.target)), target = f.origin.clone();
-    if (this.faceLoops?.length) {
-      const P = this.faceLoops.flat(), xs = P.map((p) => p.x), ys = P.map((p) => p.y);
+    const P = this.faceLoops?.length ? this.faceLoops.flat() : this.modelPts ?? [];
+    if (P.length) {
+      const xs = P.map((p) => p.x), ys = P.map((p) => p.y);
       const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys), t = Math.tan((camera.fov * Math.PI) / 360);
-      const r = this.ctx.renderer.domElement.getBoundingClientRect(), free = Math.max(0.3, (r.width - 270) / r.width);
-      dist = Math.max(30, (1.25 * Math.max(h, w / (camera.aspect * free))) / (2 * t));
-      const shift = ((r.width - free * r.width) / 2 / r.height) * 2 * dist * t; // décalage de la palette, en mm
-      target.addScaledVector(f.x, (Math.max(...xs) + Math.min(...xs)) / 2 + shift).addScaledVector(f.y, (Math.max(...ys) + Math.min(...ys)) / 2);
+      dist = Math.max(30, (1.25 * Math.max(h, w / camera.aspect)) / (2 * t));
+      target.addScaledVector(f.x, (Math.max(...xs) + Math.min(...xs)) / 2).addScaledVector(f.y, (Math.max(...ys) + Math.min(...ys)) / 2);
     }
     controls.target.copy(target);
     camera.up.copy(f.y);
