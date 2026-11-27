@@ -84,3 +84,23 @@ export function pipe(d, sk, back) {
   });
   preview();
 }
+
+// Coque (ch. 6, Shell) d'une extrusion écrite par l'éditeur : on retire le même profil décalé
+// vers l'intérieur de t, extrudé de h − t au-dessus d'un fond d'épaisseur t (dessus ouvert).
+// def : texte de la liaison de la feature ; rend un message si elle n'est pas une extrusion simple.
+export function shell(d, f, def) {
+  const m = /extrude ~h:([\d.]+) ([a-z_][\w']*) \|> place ([a-z_][\w']*)/.exec(def ?? '');
+  if (!m) { d.ctx.notify('Coque : choisissez une extrusion « un côté » faite par l’éditeur.', true); return; }
+  const [, h, esq, plan] = m, P = { t: 2 };
+  d.open(`COQUE · ${f.name}`, [
+    row('Épaisseur', num(P.t, (v) => { P.t = v; }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+    el('div', { className: 'hint', textContent: `Parois et fond de cette épaisseur, dessus ouvert (hauteur ${h} mm).` }),
+  ], {
+    key: 'shell',
+    ok: () => {
+      if (!(P.t > 0 && P.t < Number(h))) return false;
+      const n = d.ctx.nextIndex(), name = `coque${n}`, t = lit(P.t);
+      d.ctx.insert(`  let%feat ${name} =\n    Shape.(extrude ~h:(${h} -. ${t} +. 0.01) (Profile.offset (-. ${t}) ${esq}) |> translate (Geom.V3.v 0. 0. ${t}) |> place ${plan})\n  in\n`, name, 'cut', n);
+    },
+  });
+}

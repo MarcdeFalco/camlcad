@@ -211,6 +211,7 @@ function startPicking() {
 }
 // Perçage : un clic sur une face plane donne la position et la direction (Black Book ch. 4).
 const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs, insertPlane });
+const featureDef = (n) => new RegExp(`let%feat ${n} =([\\s\\S]*?)\\n  in\\n|let%feat ${n} =([^\\n]*) in`).exec(view.state.doc.toString())?.slice(1).find(Boolean);
 const selGeo = () => vp.highlight?.geometry;
 function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
@@ -237,7 +238,7 @@ const COMMANDS = {
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
   measure: () => inspect.startMeasure(), zebra: () => notify(vp.toggleZebra() ? 'Analyse zébrée : bandes réfléchies.' : 'Analyse zébrée retirée.'), section: () => inspect.section(), props: () => inspect.properties(),
-  split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
+  shell: () => needSel() && paths.shell(dialogs, journal.features[selected], featureDef(journal.features[selected].name)), split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }), angleplane: () => dialogs.anglePlane((f) => insertPlane(`(* construction *) ${frameCode(f)}`)),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
   edit: () => needSel() && dialogs.feature(selected),
