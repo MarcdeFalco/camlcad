@@ -63,6 +63,30 @@ function circleTs(P, Q, C, r, lo = EPS, hi = 1 - EPS) {
   if (qa < 1e-12 || disc <= 0) return [];
   return [(-qb - Math.sqrt(disc)) / (2 * qa), (-qb + Math.sqrt(disc)) / (2 * qa)].filter((t) => t > lo && t < hi);
 }
+// Points où le cercle (C, r) coupe les arcs (dans leur ouverture), sauf l'arc skip :
+// { arc, end (extrémité de l'arc si le point en est une), P }.
+function arcCuts(ed, C, r, skip = -1) {
+  const out = [];
+  ed.arcs.forEach((_, k) => {
+    if (k === skip) return;
+    const g = arcGeo(ed, k), dx = g.C.x - C.x, dy = g.C.y - C.y, d = Math.hypot(dx, dy);
+    if (d < 1e-9 || d > r + g.r + 1e-6 || d < Math.abs(r - g.r) - 1e-6) return;
+    const a = (r * r - g.r * g.r + d * d) / (2 * d), h = Math.sqrt(Math.max(0, r * r - a * a)), mx = C.x + (a * dx) / d, my = C.y + (a * dy) / d;
+    for (const sg of h < 1e-9 ? [0] : [-1, 1]) {
+      const P = { x: mx - (sg * h * dy) / d, y: my + (sg * h * dx) / d }, t = ccwd(Math.atan2(P.y - g.C.y, P.x - g.C.x) - g.ta);
+      const end = t < 1e-4 || t > TAU - 1e-4 ? ed.arcs[k].a : Math.abs(t - g.span) < 1e-4 ? ed.arcs[k].b : null;
+      if (end != null || t < g.span) out.push({ arc: k, end, P });
+    }
+  });
+  return out;
+}
+// Sommet commun avec un arc coupeur : son extrémité, ou un point neuf qui le scinde.
+function arcVertex(ed, h, profile) {
+  if (h.end != null) return h.end;
+  const n = ed.pts.push({ x: h.P.x, y: h.P.y, fixed: false }) - 1;
+  splitArc(ed, h.arc, n, profile);
+  return n;
+}
 // Lignes qui coupent : celles du profil quand on ajuste un élément de profil (une ligne de
 // construction, comme la diagonale d'un rectangle par le centre, ne coupe pas) ; toutes sinon.
 function cutters(ed, profile, all) {
@@ -237,11 +261,14 @@ function trimCircle(ed, ci, q, profile) {
       if (t > -1e-6 && t < 1 + 1e-6) hits.push({ j, t, th: ang(A.x + t * dx, A.y + t * dy) });
     }
   });
+  // Arcs qui coupent le cercle (dents d'un rochet) : à leur extrémité, ou en un point qui les scinde.
+  for (const h of arcCuts(ed, C, r)) hits.push({ ...h, th: ang(h.P.x, h.P.y) });
   if (hits.length < 2) { ed.sel = [{ kind: 'c', i: ci }]; return relink(ed, profile); }
   const tau = 2 * Math.PI, ccw = (x) => (((x - ang(q.x, q.y)) % tau) + tau) % tau;
   hits.sort((u, v) => ccw(u.th) - ccw(v.th));
   const hi = hits[0], lo = hits[hits.length - 1]; // premier après le clic, dernier avant
   const vertex = (h) => {
+    if (h.arc != null) return arcVertex(ed, h, profile);
     const [a, b] = ed.lines[h.j];
     if (h.t < 1e-6) return a;
     if (h.t > 1 - 1e-6) return b;
@@ -271,10 +298,12 @@ function trimArc(ed, k, q, profile) {
       if (th > 1e-6 && th < g.span - 1e-6) hits.push({ j, t, th });
     }
   });
+  for (const h of arcCuts(ed, g.C, g.r, k)) { const th = ccwd(Math.atan2(h.P.y - g.C.y, h.P.x - g.C.x) - g.ta); if (th > 1e-6 && th < g.span - 1e-6) hits.push({ ...h, th }); }
   const lo = hits.filter((h) => h.th < tq).sort((u, v) => v.th - u.th)[0], hi = hits.filter((h) => h.th > tq).sort((u, v) => u.th - v.th)[0];
   dissolve(ed, k, profile);
   const { c, a, b } = ed.arcs[k];
   const vertex = (h) => {
+    if (h.arc != null) return arcVertex(ed, h, profile);
     const [u, v] = ed.lines[h.j];
     if (h.t < 1e-6) return u;
     if (h.t > 1 - 1e-6) return v;

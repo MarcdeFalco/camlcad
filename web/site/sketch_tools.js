@@ -140,7 +140,7 @@ export const THREE_CLICK = {
     if (!O) return false;
     const ang = (P) => Math.atan2(P.y - O.y, P.x - O.x), tau = 2 * Math.PI, ccw = (x, y) => (((y - x) % tau) + tau) % tau;
     const c = add(ed, O.x, O.y), through = ccw(ang(A), ang(q)) < ccw(ang(A), ang(B));
-    ed.arcs.push(through ? { c, a, b } : { c, a: b, b: a });
+    ed.openArcs = new Set([...(ed.openArcs ?? []), ed.arcs.push(through ? { c, a, b } : { c, a: b, b: a }) - 1]); // arc de profil
     return true;
   },
 };
