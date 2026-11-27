@@ -50,6 +50,8 @@ module Make (K : Cad.Kernel.S) = struct
       (close ~rel:1e-5 (vol (Shape.sweep (Profile.rect ~center:true ~w:2. ~h:2. ()) [ v 0. 0. 0.; v 0. 0. 10.; v 10. 0. 10. ])) 80.);
     check "dépouille : tronc de pyramide 20 → 10"
       (close ~rel:1e-5 (vol (Shape.extrude ~taper:(Float.atan 0.5 *. 180. /. Float.pi) ~h:10. (Profile.rect ~center:true ~w:20. ~h:20. ()))) (7000. /. 3.));
+    check "texte : « I » de 6, trait 1, extrudé de 1 = 11"
+      (close ~rel:1e-6 (vol (Shape.extrude ~h:1. (Cad_parts.Text.profile ~stroke:1. ~size:6. "I"))) 11.);
     let mesh = E.mesh c Shape.(a - b) in
     check "maillage : fermé, Euler = 2" (Mesh.is_closed mesh && Mesh.euler_characteristic mesh = 2);
     check "maillage : volume = volume noyau" (close ~rel:1e-5 (Mesh.volume mesh) (vol Shape.(a - b)));

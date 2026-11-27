@@ -68,6 +68,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `balayage.spec.js` | Black Book ch. 3 : cercle gardé seul, chemin en L, balayage (Shape.sweep, coude en onglet, volume) |
 | `depouille.spec.js` | Black Book ch. 3 : carré de 20 extrudé de 10 avec dépouille atan(0,5) : tronc de pyramide (volume) |
 | `etude.spec.js` | Black Book ch. 7 : bielle-manivelle, étude de mouvement à trois étapes lue dans la vue |
+| `texte.spec.js` | Black Book ch. 2 et 3 : texte en relief puis gravé sur le dessus d'un pavé (Cad_parts.Text, volumes) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |
