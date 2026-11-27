@@ -25,6 +25,10 @@ test('mesurer, coupe, propriétés', async ({ page }) => {
   expect(Math.abs(d - 15)).toBeLessThan(0.3);
   await expect(page.locator('#measure-out')).toContainText('Faces parallèles, écart 0 mm');
   await shot(page, '81-mesurer');
+  // La face avant de l'aile puis le dessus de la semelle : angle de 90°.
+  await clickAt(page, await worldPoint(page, [20, 0, 20]));
+  await clickAt(page, await worldPoint(page, [55, 20, 4]));
+  await expect(page.locator('#measure-out')).toContainText('Angle entre les faces : 90°');
   await page.getByRole('button', { name: 'Fermer' }).click();
 
   // Coupe par le plan XZ décalé de 12 mm : plan de découpe actif, retiré à la fermeture.

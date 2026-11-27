@@ -59,13 +59,13 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   double-clic sur une cote pour la modifier ; les contraintes proposées dépendent de la sélection et sont
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
   les degrés de liberté, la cote demandée et la liste des contraintes.
-  « Nervure » épaissit et extrude les lignes ouvertes ; « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
+  « Nervure » épaissit et extrude les lignes ouvertes, « Tuyau » en fait un tube ; « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
   côté opposé, symétrique ; distance, aussi en tirant la flèche dans la vue ; opération), avec aperçu ; OK insère le
   plan, le `let%sketch` et la feature ; Annuler revient à l'esquisse.
   Limites : le plan d'une face est écrit en littéral. Une esquisse insérée se rouvre à la
   souris (double-clic dans le navigateur, « Modifier l'esquisse » dans la frise) tant que son
   code est celui que l'éditeur écrit ; modifiée à la main, elle se modifie dans le code.
-- **MÉCANISME** (onglet) : une pièce par couleur ; Interférences (pièces rougies) ; Éclater (vue éclatée) ; Liaison (pivot, glissière, encastrement entre
+- **MÉCANISME** (onglet) : une pièce par couleur ; Interférences (pièces rougies) ; Lien de mouvement (rapport entre deux liaisons, `~couplings`) ; Éclater (vue éclatée) ; Liaison (pivot, glissière, encastrement entre
   deux pièces du code et leurs ports, ajoutée à `Assembly.make`) ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
   comprises) ; ▶ anime la première ; interférences listées à chaque pose.

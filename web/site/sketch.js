@@ -241,7 +241,8 @@ export class SketchEditor extends SketchMarks {
         ['hdistance', 'Écart x', [a, b], B.x - A.x], ['vdistance', 'Écart y', [a, b], B.y - A.y]);
     }
     if (kinds === 'p') out.push(['fix', this.pts[L('p')[0]].fixed ? 'Libérer' : 'Fixer', L('p')]);
-    if (kinds === 'c') out.push(['radius', 'Rayon', L('c'), this.circles[L('c')[0]].r]);
+    // Cercle : coté au diamètre, comme dans un modeleur (la contrainte reste un rayon).
+    if (kinds === 'c') out.push(['radius', 'Diamètre', L('c'), 2 * this.circles[L('c')[0]].r]);
     if (kinds === 'a') out.push(['arc_radius', 'Rayon', L('a'), arcRadius(this, L('a')[0])]);
     if (kinds === 'la' || kinds === 'al') out.push(['tangent_arc', 'Tangente', [L('l')[0], L('a')[0]]]);
     if (kinds === 'cc') out.push(['equal_radius', 'Même rayon', L('c')], ['concentric', 'Concentriques', L('c')]);
@@ -288,7 +289,7 @@ export class SketchEditor extends SketchMarks {
     const value = dflt === undefined ? undefined : this.asking?.value;
     this.asking = null;
     if (dflt !== undefined && !Number.isFinite(value)) { this.redraw(); return; }
-    this.cons.push(value === undefined ? { kind, refs } : { kind, refs, value });
+    this.cons.push(value === undefined ? { kind, refs } : { kind, refs, value: kind === 'radius' ? value / 2 : value });
     this.sel = []; this.changed();
   }
 
@@ -306,7 +307,7 @@ export class SketchEditor extends SketchMarks {
     return this.lines.filter(([a, b]) => !seqs.some((q) => q.some((p, k) => { const r = q[(k + 1) % q.length]; return (p === a && r === b) || (p === b && r === a); })));
   }
   finish(kind = 'extrude') {
-    const rib = kind === 'rib' && this.openLines().length && !this.error;
+    const rib = (kind === 'rib' || kind === 'pipe') && this.openLines().length && !this.error;
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
@@ -381,7 +382,7 @@ export class SketchEditor extends SketchMarks {
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
     $('sketch-project').disabled = !this.faceLoops;
-    $('sketch-rib').disabled = !(this.openLines().length && !this.error);
+    $('sketch-rib').disabled = $('sketch-pipe').disabled = !(this.openLines().length && !this.error);
     $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }

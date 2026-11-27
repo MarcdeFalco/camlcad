@@ -53,6 +53,7 @@ export class Inspect {
       lines.push(`Distance : ${r2(d.length())} mm`, `Δx ${r2(d.x)} · Δy ${r2(d.y)} · Δz ${r2(d.z)} mm`);
       if (a.face && b.face && Math.abs(Math.abs(a.face.frame.z.dot(b.face.frame.z)) - 1) < 1e-6)
         lines.push(`Faces parallèles, écart ${r2(Math.abs(d.dot(a.face.frame.z)))} mm`);
+      else if (a.face && b.face) lines.push(`Angle entre les faces : ${r2((Math.acos(Math.max(-1, Math.min(1, a.face.frame.z.dot(b.face.frame.z)))) * 180) / Math.PI)}°`);
       const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.p, b.p]), new THREE.LineBasicMaterial({ color: 0xff8a3d, depthTest: false }));
       l.renderOrder = 5; g.add(l);
     }

@@ -65,3 +65,36 @@ export function jointDialog(d, view, changed) {
   });
   refresh();
 }
+
+// Lien de mouvement (Black Book ch. 7, Motion Link) : q(menée) = rapport × q(menante),
+// écrit dans ~couplings de Assembly.make. coords : coordonnées du mécanisme (noms).
+export function linkDialog(d, view, coords, changed) {
+  if (coords.length < 2) { d.ctx.notify('Il faut deux liaisons mobiles pour un lien de mouvement.', true); return; }
+  const names = Object.fromEntries(coords.map((c) => [c.name, c.name]));
+  const P = { driver: coords[0].name, driven: coords[1].name, ratio: -1 };
+  const ratio = el('input', { type: 'number', step: 'any', value: '-1', className: 'noenter' });
+  ratio.oninput = () => { P.ratio = Number(ratio.value); };
+  d.open('LIEN DE MOUVEMENT', [
+    row('Menante', choice(names, P.driver, (v) => { P.driver = v; })),
+    row('Menée', choice(names, P.driven, (v) => { P.driven = v; })),
+    row('Rapport', ratio),
+    el('div', { className: 'hint', textContent: 'Engrenages : −z1/z2 ; même sens : positif.' }),
+  ], {
+    key: 'link',
+    ok: () => {
+      if (P.driver === P.driven || !Number.isFinite(P.ratio)) { d.ctx.notify('Lien : deux liaisons différentes et un rapport numérique.', true); return false; }
+      let r = String(P.ratio); if (!/[.e]/.test(r)) r += '.';
+      const rec = `{ driver = ${JSON.stringify(P.driver)}; driven = ${JSON.stringify(P.driven)}; ratio = ${P.ratio < 0 ? `(${r})` : r} }`;
+      const doc = view.state.doc.toString(), m = /~couplings:\s*\[/.exec(doc);
+      if (m) {
+        const end = doc.indexOf(']', m.index), empty = !doc.slice(m.index + m[0].length, end).trim();
+        view.dispatch({ changes: { from: end, insert: `${empty ? ' ' : '; '}${rec} ` } });
+      } else {
+        const a = /Assembly\.make\b/.exec(doc);
+        if (!a) { d.ctx.notify('Pas de Assembly.make dans le code.', true); return false; }
+        view.dispatch({ changes: { from: a.index + a[0].length, insert: ` ~couplings:[ ${rec} ]` } });
+      }
+      changed();
+    },
+  });
+}
