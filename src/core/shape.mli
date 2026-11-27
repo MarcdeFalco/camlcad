@@ -39,6 +39,12 @@ val loft : (Geom.Plane.t * Profile.t) list -> t
     son plan, dans l'ordre (voir {!Loft.mesh}). Profils simples seulement (polygone,
     cercle) ; un profil booléen, ou moins de deux profils, donne un solide vide. *)
 
+val sweep : Profile.t -> Geom.V3.t list -> t
+(** Balayage (Black Book ch. 3, Sweep) d'un profil simple le long d'une ligne brisée : le
+    profil, centré sur le départ du chemin dans son plan normal, suit le chemin, coudes en onglet (voir
+    {!Loft.sweep_sections}). Solide vide pour un profil booléen ou un chemin de moins de deux
+    points. *)
+
 val id : t -> int
 val equal : t -> t -> bool
 
@@ -60,5 +66,6 @@ type view =
   | Mirror of Geom.V3.t * t
   | Scale of Geom.V3.t * t
   | Loft of (Geom.Frame.t * Profile.t) list
+  | Sweep of Profile.t * Geom.V3.t list
 
 val view : t -> view

@@ -21,3 +21,17 @@ let%expect_test "Loft.mesh : prisme, tronc de pyramide, carré vers cercle, sens
     fermé true, 0 triangles, volume 0.00
     booléen : None
     |}]
+
+let%expect_test "Loft.sweep_sections : droit, coude à 90°, coude à 45°" =
+  let sweep prof path = show (Loft.mesh (Loft.sweep_sections prof path)) in
+  sweep (square 5.) [ V3.zero; V3.v 0. 0. 10. ];
+  (* Carré de 2 le long d'un L de 10 + 10 : 4 × 20 = 80 (coupe d'onglet). *)
+  sweep (square 1.) [ V3.zero; V3.v 0. 0. 10.; V3.v 10. 0. 10. ];
+  sweep (square 1.) [ V3.zero; V3.v 10. 0. 0.; V3.v 20. 10. 0.; V3.v 20. 20. 0. ];
+  print_int (List.length (Loft.sweep_sections (square 1.) [ V3.zero; V3.zero ]));
+  [%expect {|
+    fermé true, 12 triangles, volume 1000.00
+    fermé true, 20 triangles, volume 80.00
+    fermé true, 28 triangles, volume 136.57
+    0
+    |}]

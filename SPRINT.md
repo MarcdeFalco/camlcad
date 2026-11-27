@@ -173,6 +173,11 @@ du cache Playwright).
   `Shape.loft [ (plan, profil); … ]`, loi « lissage » dans les suites. Bouton Lissage de la
   palette : garder l'esquisse seule, ou lisser vers une esquisse du code. Scénario
   `lissage.spec.js` (carré sur XY → cercle sur un plan décalé).
+- Lot 49, chapitre 3 (Sweep) : `Loft.sweep_sections` (repère par sommet, x transporté
+  parallèlement, coudes en onglet : volume = aire × longueur du chemin, testé) et
+  `Shape.sweep profil chemin`, loi « balayage » dans les suites. Palette : bouton Garder
+  (esquisse seule, sans feature, comme « Terminer l'esquisse » de Fusion) et Balayage (les
+  lignes ouvertes forment le chemin, une esquisse gardée le profil). Scénario `balayage.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -183,8 +188,7 @@ du cache Playwright).
 ## Suivant (ordre proposé)
 - Chapitre 2 : ajuster, prolonger, couper contre cercles et arcs, texte d'esquisse, cote de
   l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
-- Chapitre 3 : balayage (Sweep) le long d'un chemin, par `Loft.mesh` sur les repères du chemin ;
-  lissage de profils à trous.
+- Chapitre 3 : lissage et balayage de profils à trous, chemin courbe (arcs, courbes).
 - Chapitre 6 : coque d'un corps quelconque.
 - Chapitre 7 : liaisons choisies dans la vue (ports affichés), étude de mouvement.
 - Frise : réordonner les étapes par glisser (Source_edit « move »).
