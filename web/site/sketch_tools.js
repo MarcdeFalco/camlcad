@@ -54,6 +54,26 @@ function circle(ed, c, q) {
 
 import { slot } from './sketch_arcs.js';
 
+// Inférence (comme un modeleur) : un point posé sur une ligne y est contraint (au milieu s'il
+// en est proche), posé sur un cercle aussi ; n : élément le plus proche (SketchEditor.nearest).
+export function inferPoint(ed, q, n) {
+  const at = { x: q.x, y: q.y }, t = ed.tol();
+  let c = null;
+  if (n?.kind === 'l') {
+    const [a, b] = ed.lines[n.i], A = ed.pts[a], B = ed.pts[b], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1;
+    const M = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+    if (Math.hypot(q.x - M.x, q.y - M.y) < t) { Object.assign(at, M); c = ['midpoint', n.i]; }
+    else { const u = ((q.x - A.x) * dx + (q.y - A.y) * dy) / L2; at.x = A.x + u * dx; at.y = A.y + u * dy; c = ['on_line', n.i]; }
+  } else if (n?.kind === 'c') {
+    const C = ed.pts[ed.circles[n.i].c], r = ed.circles[n.i].r, d = Math.hypot(q.x - C.x, q.y - C.y) || 1;
+    at.x = C.x + ((q.x - C.x) * r) / d; at.y = C.y + ((q.y - C.y) * r) / d; c = ['on_circle', n.i];
+  }
+  ed.pts.push({ ...at, fixed: ed.pts.length === 0 });
+  const p = ed.pts.length - 1;
+  if (c) ed.cons.push({ kind: c[0], refs: [p, c[1]] });
+  return p;
+}
+
 // Outils à deux clics : nom → [création, texte de la mesure pendant le tracé].
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
 export const TWO_CLICK = {

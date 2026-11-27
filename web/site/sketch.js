@@ -3,7 +3,7 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
-import { TWO_CLICK } from './sketch_tools.js';
+import { TWO_CLICK, inferPoint } from './sketch_tools.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
@@ -113,8 +113,7 @@ export class SketchEditor extends SketchMarks {
   pointAt(q) {
     const n = this.nearest(q);
     if (n && n.kind === 'p') return n.i;
-    this.pts.push({ x: q.x, y: q.y, fixed: this.pts.length === 0 });
-    return this.pts.length - 1;
+    return inferPoint(this, q, n); // accroche sur une ligne (milieu) ou un cercle : contrainte implicite
   }
 
   // Survol : élastique du tracé en cours et point d'accroche.
