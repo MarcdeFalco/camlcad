@@ -35,3 +35,12 @@ let%expect_test "Loft.sweep_sections : droit, coude à 90°, coude à 45°" =
     fermé true, 28 triangles, volume 136.57
     0
     |}]
+
+let%expect_test "Loft.offset_outline : carré, sens indirect" =
+  let pr c = List.iter (fun (p : V2.t) -> Printf.printf "(%g, %g) " (p.x +. 0.) (p.y +. 0.)) c; print_newline () in
+  pr (Loft.offset_outline 1. (square 5.));
+  pr (Loft.offset_outline (-2.) (List.rev (square 5.)));
+  [%expect {|
+    (-6, -6) (6, -6) (6, 6) (-6, 6)
+    (-3, -3) (3, -3) (3, 3) (-3, 3)
+    |}]

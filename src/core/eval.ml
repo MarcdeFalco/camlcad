@@ -92,7 +92,14 @@ module Make (K : Kernel.S) = struct
               let k = K.cylinder ~r ~h ~segments:(segments q ~r ~deg:360.) in
               if center then K.transform (Geom.Frame.at 0. 0. (-.h /. 2.)) k else k
           | Sphere r -> K.sphere ~r ~segments:(segments q ~r ~deg:360.)
-          | Extrude { profile; h; twist; scale_top } -> K.extrude (section c profile) ~h ~twist ~scale_top
+          | Extrude { profile; h; twist; scale_top; taper = 0. } -> K.extrude (section c profile) ~h ~twist ~scale_top
+          | Extrude { profile; h; taper; twist = 0.; scale_top = 1. } -> (
+              match Loft.outline ~segments:(segments q ~r:(radius profile) ~deg:360.) profile with
+              | None -> K.empty
+              | Some o ->
+                  let top = Loft.offset_outline (-.h *. Float.tan (taper *. Float.pi /. 180.)) o in
+                  K.of_mesh (Loft.mesh [ (Geom.Frame.world, o); (Geom.Frame.at 0. 0. h, top) ]))
+          | Extrude _ -> K.empty
           | Revolve { profile; deg } ->
               K.revolve (section c profile) ~deg ~segments:(segments q ~r:(radius profile) ~deg)
           | Union (a, b) -> K.union (solid c a) (solid c b)

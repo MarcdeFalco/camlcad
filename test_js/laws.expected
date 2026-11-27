@@ -12,6 +12,7 @@ miroir : bbox réfléchie                        ok
 échelle : volume et bbox autour du centre       ok
 lissage : tronc de pyramide 20 → 10, h 10      ok
 balayage : carré 2 le long d'un L 10 + 10       ok
+dépouille : tronc de pyramide 20 → 10         ok
 maillage : fermé, Euler = 2                     ok
 maillage : volume = volume noyau                 ok
 STL : aller-retour fermé                        ok

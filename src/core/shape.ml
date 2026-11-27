@@ -5,7 +5,7 @@ and view =
   | Cube of { size : Geom.V3.t; center : bool }
   | Cylinder of { r : float; h : float; center : bool }
   | Sphere of float
-  | Extrude of { profile : Profile.t; h : float; twist : float; scale_top : float }
+  | Extrude of { profile : Profile.t; h : float; twist : float; scale_top : float; taper : float }
   | Revolve of { profile : Profile.t; deg : float }
   | Union of t * t
   | Difference of t * t
@@ -21,7 +21,7 @@ type key =
   | KCube of Geom.V3.t * bool
   | KCylinder of float * float * bool
   | KSphere of float
-  | KExtrude of int * float * float * float
+  | KExtrude of int * float * float * float * float
   | KRevolve of int * float
   | KUnion of int * int
   | KDifference of int * int
@@ -37,7 +37,7 @@ let key = function
   | Cube { size; center } -> KCube (size, center)
   | Cylinder { r; h; center } -> KCylinder (r, h, center)
   | Sphere r -> KSphere r
-  | Extrude { profile; h; twist; scale_top } -> KExtrude (Profile.id profile, h, twist, scale_top)
+  | Extrude { profile; h; twist; scale_top; taper } -> KExtrude (Profile.id profile, h, twist, scale_top, taper)
   | Revolve { profile; deg } -> KRevolve (Profile.id profile, deg)
   | Union (a, b) -> KUnion (a.id, b.id)
   | Difference (a, b) -> KDifference (a.id, b.id)
@@ -67,8 +67,8 @@ let cube ?(center = false) size = mk (Cube { size; center })
 let cylinder ?(center = false) ~r ~h () = mk (Cylinder { r; h; center })
 let sphere ~r = mk (Sphere r)
 
-let extrude ?(twist = 0.) ?(scale_top = 1.) ~h profile =
-  mk (Extrude { profile; h; twist; scale_top })
+let extrude ?(twist = 0.) ?(scale_top = 1.) ?(taper = 0.) ~h profile =
+  mk (Extrude { profile; h; twist; scale_top; taper })
 
 let revolve ?(deg = 360.) profile = mk (Revolve { profile; deg })
 let ( + ) a b = mk (Union (a, b))
