@@ -3,7 +3,7 @@
 ; Lancement : dune build @test_native/runtest-native (Manifold requis).
 
 (executables
- (names laws examples mech)
+ (names laws examples mech skill)
  (libraries kernel_suites kernel_manifold_native))
 
 (rule
@@ -26,3 +26,10 @@
   (progn
    (with-stdout-to mech.output (run ./mech.exe))
    (diff %{dep:../test_js/mech.expected} mech.output))))
+
+(rule
+ (alias runtest-native)
+ (action
+  (progn
+   (with-stdout-to skill.output (run ./skill.exe))
+   (diff %{dep:../test_js/skill.expected} skill.output))))

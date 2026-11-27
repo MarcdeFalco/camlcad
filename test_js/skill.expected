@@ -1,0 +1,8 @@
+boite : volume 31485 mm3, fermé true, genre -1, boîte 80.0 x 110.0 x 30.0, zmin 0.0
+equerre : volume 12933 mm3, fermé true, genre 4, boîte 50.0 x 30.0 x 40.0, zmin 0.0
+molette : volume 6355 mm3, fermé true, genre 1, boîte 29.9 x 30.0 x 10.0, zmin 0.0
+molette M8 : volume 6162 mm3, fermé true, genre 1, boîte 29.9 x 30.0 x 10.0, zmin 0.0
+pignon-crémaillère z20 : 25 poses, 0 interférences dont 0 entre les dentures
+pignon-crémaillère z18 : 25 poses, 0 interférences dont 0 entre les dentures
+pignon-crémaillère z23 : 25 poses, 0 interférences dont 0 entre les dentures
+pignon-crémaillère jeu -0.3 : 25 poses, 50 interférences dont 25 entre les dentures (ex. -60° pignon/cremaillere 14.1 mm3)

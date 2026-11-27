@@ -1,0 +1,8 @@
+; Exemples de la skill camlcad : chaque fichier est un modèle complet, tel qu'on
+; l'ouvre dans l'éditeur (Fichier > Ouvrir). Les compiler ici garantit qu'ils
+; suivent l'API réelle ; test/test_skill.ml et test_js/skill.ml les évaluent.
+; Pour vérifier un nouveau modèle : le copier ici, puis  dune build @check.
+(library
+ (name camlcad_skill_examples)
+ (libraries geom cad cad_parts cad_mech)
+ (preprocess (pps ppx_cad)))
