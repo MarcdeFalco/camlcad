@@ -72,9 +72,11 @@ export function pattern(d, f, geo) {
         const t = new THREE.Vector3(...AXES[P.dir1]).multiplyScalar((i - c1) * P.s1).addScaledVector(new THREE.Vector3(...AXES[P.dir2]), (j - c2) * P.s2);
         out.push(new THREE.Matrix4().makeTranslation(t.x, t.y, t.z));
       }
-    } else for (let i = 0; i < P.n; i++) out.push(new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(...AXES[P.axis]), ((i * stepDeg()) * Math.PI) / 180));
+    } else for (let i = 0; i < P.n; i++) out.push(new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(...AXES[P.axis]), (((i - c0()) * stepDeg()) * Math.PI) / 180));
     return out;
   };
+  // Symétrique (angle < 360°) : copies réparties de part et d'autre de l'original.
+  const c0 = () => (P.sym && P.angle < 360 ? (P.n - 1) / 2 : 0);
   const stepDeg = () => (P.angle >= 360 ? 360 / P.n : P.angle / Math.max(1, P.n - 1));
   const preview = () => {
     const g = new THREE.Group();
@@ -95,6 +97,7 @@ export function pattern(d, f, geo) {
     row('Axe (origine)', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.axis, (v) => { P.axis = v; preview(); })),
     row('Nombre', num(P.n, (v) => { P.n = Math.max(1, Math.round(v)); preview(); }, { step: 1, min: 1 })),
     row('Angle total', num(P.angle, (v) => { P.angle = v; preview(); }), el('span', { className: 'unit', textContent: '°' })),
+    row('Symétrique', Object.assign(el('input', { type: 'checkbox', id: 'pattern-csym', checked: P.sym }), { onchange: (e) => { P.sym = e.target.checked; preview(); } })),
   ]));
   d.open(`RÉSEAU · ${f.name}`, [
     row('Type', choice({ rect: 'Rectangulaire', circ: 'Circulaire' }, P.type, (v) => { P.type = v; rows(); preview(); })),
@@ -110,7 +113,7 @@ export function pattern(d, f, geo) {
         const ix = (v, n) => (P.sym && n > 1 ? `(float ${v} -. ${lit((n - 1) / 2)})` : `float ${v}`);
         const comp = (k) => [a[k] ? `${ix('i', P.n1)} *. ${litp(a[k])}` : '', b[k] ? `${ix('j', P.n2)} *. ${litp(b[k])}` : ''].filter(Boolean).join(' +. ') || '0.';
         expr = `union (List.concat (List.init ${P.n1} (fun i -> List.init ${P.n2} (fun j ->\n      ${f.name} |> translate (Geom.V3.v (${comp(0)}) (${comp(1)}) (${comp(2)}))))))`;
-      } else expr = `union (List.init ${P.n} (fun i -> ${f.name} |> rotate ~axis:${AXIS_CODE[P.axis]} ~deg:(float i *. ${lit(stepDeg())})))`;
+      } else expr = `union (List.init ${P.n} (fun i -> ${f.name} |> rotate ~axis:${AXIS_CODE[P.axis]} ~deg:(${c0() ? `(float i -. ${lit(c0())})` : 'float i'} *. ${lit(stepDeg())})))`;
       d.ctx.insert(`  let%feat ${name} =\n    Shape.(${expr})\n  in\n`, name, P.op, n);
     },
   });
