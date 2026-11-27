@@ -127,6 +127,8 @@ du cache Playwright).
 - Lot 34, chapitre 6 (Shell) : Coque d'une extrusion faite par l'éditeur : même esquisse
   décalée vers l'intérieur (`Profile.offset`), extrudée au-dessus d'un fond de même épaisseur,
   retirée (dessus ouvert) ; reste liée à l'esquisse. Scénario `coque.spec.js` (volume exact).
+- Lot 35, chapitre 4 (Hole from sketch points) : Perçages depuis l'esquisse : un trou à chaque
+  point isolé (diamètre, traversant ou profondeur), Couper. Scénario `percages_points.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

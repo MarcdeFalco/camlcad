@@ -289,13 +289,15 @@ export class SketchEditor extends SketchMarks {
   }
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
+  // Points isolés (outil Point) : centres de perçages.
+  freePoints() { return this.pts.map((_, i) => i).filter((i) => !this.lines.some((l) => l.includes(i)) && !this.circles.some((c) => c.c === i) && !this.arcs.some((a) => [a.c, a.a, a.b].includes(i))); }
   // Lignes hors de toute boucle (construction) : chemins d'une nervure.
   openLines() {
     const seqs = this.loops.map((l) => loopPoints(this, l));
     return this.lines.filter(([a, b]) => !seqs.some((q) => q.some((p, k) => { const r = q[(k + 1) % q.length]; return (p === a && r === b) || (p === b && r === a); })));
   }
   finish(kind = 'extrude') {
-    const rib = (kind === 'rib' || kind === 'pipe') && this.openLines().length && !this.error;
+    const rib = ((kind === 'rib' || kind === 'pipe') && this.openLines().length && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
@@ -303,7 +305,7 @@ export class SketchEditor extends SketchMarks {
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })),
-      ribs: this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]),
+      ribs: this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]), points: this.freePoints().map((i) => ({ ...this.pts[i] })),
     };
     this.suspend();
     this.ctx.finish(data);
@@ -370,6 +372,7 @@ export class SketchEditor extends SketchMarks {
     });
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
     $('sketch-project').disabled = !this.faceLoops;
+    $('sketch-holes').disabled = !this.freePoints().length || !!this.error;
     $('sketch-rib').disabled = $('sketch-pipe').disabled = !(this.openLines().length && !this.error);
     $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();

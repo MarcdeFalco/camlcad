@@ -185,7 +185,7 @@ const sketch = new SketchEditor({
   mode: (on) => showTab(on ? 'sketch' : null),
   finish: (data) => {
     vp.threeQuarter(data.frame);
-    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (data.kind === 'rib' || data.kind === 'pipe' ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
+    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (['rib', 'pipe', 'holes'].includes(data.kind) ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
@@ -217,7 +217,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-holes').onclick = () => sketch.finish('holes'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {
