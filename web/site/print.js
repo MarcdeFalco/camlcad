@@ -98,3 +98,18 @@ export class Print3D {
   }
   close() { this.clear(false); this.ctx.viewport.fit(); }
 }
+
+// Mise en plan et capture : dialogue avec aperçu, téléchargement.
+import { drawingSVG } from './drawing.js';
+export function drawingDialog(ctx) {
+  const m = ctx.mesh();
+  if (!m || !m.triangles.length) { ctx.notify('Pas de pièce.', true); return; }
+  const { svg, scale, size } = drawingSVG(m, ctx.name());
+  const img = el('img', { src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, className: 'drawing-preview', alt: 'mise en plan' });
+  ctx.dialogs.open('MISE EN PLAN', [
+    img,
+    el('div', { id: 'drawing-info', className: 'hint', textContent: `A4 paysage, échelle ${scale >= 1 ? scale + ':1' : '1:' + Math.round(1 / scale)}, encombrement ${size.map((x) => fmt(Math.round(x * 100) / 100)).join(' × ')} mm` }),
+    Object.assign(el('button', { textContent: 'Télécharger le SVG' }), { onclick: () => ctx.download(new Blob([svg], { type: 'image/svg+xml' }), 'svg', `${ctx.name()}-plan`) }),
+    Object.assign(el('button', { textContent: 'Capture de la vue (PNG)' }), { onclick: async () => ctx.download(await (await fetch(ctx.viewport.capture())).blob(), 'png', `${ctx.name()}-vue`) }),
+  ], { key: 'drawing', okLabel: 'Fermer', cancel: false });
+}

@@ -71,6 +71,10 @@ du cache Playwright).
   l'outil traverse la pièce le long de l'arête). Barre d'outils à menus ▾ par groupe (commandes
   secondaires), comme Fusion ; `cmd()` des scénarios ouvre le menu au besoin.
   `face_commands.js`, `toolbar.js`. Scénario `conge.spec.js` (volumes vérifiés).
+- Lot 16, chapitres 11 (Drawing) et 1 (Capture Image) : bouton Plan : mise en plan A4 paysage
+  en projection européenne (face, dessus, gauche), arêtes vives, cotes d'encombrement,
+  cartouche, échelle normalisée ; SVG téléchargé ; capture PNG de la vue. `drawing.js`.
+  Scénario `plan.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
@@ -84,5 +88,6 @@ du cache Playwright).
 ## Écarts connus avec Fusion (pas encore traités)
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Pas d'échelle (`Shape.scale` absent du noyau).
+- Mise en plan : toutes les arêtes vives en trait plein (pas de traits cachés en pointillés).
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
 - Pas de flèche de distance dans la vue pour l'extrusion, pas de choix de régions de profil.

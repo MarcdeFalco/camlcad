@@ -20,7 +20,7 @@ import { Mech } from './mech.js';
 import { codeEdits, locRangeIn } from './code_edit.js';
 import { Bodies } from './bodies.js';
 import { Inspect } from './inspect.js';
-import { Print3D } from './print.js';
+import { Print3D, drawingDialog } from './print.js';
 import { prepareEdit, sameCode, sketchOf, findSketch } from './sketch_parse.js';
 import * as feats from './dialogs_features.js';
 
@@ -353,11 +353,11 @@ function onResult(m) {
   }
   if (m.ok && m.mode === 'mech') {
     mech.show(m); lastMesh = null;
-    $('export-stl').disabled = $('print3d').disabled = true; $('export-3mf').disabled = false;
+    $('export-stl').disabled = $('print3d').disabled = $('drawing').disabled = true; $('export-3mf').disabled = false;
   } else if (m.ok) {
     mech.clear();
     lastMesh = m;
-    $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = false;
+    $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = $('drawing').disabled = false;
     if (rollbackAt == null) vp.setPart(m); else timeline.setMarker(rollbackAt);
     if (selected != null) featureMesh(selected, 0);
   }
@@ -367,6 +367,7 @@ function onResult(m) {
 // ---------- Export ----------
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
 $('print3d').onclick = () => print.open();
+$('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download });
 function download(blob, ext, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -381,7 +382,7 @@ async function loadExample(name) {
   if (sketch.active) sketch.stop();
   dialogs.close(true); stopPicking();
   $("status").textContent = lastStatus = `ouverture de « ${name} »…`; $('status').classList.remove('err');
-  $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = true; // rien à exporter avant le premier résultat
+  $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = $('drawing').disabled = true; // rien à exporter avant le premier résultat
   const code = name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text();
   if (journal) selectFeature(null, false);
   timeline.setMarker(null); // avant de vider : remettrait l'ancienne pièce
