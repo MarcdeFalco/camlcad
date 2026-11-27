@@ -237,3 +237,30 @@ let%expect_test "régions : cercles concentriques (bague), contour dans un cercl
     Sketch.(disk c0 - loop [ p1; p2; p3; p4 ])
     Sketch.(loop [ p0; p1; p2; p3 ] - disk c0)
     |}]
+
+let%expect_test "régions d'un profil d'esquisse (Profile.regions)" =
+  let rec show p =
+    match Profile.view p with
+    | Polygon ps -> Printf.sprintf "poly%d" (List.length ps)
+    | Translate (_, c) -> show c
+    | Circle r -> Printf.sprintf "disque%g" r
+    | Difference (a, b) -> Printf.sprintf "(%s - %s)" (show a) (show b)
+    | Union (a, b) -> Printf.sprintf "(%s + %s)" (show a) (show b)
+    | _ -> "?"
+  in
+  let d r = Profile.translate (Geom.V2.v 0. 0.) (Profile.circle ~r) in
+  let sq = Profile.rect ~center:true ~w:200. ~h:200. () in
+  (* Practical 3 : contour extérieur, Ø20, Ø8 ; profil par défaut : contour − Ø20 + Ø8. *)
+  let p = Profile.(union (difference sq (d 10.)) (d 4.)) in
+  List.iter (fun r -> print_endline (show r)) (Profile.regions p);
+  print_endline (show (Profile.region 1 p));
+  (try ignore (Profile.region 3 p) with Invalid_argument m -> print_endline m);
+  print_endline (string_of_int (List.length (Profile.regions (Profile.offset 1. sq))));
+  [%expect {|
+    (poly4 - disque10)
+    (disque10 - disque4)
+    disque4
+    (disque10 - disque4)
+    Profile.region 3 : le profil a 3 région(s)
+    1
+    |}]

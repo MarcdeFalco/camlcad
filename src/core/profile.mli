@@ -17,6 +17,19 @@ val offset : float -> t -> t
 val translate : Geom.V2.t -> t -> t
 val rotate : deg:float -> t -> t
 
+val regions : t -> t list
+(** Régions d'un profil d'esquisse, comme celles qu'on clique dans un modeleur : chaque
+    contour (polygone, ou disque placé par [translate]) moins les contours qu'il contient
+    directement, rangées par profondeur d'imbrication (nombre de contours qui contiennent
+    le premier sommet, ou le point d'angle 0 d'un disque) puis par ordre d'apparition.
+    Pour un profil de {!Sketch} (contours réunis et retranchés) : [Sketch.(a - b)], [b] dans
+    [a], donne [[a - b; b]]. Contours égaux comptés une fois. Un profil qui n'est pas fait
+    que de polygones et de disques réunis ou retranchés est une seule région : [[p]]. *)
+
+val region : int -> t -> t
+(** [region k p] : la [k]-ième (à partir de 0) de [regions p]. Lève [Invalid_argument]
+    si [k] est hors bornes. *)
+
 val id : t -> int
 (** Identifiant unique du terme ; deux termes structurellement égaux ont
     le même [id] (hash-consing). *)
