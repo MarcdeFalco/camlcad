@@ -52,6 +52,7 @@ let rec op s =
   | Mirror _ -> "mirror"
   | Scale (_, s) -> op s
   | Loft _ -> "loft"
+  | Sweep _ -> "sweep"
   | Place (_, s) -> op s
 
 let feature (f : Doc.feature_info) =

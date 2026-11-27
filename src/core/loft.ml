@@ -124,3 +124,47 @@ let mesh sections =
       if Mesh.volume m < 0. then { m with triangles = flat true } else m
     end
   end
+
+let sweep_sections profile path =
+  let pts = Array.of_list path in
+  (* Points confondus consécutifs retirés. *)
+  let pts = Array.of_list (List.rev (Array.fold_left (fun acc p -> match acc with q :: _ when V3.dist p q < 1e-9 -> acc | _ -> p :: acc) [] pts)) in
+  let n = Array.length pts in
+  if n < 2 || profile = [] then []
+  else begin
+    let fold f = List.fold_left (fun a (p : V2.t) -> f a p) in
+    let lo = fold (fun (a : V2.t) p -> V2.v (Float.min a.x p.x) (Float.min a.y p.y)) (List.hd profile) profile
+    and hi = fold (fun (a : V2.t) p -> V2.v (Float.max a.x p.x) (Float.max a.y p.y)) (List.hd profile) profile in
+    let profile = List.map (fun p -> V2.sub p (V2.scale 0.5 (V2.add lo hi))) profile in
+    let d = Array.init (n - 1) (fun i -> V3.normalize (V3.sub pts.(i + 1) pts.(i))) in
+    let tangent i = if i = 0 then d.(0) else if i = n - 1 then d.(n - 2) else V3.normalize (V3.add d.(i - 1) d.(i)) in
+    let x0 =
+      let c = V3.cross d.(0) V3.ez in
+      if V3.norm c < 1e-9 then V3.ex else V3.normalize c
+    in
+    let x = ref x0 in
+    List.init n (fun i ->
+        let t = tangent i in
+        let xi = V3.normalize (V3.sub !x (V3.scale (V3.dot !x t) t)) in
+        x := xi;
+        let yi = V3.cross t xi in
+        (* Coude : étirement 1 / cos(φ/2) selon la direction du coude dans le plan de coupe. *)
+        let stretch v =
+          if i = 0 || i = n - 1 then v
+          else
+            let bend = V3.sub d.(i) d.(i - 1) in
+            let b = V3.sub bend (V3.scale (V3.dot bend t) t) in
+            if V3.norm b < 1e-9 then v
+            else
+              let b = V3.normalize b and c = V3.dot d.(i - 1) t in
+              V3.add v (V3.scale (((1. /. c) -. 1.) *. V3.dot v b) b)
+        in
+        let section =
+          List.map
+            (fun (p : V2.t) ->
+              let v = stretch (V3.add (V3.scale p.x xi) (V3.scale p.y yi)) in
+              V2.v (V3.dot v xi) (V3.dot v yi))
+            profile
+        in
+        (Frame.make ~origin:pts.(i) ~x:xi ~z:t, section))
+  end
