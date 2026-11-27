@@ -13,7 +13,7 @@ test('outils d’esquisse : rectangle par le centre, polygone, point, cote', asy
   await page.getByRole('button', { name: 'Rect. centre' }).click();
   await clickSketch(page, -20, 0);
   await page.mouse.move(...await sketchPoint(page, -8, 8), { steps: 5 });
-  await expect(page.locator('#sketch-live')).toHaveText('24 × 16 mm');
+  await expect(page.locator('#sketch-live')).toHaveText('24 × 16 mm · tapez la cote');
   await clickSketch(page, -8, 8);
   await expect(page.locator('#sketch-list li')).toHaveCount(5); // H, V, H, V, milieu
 
