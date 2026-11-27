@@ -141,6 +141,10 @@ du cache Playwright).
 - Lot 39, chapitre 10 (In-canvas Render) : quatrième style de la barre de navigation,
   « Rendu » : éclairage d'ambiance (RoomEnvironment), tons ACES, matière satinée, ombre portée
   sur le plan de travail. Scénario `rendu.spec.js`.
+- Lot 40, chapitre 2 (Spline) : `Sketch.spline` (Catmull-Rom uniforme, fermée si le premier et
+  le dernier point sont le même ; contrat, test d'expectation), élément `S` des boucles de
+  `Sketch_desc` ; outil Courbe (cliquer le premier point ferme), relue à la réouverture.
+  Scénario `courbe.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

@@ -57,6 +57,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `cotes_parametres.spec.js` | Black Book ch. 6 : cotes « largeur » et « largeur/2 », paramètre changé (pièce 50 × 25), esquisse rouverte |
 | `raccourcis.spec.js` | Black Book ch. 1 : « ? » liste les raccourcis ; Q, M, H lancent les commandes |
 | `rendu.spec.js` | Black Book ch. 10 : style Rendu (ombres activées, image changée), retour au style ombré |
+| `courbe.spec.js` | Black Book ch. 2 : courbe lisse fermée par cinq points, extrudée, esquisse rouverte |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

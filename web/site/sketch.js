@@ -3,11 +3,11 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
-import { TWO_CLICK, inferPoint } from './sketch_tools.js';
+import { TWO_CLICK, inferPoint, splineClick } from './sketch_tools.js';
 import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
-import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
+import { arcPoints, arcRadius, loopPoints, loopOutline, splinePoints, centerArc, fillet } from './sketch_arcs.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
@@ -144,6 +144,8 @@ export class SketchEditor extends SketchMarks {
       const n = this.nearest(q), ch = this.tool === 'chamfer';
       if (n && n.kind === 'p') { this.asking = { kind: this.tool, label: ch ? 'Longueur du chanfrein' : 'Rayon du congé', refs: [n.i], value: ch ? 2 : 3 }; this.sel = [{ kind: 'p', i: n.i }]; }
       this.redraw();
+    } else if (this.tool === 'spline') {
+      if (splineClick(this, q)) this.changed(); else this.redraw();
     } else if (this.tool === 'point') {
       this.pointAt(q); this.changed();
     } else if (this.tool === 'dim') {
@@ -188,7 +190,7 @@ export class SketchEditor extends SketchMarks {
   }
   project() { if (projectFace(this)) this.changed(); }
   remove() { if (deleteSelection(this)) { this.asking = null; this.changed(); } }
-  setTool(t) { this.dropPending(); this.tool = t; this.chain = null; this.redraw(); }
+  setTool(t) { this.dropPending(); this.tool = t; this.chain = null; this.spl = null; this.redraw(); }
   // Premier clic d'un rectangle ou d'un cercle abandonné : retire le point s'il ne sert à rien.
   dropPending() {
     const i = this.pending; this.pending = null; this.pending2 = null;
@@ -291,13 +293,6 @@ export class SketchEditor extends SketchMarks {
   }
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
-  // Points isolés (outil Point) : centres de perçages.
-  freePoints() { return this.pts.map((_, i) => i).filter((i) => !this.lines.some((l) => l.includes(i)) && !this.circles.some((c) => c.c === i) && !this.arcs.some((a) => [a.c, a.a, a.b].includes(i))); }
-  // Lignes hors de toute boucle (construction) : chemins d'une nervure.
-  openLines() {
-    const seqs = this.loops.map((l) => loopPoints(this, l));
-    return this.lines.filter(([a, b]) => !seqs.some((q) => q.some((p, k) => { const r = q[(k + 1) % q.length]; return (p === a && r === b) || (p === b && r === a); })));
-  }
   finish(kind = 'extrude') {
     const rib = ((kind === 'rib' || kind === 'pipe') && this.openLines().length && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
@@ -332,6 +327,8 @@ export class SketchEditor extends SketchMarks {
     const chain = this.chain ?? [], seqs = this.loops.map((l) => loopPoints(this, l));
     const inLoop = (a, b) => (chain.includes(a) && chain.includes(b)) || seqs.some((l) => l.some((p, k) => { const r = l[(k + 1) % l.length]; return (p === a && r === b) || (p === b && r === a); }));
     this.lines.forEach(([a, b], i) => seg([this.pts[a], this.pts[b]], col('l', i), !inLoop(a, b)));
+    for (const l of this.loops) for (const it of l) if (it.s) seg(splinePoints(this, it.s), 0x1f6feb, false);
+    if (this.spl?.length > 1) seg(splinePoints(this, this.spl), 0x1f6feb, true);
     this.arcs.forEach((_, i) => seg(arcPoints(this, i), col('a', i), !seqs.some((l) => l.includes(this.arcs[i].a) && l.includes(this.arcs[i].b))));
     this.circles.forEach((c, i) => {
       const C = this.pts[c.c];

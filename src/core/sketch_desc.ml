@@ -1,5 +1,5 @@
 type constr = { kind : string; refs : int list; value : float option; expr : string option }
-type item = P of int | A of int | Rev of int
+type item = P of int | A of int | Rev of int | S of int list
 
 type t = {
   points : (float * float * bool) array;
@@ -41,8 +41,8 @@ let check d =
   Array.iter (fun (a, b) -> if not (ok Sp a && ok Sp b) then fail "ligne : point inconnu") d.lines;
   Array.iter (fun (c, _) -> if not (ok Sp c) then fail "cercle : centre inconnu") d.circles;
   Array.iter (fun (c, a, b) -> if not (ok Sp c && ok Sp a && ok Sp b) then fail "arc : point inconnu") d.arcs;
-  let item = function P i -> ok Sp i | A k | Rev k -> ok Sa k in
-  let size l = List.fold_left (fun n i -> n + match i with P _ -> 1 | _ -> 2) 0 l in
+  let item = function P i -> ok Sp i | A k | Rev k -> ok Sa k | S l -> List.length l >= 2 && List.for_all (ok Sp) l in
+  let size l = List.fold_left (fun n i -> n + match i with P _ -> 1 | S l -> List.length l | _ -> 2) 0 l in
   List.iter (fun l -> if size l < 3 || not (List.for_all item l) then fail "boucle invalide") d.loops;
   List.iter
     (fun c ->
@@ -58,7 +58,7 @@ let check d =
 (* Boucles ordonnées par profondeur d'imbrication, avec leur signe (true : ajoutée). *)
 let nested d =
   let pt i = let x, y, _ = d.points.(i) in (x, y) in
-  let corners l = List.concat_map (function P i -> [ pt i ] | A k | Rev k -> let _, a, b = d.arcs.(k) in [ pt a; pt b ]) l in
+  let corners l = List.concat_map (function P i -> [ pt i ] | S l -> List.map pt l | A k | Rev k -> let _, a, b = d.arcs.(k) in [ pt a; pt b ]) l in
   let inside (x, y) poly =
     let n = List.length poly and a = Array.of_list poly in
     let c = ref false in
@@ -117,7 +117,10 @@ let build d =
            | _ -> assert false (* exclu par [check] *)
          in
          let+ () = Sketch.constrain (List.map one d.constraints) in
-         let edge = function P i -> Sketch.pt ps.(i) | A k -> Sketch.along arcs.(k) | Rev k -> Sketch.back arcs.(k) in
+         let edge = function
+           | P i -> Sketch.pt ps.(i) | A k -> Sketch.along arcs.(k) | Rev k -> Sketch.back arcs.(k)
+           | S l -> Sketch.spline (List.map (fun i -> ps.(i)) l)
+         in
          let loops = List.map (fun (plus, l) -> (plus, Sketch.path (List.map edge l))) (nested d) in
          let disks = Array.to_list (Array.map Sketch.disk cs) in
          match (loops, disks) with
@@ -183,7 +186,12 @@ let to_code ?(indent = 4) d =
     if List.length pts = List.length ls then Printf.sprintf "loop [ %s ]" (String.concat "; " (List.map p pts))
     else
       Printf.sprintf "path [ %s ]"
-        (String.concat "; " (List.map (function P i -> "pt " ^ p i | A k -> "along " ^ a k | Rev k -> "back " ^ a k) ls))
+        (String.concat "; "
+           (List.map
+              (function
+                | P i -> "pt " ^ p i | A k -> "along " ^ a k | Rev k -> "back " ^ a k
+                | S l -> "spline [ " ^ String.concat "; " (List.map p l) ^ " ]")
+              ls))
   in
   let disks = Array.to_list (Array.mapi (fun i _ -> Printf.sprintf "disk %s" (c i)) d.circles) in
   let region =

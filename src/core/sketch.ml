@@ -116,12 +116,13 @@ let hdistance p q d v = [ px v q -. px v p -. d ]
 let vdistance p q d v = [ py v q -. py v p -. d ]
 
 (* Régions *)
-type edge = Pt of point | Along of arc | Back of arc
+type edge = Pt of point | Along of arc | Back of arc | Spline of point list
 type region = Path of edge list | Disk of circle | Union of region * region | Diff of region * region
 
 let pt p = Pt p
 let along a = Along a
 let back a = Back a
+let spline ps = if List.length ps < 2 then invalid_arg "Sketch.spline : au moins deux points" else Spline ps
 let path es = Path es
 let loop ps = Path (List.map pt ps)
 
@@ -131,6 +132,19 @@ let vertices v es =
   let rec expand = function
     | Pt p -> [ p2 p ]
     | Back a -> List.rev (expand (Along a))
+    | Spline ps ->
+        let a = Array.of_list (List.map p2 ps) in
+        let n = Array.length a in
+        let closed = n > 2 && List.hd ps == List.nth ps (n - 1) in
+        (* Voisins : rebouclés si la courbe est fermée, sinon le point de bout répété. *)
+        let at i = if closed then a.(((i mod (n - 1)) + (n - 1)) mod (n - 1)) else a.(max 0 (min (n - 1) i)) in
+        let cr (p0 : Geom.V2.t) (p1 : Geom.V2.t) (p2 : Geom.V2.t) (p3 : Geom.V2.t) t =
+          let t2 = t *. t in
+          let t3 = t2 *. t in
+          let f a b c d = 0.5 *. ((2. *. b) +. ((c -. a) *. t) +. (((2. *. a) -. (5. *. b) +. (4. *. c) -. d) *. t2) +. ((3. *. b) -. a -. (3. *. c) +. d) *. t3) in
+          Geom.V2.v (f p0.x p1.x p2.x p3.x) (f p0.y p1.y p2.y p3.y)
+        in
+        a.(0) :: List.concat (List.init (n - 1) (fun i -> List.init 8 (fun k -> cr (at (i - 1)) (at i) (at (i + 1)) (at (i + 2)) (float_of_int (k + 1) /. 8.))))
     | Along a ->
         let cx = px v a.ac and cy = py v a.ac and r = arc_r v a in
         let t0 = Float.atan2 (py v a.as_ -. cy) (px v a.as_ -. cx) in

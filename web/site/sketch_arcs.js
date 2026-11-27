@@ -17,17 +17,31 @@ export function arcPoints(ed, k, rev = false) {
 }
 export const arcRadius = (ed, k) => { const { c, a } = ed.arcs[k]; return Math.hypot(ed.pts[a].x - ed.pts[c].x, ed.pts[a].y - ed.pts[c].y); };
 
+// Courbe lisse (Catmull-Rom uniforme, 8 facettes par intervalle, comme Cad.Sketch.spline).
+export function splinePoints(ed, ids) {
+  const a = ids.map((i) => ed.pts[i]), n = a.length, closed = n > 2 && ids[0] === ids[n - 1];
+  const at = (i) => (closed ? a[(((i % (n - 1)) + (n - 1)) % (n - 1))] : a[Math.max(0, Math.min(n - 1, i))]);
+  const f = (p0, p1, p2, p3, t) => 0.5 * (2 * p1 + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (3 * p1 - p0 - 3 * p2 + p3) * t * t * t);
+  const out = [{ x: a[0].x, y: a[0].y }];
+  for (let i = 0; i < n - 1; i++) for (let k = 1; k <= 8; k++) {
+    const t = k / 8, q = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+    out.push({ x: f(q[0].x, q[1].x, q[2].x, q[3].x, t), y: f(q[0].y, q[1].y, q[2].y, q[3].y, t) });
+  }
+  return out;
+}
+
 // Suite des indices de points d'une boucle (un arc compte pour son début et sa fin).
 export function loopPoints(ed, l) {
   return l.flatMap((it) => {
     if (typeof it === 'number') return [it];
+    if (it.s) return it.s;
     const k = it.a ?? it.r, { a, b } = ed.arcs[k];
     return it.a != null ? [a, b] : [b, a];
   });
 }
 // Contour d'une boucle en coordonnées (arcs échantillonnés), pour l'aperçu d'extrusion.
 export function loopOutline(ed, l) {
-  return l.flatMap((it) => (typeof it === 'number' ? [{ x: ed.pts[it].x, y: ed.pts[it].y }] : arcPoints(ed, it.a ?? it.r, it.r != null)));
+  return l.flatMap((it) => (typeof it === 'number' ? [{ x: ed.pts[it].x, y: ed.pts[it].y }] : it.s ? splinePoints(ed, it.s) : arcPoints(ed, it.a ?? it.r, it.r != null)));
 }
 
 // Oblong centre à centre : deux demi-cercles reliés par deux segments tangents et

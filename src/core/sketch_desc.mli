@@ -24,8 +24,9 @@ type constr = {
       code par [to_code] à la place de [value] ; [value] en est la valeur, pour résoudre. *)
 }
 
-type item = P of int | A of int | Rev of int
-(** Élément d'une boucle : point, arc parcouru de son début à sa fin, ou à l'envers. *)
+type item = P of int | A of int | Rev of int | S of int list
+(** Élément d'une boucle : point, arc parcouru de son début à sa fin, ou à l'envers, ou
+    courbe lisse par des points ([Sketch.spline]). *)
 
 type t = {
   points : (float * float * bool) array;  (** x, y (valeurs initiales), fixe *)
