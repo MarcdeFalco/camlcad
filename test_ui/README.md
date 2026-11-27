@@ -55,6 +55,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `coque.spec.js` | Black Book ch. 6 : extrusion transformée en bac ouvert, parois et fond de 2 mm (volume exact) |
 | `percages_points.spec.js` | Black Book ch. 4 : quatre trous Ø3,4 posés par des points d'esquisse (volume) |
 | `cotes_parametres.spec.js` | Black Book ch. 6 : cotes « largeur » et « largeur/2 », paramètre changé (pièce 50 × 25), esquisse rouverte |
+| `raccourcis.spec.js` | Black Book ch. 1 : « ? » liste les raccourcis ; Q, M, H lancent les commandes |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

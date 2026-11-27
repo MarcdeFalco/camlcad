@@ -136,6 +136,8 @@ du cache Playwright).
   dans le code (`length l0 (largeur /. 2.)`), évaluée dans l'éditeur (`expr.js`) ; cote marquée
   ƒ ; l'esquisse suit le paramètre et se rouvre (la vérification ignore désormais les positions
   de départ, qui changent avec les paramètres). Scénario `cotes_parametres.spec.js`.
+- Lot 38, chapitre 1 (raccourcis) : Q pousser/tirer, H perçage, M mesurer, J liaison, « ? » (et
+  bouton ?) pour la liste des raccourcis. Scénario `raccourcis.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

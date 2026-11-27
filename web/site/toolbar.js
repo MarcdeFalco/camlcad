@@ -22,3 +22,15 @@ export function groupMenus() {
   }
   document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.more-menu,.more-toggle')) for (const m of document.querySelectorAll('.more-menu')) m.hidden = true; });
 }
+
+// Aide des raccourcis (touche ?), comme la liste des raccourcis d'un modeleur.
+export const SHORTCUTS = [
+  ['S', 'Esquisse'], ['E', 'Extrusion'], ['Q', 'Pousser / tirer'], ['H', 'Perçage'], ['M', 'Mesurer'], ['J', 'Liaison'],
+  ['F', 'Ajuster la vue'], ['Suppr', 'Supprimer la feature (ou les éléments d’esquisse)'], ['Ctrl+Z / Ctrl+Maj+Z', 'Annuler / rétablir'],
+  ['Ctrl+E', 'Afficher le code'], ['Clic droit (vue)', 'Menu circulaire'], ['Échap', 'Annuler la commande'],
+  ['Esquisse : R L C A P D S', 'Rectangle, contour, cercle, arc, polygone, cote, sélection'],
+];
+export function shortcutsHelp(dialogs) {
+  const rows = SHORTCUTS.map(([k, v]) => { const r = document.createElement('div'); r.className = 'drow'; r.innerHTML = '<label></label><div class="dctrl"></div>'; r.firstChild.textContent = k; r.lastChild.textContent = v; return r; });
+  dialogs.open('RACCOURCIS', rows, { key: 'help', okLabel: 'Fermer', cancel: false });
+}
