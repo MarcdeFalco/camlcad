@@ -172,7 +172,16 @@ export class Dialogs {
       row('Profil', el('span', { className: 'hint', textContent: `esquisse (${sk.loops.length} contour${sk.loops.length > 1 ? 's' : ''}, ${sk.circles.length} cercle${sk.circles.length > 1 ? 's' : ''})` })),
       ...(all.length > 1 ? [row('Contours', el('span', { className: 'profiles' }, ...all.map((_, i) => el('label', {}, Object.assign(el('input', { type: 'checkbox', checked: true }), { onchange: (e) => { sel[i] = e.target.checked; preview(); } }), ` ${i + 1} `))))] : []),
       row('Direction', dirSel),
-      row('Distance', hIn, el('span', { className: 'unit', textContent: 'mm' })),
+      row('Distance', hIn, el('span', { className: 'unit', textContent: 'mm' }),
+        // Jusqu'à une face (ch. 3, Extent « To ») : la distance au plan d'une face plane parallèle.
+        ...(this.ctx.pickFace && !empty ? [Object.assign(el('button', { textContent: 'Jusqu’à…', id: 'extrude-to', title: 'Jusqu’à une face plane parallèle (cliquez-la)' }), { onclick: () => this.ctx.pickFace('Cliquez la face plane où s’arrête l’extrusion', (hit, f) => {
+          const n = sk.frame.z, z = f.frame.z.clone().normalize();
+          if (Math.abs(Math.abs(z.dot(n)) - 1) > 1e-6) { this.ctx.notify('Jusqu’à : la face doit être parallèle au plan de l’esquisse.', true); return; }
+          const dist = f.frame.origin.clone().sub(sk.frame.origin).dot(n);
+          if (Math.abs(dist) < 1e-6) return;
+          P.dir = dist > 0 ? 'one' : 'flip'; dirSel.value = P.dir; P.h = Math.round(Math.abs(dist) * 1e4) / 1e4; hIn.value = String(P.h);
+          this.gizmo?.set(dist); preview();
+        }) })] : [])),
       row('Dépouille', num(P.taper, (v) => { P.taper = v; preview(); }), el('span', { className: 'unit', textContent: '°' })),
       row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : opSel),
     ], {

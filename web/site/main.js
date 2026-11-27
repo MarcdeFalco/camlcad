@@ -140,7 +140,7 @@ const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
 const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertLets, codeText: () => view.state.doc.toString(), allPlanes, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
+  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertLets, pickFace: (t, cb) => faces.start(t, cb), codeText: () => view.state.doc.toString(), allPlanes, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });

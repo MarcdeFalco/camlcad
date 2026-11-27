@@ -220,6 +220,9 @@ du cache Playwright).
 - Lot 61, chapitres 6 et 10 (Appearance) : commande Apparence (PLA de couleurs, PETG
   translucide, aluminium, laiton), appliquée dans tous les styles de vue et gardée dans le
   navigateur. Scénario `apparence.spec.js`.
+- Lot 62, chapitre 3 (Extrude, Extent « To ») : bouton « Jusqu'à… » du dialogue d'extrusion :
+  on clique une face plane parallèle, la distance et le sens en sont tirés (valeur écrite en
+  littéral). Scénario `jusqua.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
