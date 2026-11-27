@@ -27,6 +27,8 @@ test('paramètre utilisateur', async ({ page }) => {
   await lit.locator('.promote input').fill('hauteur');
   await lit.getByRole('button', { name: 'créer' }).click();
   await expect.poll(() => code(page)).toContain('let%param hauteur');
+  // Attendre la réévaluation : le dialogue des paramètres lit le journal.
+  await expect(page.locator('#tree .row', { hasText: 'hauteur' })).toBeVisible();
   await page.getByRole('button', { name: 'Fermer' }).click();
   await page.getByRole('button', { name: 'Paramètres' }).click();
   const row = page.locator('#dialog .prow', { hasText: 'hauteur' });
