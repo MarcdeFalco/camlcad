@@ -76,6 +76,12 @@ let model : Shape.t Doc.t =    (* mécanisme : Cad_mech.Assembly.t Doc.t *)
 - Aucune fonction de congé ou de chanfrein 3D : un chanfrein se fait par le profil
   (révolution, extrusion d'un polygone) ou `~scale_top` / `~taper` d'une extrusion ; un
   arrondi vertical par `Profile.offset`.
+- **Fonctions courtes.** Le toplevel de l'éditeur (OCaml 5) refuse une fonction dont la
+  pile dépasse un seuil (erreur « The external function caml_ensure_stack_capacity is not
+  available ») : au-delà d'une dizaine de `let` locaux ou d'expressions très imbriquées
+  dans une même fonction, découper (une fonction par pièce ou sous-ensemble, comme
+  `examples/cremaillere.ml`). Les `let%param` / `let%feat` de `model` ne comptent pas :
+  chacun ouvre sa propre fonction.
 - Pas d'exception : les fonctions qui lèvent `Invalid_argument` (`Thread.pitch` hors
   M2–M24, `Gear.spur` avec moins de 4 dents, `Text.profile ~size:0.`…) se protègent
   par les `[@range]` ou par un garde-fou :
@@ -117,6 +123,7 @@ let model : Shape.t Doc.t =    (* mécanisme : Cad_mech.Assembly.t Doc.t *)
       noms uniques. Chaque `let%feat` : nom unique ; le motif est une variable.
 - [ ] Toutes les fonctions et arguments existent dans `references/api.md` (labels exacts :
       `~r ~h ()`, `~w ~h ()`, `~axis ~deg`, `~normal`, `~module_ ~teeth ()`).
+- [ ] Aucune fonction ordinaire avec plus d'une dizaine de `let` locaux (découper).
 - [ ] Arithmétique flottante partout (`2. *. r`, pas `2 * r`) ; pas d'entier dans `Shape.( )`.
 - [ ] Polygones anti-horaires, sans auto-intersection ; esquisses à 0 degré de liberté.
 - [ ] Outils de coupe qui dépassent ; pièces jointes qui se chevauchent.

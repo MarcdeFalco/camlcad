@@ -78,6 +78,10 @@ let model : Assembly.t Doc.t =
   Doc.return (make ~jeu ())
 ```
 
+Écrire **une fonction par pièce** (`bati ~cote … = Part.make …`) et une fonction `make` courte
+qui les assemble : une fonction `make` qui construit tout d'un bloc dépasse la pile autorisée
+par le toplevel de l'éditeur (voir SKILL.md, « Fonctions courtes »).
+
 Dans un mécanisme, `let%feat` est possible mais facultatif : la frise montre les
 paramètres, la vue montre les pièces. Les dimensions vont en `let%param` dans `model`,
 la construction dans une fonction `make` à arguments optionnels (testable, réutilisable).
