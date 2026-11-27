@@ -313,7 +313,7 @@ function selectFeature(fid, moveCursor) {
   featureMesh(fid, 0);
 }
 function renderTimeline() {
-  docs.showEmpty(!journal?.features?.length && !sketch.active && $('dialog').hidden && $('hint').hidden);
+  docs.showEmpty(!journal?.features?.length && !/let%(feat|sketch)/.test(view.state.doc.toString()) && !sketch.active && $('dialog').hidden && $('hint').hidden); // pas sur un document en erreur
   timeline.update(journal, selected, { doc: docName(), sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }
 // ---------- Paramètres ----------
