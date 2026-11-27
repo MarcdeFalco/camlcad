@@ -68,6 +68,7 @@ function circle(ed, c, q) {
 }
 
 import { slot } from './sketch_arcs.js';
+import { closeOpenProfile } from './sketch_trim.js';
 
 // Inférence (comme un modeleur) : un point posé sur une ligne y est contraint (au milieu s'il
 // en est proche), posé sur un cercle aussi ; n : élément le plus proche (SketchEditor.nearest).
@@ -150,7 +151,7 @@ function cslot(ed, o, q) {
   const O = ed.pts[o];
   if (Math.hypot(q.x - O.x, q.y - O.y) < 1e-6) return false;
   const c1 = add(ed, 2 * O.x - q.x, 2 * O.y - q.y);
-  if (!slot(ed, c1, q)) return false;
+  if (!slot(ed, c1, q, [o])) return false;
   const c2 = ed.arcs[ed.arcs.length - 1].c, l = ed.lines.length;
   ed.lines.push([c1, c2]);
   cons(ed, 'midpoint', [o, l]);
@@ -206,4 +207,40 @@ export function ellipseClick(ed, q) {
 export function ellipseOutline(ed, e) {
   const C = ed.pts[e.c], A = ed.pts[e.a], rx = Math.hypot(A.x - C.x, A.y - C.y) || 1, ux = (A.x - C.x) / rx, uy = (A.y - C.y) / rx;
   return Array.from({ length: 64 }, (_, k) => { const t = (2 * Math.PI * k) / 64, a = rx * Math.cos(t), b = e.ry * Math.sin(t); return { x: C.x + a * ux - b * uy, y: C.y + a * uy + b * ux }; });
+}
+
+// Contour (L) : ligne par ligne ; cliquer le premier point ferme le contour. Chaque ligne est
+// du profil (pleine, pas de construction) ; des lignes qui se referment font un contour.
+export function polyClick(ed, q) {
+  const first = ed.chain ? ed.chain[0] : null, i = ed.pointAt(q);
+  if (!ed.chain) { ed.chain = [i]; return; }
+  const prev = ed.chain[ed.chain.length - 1];
+  if (i !== prev) {
+    ed.lines.push([prev, i]);
+    // Contrainte implicite : ligne presque horizontale ou verticale (à 3° près).
+    const A = ed.pts[prev], B = ed.pts[i], ang = Math.abs(Math.atan2(B.y - A.y, B.x - A.x) * 180 / Math.PI) % 180, l = ed.lines.length - 1;
+    if (ang < 3 || ang > 177) cons(ed, 'horizontal', [l]);
+    else if (Math.abs(ang - 90) < 3) cons(ed, 'vertical', [l]);
+    ed.openProfile = [...(ed.openProfile ?? []), prev < i ? `${prev},${i}` : `${i},${prev}`];
+  }
+  if (i === first && ed.chain.length >= 3) { ed.loops.push(ed.chain.slice()); ed.openProfile = ed.openProfile.filter((k) => !ed.chain.some((p, j) => { const r = ed.chain[(j + 1) % ed.chain.length]; return k === (p < r ? `${p},${r}` : `${r},${p}`); })); ed.chain = null; }
+  else { ed.chain.push(i); if (closeOpenProfile(ed)) ed.chain = null; }
+}
+
+// Cote d'angle entre deux lignes : Sketch.angle est orienté (de la première vers la seconde).
+// La valeur tapée est positive ; l'ordre des lignes est choisi pour que l'angle actuel ait
+// ce signe, sinon le solveur retournerait la figure de l'autre côté.
+export function orientAngle(ed, refs, v) {
+  const dir = (l) => { const [a, b] = ed.lines[l]; return Math.atan2(ed.pts[b].y - ed.pts[a].y, ed.pts[b].x - ed.pts[a].x); };
+  const th = ((((dir(refs[1]) - dir(refs[0])) * 180) / Math.PI + 540) % 360) - 180; // dans ]-180, 180]
+  return Math.abs(th - v) <= Math.abs(th + v) ? refs : [refs[1], refs[0]];
+}
+
+// Esquisse sur une face : ses sommets accrochent le curseur (comme les arêtes du modèle dans
+// un modeleur) ; le point posé y est fixe. Rend le sommet (coordonnées du plan) ou null.
+export function faceVertex(ed, q) {
+  if (!ed.faceLoops || !q) return null;
+  let best = null, d0 = ed.tol();
+  for (const p of ed.faceLoops.flat()) { const d = Math.hypot(p.x - q.x, p.y - q.y); if (d < d0) { d0 = d; best = { x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100 }; } }
+  return best;
 }

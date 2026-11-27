@@ -1,12 +1,12 @@
 // Cotes tapées pendant le tracé (la boîte flottante d'un modeleur) : après le premier clic
-// d'un rectangle, d'un rectangle par le centre ou d'un cercle, taper un chiffre ouvre les
+// d'un rectangle, d'un rectangle par le centre, d'un cercle ou d'un oblong, taper un chiffre ouvre les
 // champs de cote à côté du curseur (Tab : champ suivant, Entrée : tracer, Échap : annuler).
 // La forme est tracée à ces cotes, du côté du curseur, et cotée (contraintes de longueur,
 // de diamètre) : plus besoin de Sélection, élément, cote, valeur.
 import { TWO_CLICK } from './sketch_tools.js';
 import { parseDim } from './expr.js';
 
-export const TYPED = { rect: ['Largeur', 'Hauteur'], crect: ['Largeur', 'Hauteur'], circle: ['Ø'] };
+export const TYPED = { rect: ['Largeur', 'Hauteur'], crect: ['Largeur', 'Hauteur'], circle: ['Ø'], slot: ['Entraxe', 'Largeur'], cslot: ['Entraxe', 'Largeur'] };
 
 // Touche pendant l'esquisse : rend vrai si elle ouvre la saisie.
 export function typedDims(ed, e) {
@@ -35,11 +35,18 @@ export function typedDims(ed, e) {
     const l = ed.lines.length, c = ed.circles.length;
     const at = ed.tool === 'rect' ? { x: A.x + sx * val[0], y: A.y + sy * h }
       : ed.tool === 'crect' ? { x: A.x + (sx * val[0]) / 2, y: A.y + (sy * h) / 2 }
-        : { x: A.x + val[0] / 2, y: A.y };
+        : ed.tool === 'circle' ? { x: A.x + val[0] / 2, y: A.y }
+          : (() => { const L = Math.hypot(q.x - A.x, q.y - A.y) || 1, f = ed.tool === 'cslot' ? val[0] / 2 : val[0]; return { x: A.x + ((q.x - A.x) / L) * f, y: A.y + ((q.y - A.y) / L) * f }; })();
+    const k = ed.arcs.length;
     ed.pending = null; box.remove();
     if (!TWO_CLICK[ed.tool][0](ed, a, at, ed.sides())) { ed.redraw(); return; }
     const dim = (kind, refs, v, ex) => ed.cons.push({ kind, refs, value: v, ...(ex ? { expr: kind === 'radius' ? `(${ex}) /. 2.` : ex } : {}) });
     if (ed.tool === 'circle') dim('radius', [c], val[0] / 2, exprs[0]);
+    else if (ed.tool === 'slot' || ed.tool === 'cslot') {
+      // Oblong : entraxe (distance des centres) et largeur (rayon des bouts = largeur / 2).
+      dim('distance', [ed.arcs[k].c, ed.arcs[k + 1].c], val[0], exprs[0]);
+      if (val[1] != null) { ed.cons = ed.cons.filter((x) => !(x.kind === 'arc_radius' && x.refs[0] === k)); ed.cons.push({ kind: 'arc_radius', refs: [k], value: val[1] / 2, ...(exprs[1] ? { expr: `(${exprs[1]}) /. 2.` } : {}) }); }
+    }
     else { dim('length', [l], val[0], exprs[0]); if (val[1] != null) dim('length', [l + 1], val[1], exprs[1]); }
     ed.changed();
   };

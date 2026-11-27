@@ -250,7 +250,7 @@ const COMMANDS = {
   suppress: () => needSel() && timeline.run({ op: 'suppress', fid: selected, on: !journal.features[selected].suppressed }),
   delete: () => needSel() && timeline.remove(selected),
   look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
-  fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
+  fit: () => vp.fit(sketch.active ? [sketch.group] : mech.active ? mech.state.meshes : undefined), // en esquisse : le dessin
   motion: () => mech.panel(), study: () => motionStudy(mech, dialogs), importstl: () => importStl(dialogs, worker), appearance: () => appearanceDialog(dialogs, vp), thickness: () => thicknessDialog(dialogs, vp), video: () => mech.record((b) => download(b, 'webm')) && notify('Enregistrement d’un cycle (4 s)…'), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
   joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }), link: () => linkDialog(dialogs, view, mech.state?.coords ?? [], () => { clearTimeout(debounce); evalCode(); }),
 };
@@ -271,7 +271,7 @@ window.addEventListener('keydown', (e) => {
   if (e.target.closest('input,select,textarea,.cm-editor')) return;
   // Annuler / rétablir : l'historique du code (toute action de l'éditeur est une réécriture).
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !sketch.active) { e.preventDefault(); (e.shiftKey ? redo : undo)(view); return; }
-  if (sketch.active) { sketch.key(e); return; }
+  if (sketch.active) { if (e.key === 'f' && !document.getElementById('sketch-type')) COMMANDS.fit(); else sketch.key(e); return; }
   if (e.key === 'Escape' && picking) { stopPicking(); return; }
   if (e.key === 'Escape' && faces.active) { faces.cancel(); return; }
   const keys = { s: 'sketch', e: 'extrude', f: 'fit', q: 'presspull', h: 'hole', m: 'measure', j: 'joint', Delete: 'delete', '?': 'help' };
@@ -313,7 +313,7 @@ function selectFeature(fid, moveCursor) {
   featureMesh(fid, 0);
 }
 function renderTimeline() {
-  docs.showEmpty(!journal?.features?.length && !sketch.active && $('dialog').hidden && $('hint').hidden);
+  docs.showEmpty(!journal?.features?.length && !/let%(feat|sketch)/.test(view.state.doc.toString()) && !sketch.active && $('dialog').hidden && $('hint').hidden); // pas sur un document en erreur
   timeline.update(journal, selected, { doc: docName(), sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }
 // ---------- Paramètres ----------

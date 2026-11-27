@@ -214,7 +214,7 @@ let solve (m : region t) =
   let f v = Array.of_list (List.concat_map (fun c -> c v) cs) in
   let neq = Array.length (f x0) in
   let x, rep = Nlsolve.solve ~n:st.nvars ~m:neq f x0 in
-  if not rep.converged then
+  if (not rep.converged) && not (rep.residual <= 1e-6) then
     Error
       (Printf.sprintf "esquisse : contraintes incompatibles (résidu %.3g après %d itérations)" rep.residual
          rep.iterations)

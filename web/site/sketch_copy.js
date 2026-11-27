@@ -21,7 +21,11 @@ function usedPoints(ed, items) {
 function copy(ed, items, map, flip) {
   const L = new Map(), A = new Map();
   for (const { kind, i } of items) {
-    if (kind === 'l') { const [a, b] = ed.lines[i]; L.set(i, ed.lines.length); ed.lines.push([map(a), map(b)]); }
+    if (kind === 'l') {
+      const [a, b] = ed.lines[i], k = (u, v) => (u < v ? `${u},${v}` : `${v},${u}`);
+      L.set(i, ed.lines.length); ed.lines.push([map(a), map(b)]);
+      if (ed.openProfile?.includes(k(a, b))) ed.openProfile = [...ed.openProfile, k(map(a), map(b))]; // une ligne de profil reste du profil
+    }
     if (kind === 'c') { const c = ed.circles[i]; ed.circles.push({ c: map(c.c), r: c.r }); cons(ed, 'equal_radius', [i, ed.circles.length - 1]); }
     if (kind === 'a') { const a = ed.arcs[i]; A.set(i, ed.arcs.length); ed.arcs.push(flip ? { c: map(a.c), a: map(a.b), b: map(a.a) } : { c: map(a.c), a: map(a.a), b: map(a.b) }); }
   }
@@ -50,9 +54,12 @@ export function mirror(ed, items, axis) {
   for (const p of usedPoints(ed, items)) {
     const P = ed.pts[p], t = ((P.x - A.x) * dx + (P.y - A.y) * dy) / L2, fx = A.x + t * dx, fy = A.y + t * dy;
     if (Math.hypot(P.x - fx, P.y - fy) < 1e-6 || p === ia || p === ib) { m.set(p, p); continue; }
-    ed.pts.push({ x: 2 * fx - P.x, y: 2 * fy - P.y, fixed: false });
-    m.set(p, ed.pts.length - 1);
-    cons(ed, 'symmetric', [p, ed.pts.length - 1, axis]);
+    // Image confondue avec un point existant (coin d'un rectangle) : ce point, pas un doublon,
+    // pour que les lignes copiées se raccordent et ferment le contour.
+    const X = 2 * fx - P.x, Y = 2 * fy - P.y, j = ed.pts.findIndex((o) => Math.hypot(o.x - X, o.y - Y) < 1e-3);
+    if (j < 0) ed.pts.push({ x: X, y: Y, fixed: false });
+    m.set(p, j < 0 ? ed.pts.length - 1 : j);
+    cons(ed, 'symmetric', [p, m.get(p), axis]);
   }
   copy(ed, items, (p) => m.get(p), true);
   return null;
