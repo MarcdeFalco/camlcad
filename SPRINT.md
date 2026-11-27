@@ -119,6 +119,14 @@ du cache Playwright).
 - Lot 31, chapitre 2 (Chamfer, Sketch Scale) : chanfrein d'esquisse à un sommet (sommet virtuel
   gardé comme pour le congé), mise à l'échelle de toute l'esquisse (points et cotes).
   Scénario `esquisse_echelle.spec.js` (volume vérifié).
+- Lot 32, chapitre 11 (Section View) : la mise en plan ajoute la coupe A-A (plan y milieu,
+  contours chaînés, matière hachurée, échelle propre si besoin) et son trait de coupe sur la
+  vue de dessus. Scénario `plan.spec.js`.
+- Lot 33, chapitre 2 (contraintes implicites) : un point posé sur une ligne y est contraint
+  (au milieu s'il en est proche), sur un cercle aussi. Scénario `inference.spec.js`.
+- Lot 34, chapitre 6 (Shell) : Coque d'une extrusion faite par l'éditeur : même esquisse
+  décalée vers l'intérieur (`Profile.offset`), extrudée au-dessus d'un fond de même épaisseur,
+  retirée (dessus ouvert) ; reste liée à l'esquisse. Scénario `coque.spec.js` (volume exact).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
@@ -131,6 +139,6 @@ du cache Playwright).
 
 ## Écarts connus avec Fusion (pas encore traités)
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
-- Pas d'échelle (`Shape.scale` absent du noyau).
+- Pas d'échelle de corps (`Shape.scale` absent du noyau) ; coque seulement pour une extrusion simple.
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
 - Pas de choix de régions de profil (toutes les boucles de l'esquisse sont extrudées).

@@ -36,6 +36,35 @@ function hiddenTest(mesh) {
   };
 }
 
+// Coupe par le plan y = y0 : segments d'intersection chaînés en contours (x, z).
+function sectionLoops(mesh, y0) {
+  const V = mesh.vertices, T = mesh.triangles, segs = [];
+  const P = (i) => [V[3 * i], V[3 * i + 1] - y0, V[3 * i + 2]];
+  for (let t = 0; t < T.length; t += 3) {
+    const q = [P(T[t]), P(T[t + 1]), P(T[t + 2])], pts = [];
+    for (let k = 0; k < 3; k++) {
+      const a = q[k], b = q[(k + 1) % 3];
+      if ((a[1] > 0) !== (b[1] > 0)) { const u = a[1] / (a[1] - b[1]); pts.push([a[0] + u * (b[0] - a[0]), a[2] + u * (b[2] - a[2])]); }
+    }
+    if (pts.length === 2) segs.push(pts);
+  }
+  const key = (p) => `${Math.round(p[0] * 1000)},${Math.round(p[1] * 1000)}`, next = new Map();
+  for (const [a, b] of segs) { next.set(key(a), [...(next.get(key(a)) ?? []), b]); next.set(key(b), [...(next.get(key(b)) ?? []), a]); }
+  const used = new Set(), loops = [];
+  for (const [a, b] of segs) {
+    const k0 = `${key(a)}|${key(b)}`; if (used.has(k0)) continue;
+    const loop = [a]; let prev = a, cur = b; used.add(k0); used.add(`${key(b)}|${key(a)}`);
+    for (let n = 0; n < segs.length && key(cur) !== key(a); n++) {
+      loop.push(cur);
+      const nx = (next.get(key(cur)) ?? []).find((p) => key(p) !== key(prev) && !used.has(`${key(cur)}|${key(p)}`));
+      if (!nx) break;
+      used.add(`${key(cur)}|${key(nx)}`); used.add(`${key(nx)}|${key(cur)}`); prev = cur; cur = nx;
+    }
+    if (loop.length >= 3) loops.push(loop);
+  }
+  return loops;
+}
+
 export function drawingSVG(mesh, title) {
   const E = edges(mesh), V = mesh.vertices, hidden = hiddenTest(mesh);
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
@@ -80,6 +109,19 @@ export function drawingSVG(mesh, title) {
   for (const [k, v] of Object.entries(VIEWS)) {
     const [px, py] = place[k], tx = k === 'gauche' ? gx0 : ox, ty = k === 'dessus' ? py + 2 + D * 0 + 6 : fy + 14;
     svg += `<text x="${r(tx)}" y="${r(k === 'dessus' ? oyFront + gap + D * s + 6 : ty)}" font-size="3" fill="#555">${v.name}</text>\n`;
+  }
+  // Coupe A-A (Black Book ch. 11, Section View) : plan y = milieu, matière hachurée, vue
+  // placée sous la vue de gauche ; trait de coupe sur la vue de dessus.
+  const y0 = (lo[1] + hi[1]) / 2, loops = sectionLoops(mesh, y0);
+  const roomW = 287 - 10 - (ox + W * s + gap), roomH = 190 - (oyFront + gap), s2 = SCALES.find((k) => k <= s && W * k <= roomW && H * k <= roomH);
+  if (loops.length && s2) {
+    const cx = ox + W * s + gap - lo[0] * s2, cy = oyFront + gap + H * s2 + lo[2] * s2;
+    svg += `<defs><pattern id="hach" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2" stroke="#000" stroke-width="0.25"/></pattern></defs>\n`;
+    svg += `<g class="view section" data-view="coupe"><path fill="url(#hach)" fill-rule="evenodd" stroke="#000" stroke-width="0.35" d="${loops.map((l) => 'M' + l.map((p) => `${r(cx + p[0] * s2)} ${r(cy - p[1] * s2)}`).join(' L') + ' Z').join(' ')}"/></g>\n`;
+    svg += `<text x="${r(ox + W * s + gap)}" y="${r(cy + 6)}" font-size="3" fill="#555">Coupe A-A${s2 !== s ? ` (${scaleText(s2)})` : ''}</text>\n`;
+    const [tx, ty] = place.dessus, ly = r(ty - y0 * s);
+    svg += `<g class="cutline" stroke="#c00" stroke-width="0.25" stroke-dasharray="4 1 1 1"><line x1="${r(tx + lo[0] * s - 4)}" y1="${ly}" x2="${r(tx + hi[0] * s + 4)}" y2="${ly}"/></g>` +
+      `<text x="${r(tx + lo[0] * s - 7)}" y="${ly}" font-size="3.5" fill="#c00">A</text><text x="${r(tx + hi[0] * s + 5)}" y="${ly}" font-size="3.5" fill="#c00">A</text>\n`;
   }
   // Cartouche.
   svg += `<g class="cartouche" font-size="3.5"><rect x="192" y="185" width="100" height="20" fill="none" stroke="#000" stroke-width="0.4"/>` +
