@@ -47,7 +47,7 @@ test('Practical 2 : plaque inclinée à oblong', async ({ page }) => {
   await clickSketch(page, 25, -20); await clickSketch(page, 50, -25.6);
   await page.locator('#sketch-ask input').fill('80'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: '80°' })).toBeVisible();
-  const p5 = await page.evaluate(() => window.camlcadSketch.pts.find((p) => p.x > 90 && p.y < 0));
+  const p5 = await page.evaluate(() => window.camlcadSketch.pts.find((p) => p.x > 90 && p.x < 99 && p.y < -5));
   expect(p5.x).toBeCloseTo(93.94, 1); expect(p5.y).toBeCloseTo(-17.84, 1);
   await shot(page, '260-practical2-esquisse');
   // Oblong par le centre (menu ▾), entraxe 16 et largeur 15 tapés.
