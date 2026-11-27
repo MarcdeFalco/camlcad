@@ -75,6 +75,8 @@ du cache Playwright).
   en projection européenne (face, dessus, gauche), arêtes vives, cotes d'encombrement,
   cartouche, échelle normalisée ; SVG téléchargé ; capture PNG de la vue. `drawing.js`.
   Scénario `plan.spec.js`.
+- Lot 17, chapitre 10 (Auto Explode) : MÉCANISME, Éclater : curseur d'écartement des pièces
+  depuis le centre de l'assemblage, rassemblées à la fermeture. Scénario `eclate.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

@@ -40,10 +40,35 @@ export class Mech {
     const s = this.state;
     if (!s) return;
     if (!m.ok) { s.inter = [m.error]; this.refresh(); return; }
-    s.meshes.forEach((o, i) => { o.matrix.fromArray(m.matrices.slice(16 * i, 16 * i + 16)); o.matrixWorldNeedsUpdate = true; });
+    s.base = s.meshes.map((_, i) => new THREE.Matrix4().fromArray(m.matrices.slice(16 * i, 16 * i + 16)));
+    this.place();
     s.pose = new Map(m.pose);
     s.inter = m.interferences;
     this.refresh();
+  }
+
+  // Vue éclatée (Black Book ch. 10, Auto Explode) : chaque pièce s'écarte du centre de
+  // l'assemblage, le long de la direction de son propre centre, d'un facteur f (0 : assemblé).
+  place() {
+    const s = this.state;
+    if (!s?.base) return;
+    const centers = s.meshes.map((o, i) => { o.geometry.computeBoundingBox(); return o.geometry.boundingBox.getCenter(new THREE.Vector3()).applyMatrix4(s.base[i]); });
+    const mid = centers.reduce((a, c) => a.add(c), new THREE.Vector3()).multiplyScalar(1 / Math.max(1, centers.length));
+    s.meshes.forEach((o, i) => {
+      const off = centers[i].clone().sub(mid).multiplyScalar(this.explode ?? 0);
+      o.matrix.copy(s.base[i]).premultiply(new THREE.Matrix4().makeTranslation(off.x, off.y, off.z));
+      o.matrixWorldNeedsUpdate = true;
+    });
+  }
+  setExplode(f) { this.explode = f; this.place(); }
+  explodePanel() {
+    if (!this.state) return;
+    const input = el('input', { type: 'range', min: 0, max: 2, step: 0.05, value: this.explode ?? 0, id: 'explode' });
+    const out = el('span', { className: 'unit', textContent: `${fmt(this.explode ?? 0)} ×` });
+    input.oninput = () => { this.setExplode(Number(input.value)); out.textContent = `${fmt(Number(input.value))} ×`; };
+    this.ctx.dialogs.open('VUE ÉCLATÉE', [el('div', { className: 'drow' }, el('label', { textContent: 'Écartement' }), el('div', { className: 'dctrl' }, input, out)),
+      el('div', { className: 'hint', textContent: 'Fermer rassemble les pièces.' })], { key: 'explode', okLabel: 'Fermer', cancel: false });
+    this.ctx.dialogs.ctx.onCloseExtra = () => this.setExplode(0);
   }
 
   send(d) {

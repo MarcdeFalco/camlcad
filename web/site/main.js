@@ -243,7 +243,7 @@ const COMMANDS = {
   delete: () => needSel() && timeline.remove(selected),
   look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
   fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
-  motion: () => mech.panel(),
+  motion: () => mech.panel(), explode: () => mech.explodePanel(),
   joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }),
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
