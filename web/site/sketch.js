@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK, inferPoint } from './sketch_tools.js';
+import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
@@ -277,7 +278,8 @@ export class SketchEditor extends SketchMarks {
     const value = dflt === undefined ? undefined : this.asking?.value;
     this.asking = null;
     if (dflt !== undefined && !Number.isFinite(value)) { this.redraw(); return; }
-    this.cons.push(value === undefined ? { kind, refs } : { kind, refs, value: kind === 'radius' ? value / 2 : value });
+    const ex = this.asked?.expr; this.asked = null; // cote en expression (paramètres)
+    this.cons.push(value === undefined ? { kind, refs } : { kind, refs, value: kind === 'radius' ? value / 2 : value, ...(ex ? { expr: kind === 'radius' ? `(${ex}) /. 2.` : ex } : {}) });
     this.sel = []; this.changed();
   }
 
@@ -355,8 +357,12 @@ export class SketchEditor extends SketchMarks {
     const ask = $('sketch-ask'); ask.replaceChildren(); ask.hidden = !this.asking;
     if (this.asking) {
       const a = this.asking, i = document.createElement('input'), ok = document.createElement('button');
-      i.type = 'number'; i.step = 'any'; i.value = fmt(a.value); ok.textContent = 'OK';
-      const go = () => { a.value = Number(i.value); this.addConstraint([a.kind, a.label, a.refs, a.value]); };
+      i.value = fmt(a.value); i.title = 'Nombre, ou expression avec des paramètres (largeur/2)'; ok.textContent = 'OK';
+      const go = () => {
+        const d = parseDim(i.value, this.ctx.params?.() ?? []);
+        if (!d) { i.classList.add('bad'); return; }
+        a.value = d.value; this.asked = d.expr ? { expr: d.expr } : null; this.addConstraint([a.kind, a.label, a.refs, a.value]);
+      };
       i.onkeydown = (e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') { this.asking = null; this.redraw(); } };
       ok.onclick = go;
       ask.append(Object.assign(document.createElement('span'), { textContent: `${a.label} (${a.kind === 'angle' ? '°' : 'mm'})` }), i, ok);

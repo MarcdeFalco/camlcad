@@ -196,3 +196,5 @@ button { font:inherit; color:inherit; }
 #marking button i { font-style:normal; color:var(--accent); }
 #marking button:hover { background:var(--accent-soft); }
 #appbar .hist { border:1px solid var(--line); background:var(--panel2, #fff); border-radius:4px; padding:1px 7px; cursor:pointer; font-size:14px; }
+#sketch-dims .dim.fx { border-color:#8e44ad; color:#8e44ad; }
+#sketch-ask input.bad, .dim-edit.bad { outline:2px solid var(--err); }

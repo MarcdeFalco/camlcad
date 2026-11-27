@@ -7,11 +7,11 @@ let rect_trou : Sketch_desc.t =
     arcs = [||];
     constraints =
       Sketch_desc.
-        [ { kind = "horizontal"; refs = [ 0 ]; value = None }; { kind = "vertical"; refs = [ 1 ]; value = None };
-          { kind = "horizontal"; refs = [ 2 ]; value = None }; { kind = "vertical"; refs = [ 3 ]; value = None };
-          { kind = "length"; refs = [ 0 ]; value = Some 40. }; { kind = "length"; refs = [ 1 ]; value = Some 20. };
-          { kind = "hdistance"; refs = [ 0; 4 ]; value = Some 20. }; { kind = "vdistance"; refs = [ 0; 4 ]; value = Some 10. };
-          { kind = "radius"; refs = [ 0 ]; value = Some 4. } ];
+        [ { kind = "horizontal"; refs = [ 0 ]; value = None; expr = None }; { kind = "vertical"; refs = [ 1 ]; value = None; expr = None };
+          { kind = "horizontal"; refs = [ 2 ]; value = None; expr = None }; { kind = "vertical"; refs = [ 3 ]; value = None; expr = None };
+          { kind = "length"; refs = [ 0 ]; value = Some 40.; expr = None }; { kind = "length"; refs = [ 1 ]; value = Some 20.; expr = None };
+          { kind = "hdistance"; refs = [ 0; 4 ]; value = Some 20.; expr = None }; { kind = "vdistance"; refs = [ 0; 4 ]; value = Some 10.; expr = None };
+          { kind = "radius"; refs = [ 0 ]; value = Some 4.; expr = None } ];
     loops = [ Sketch_desc.[ P 0; P 1; P 2; P 3 ] ] }
 
 let r x = Float.round (x *. 1e6) /. 1e6 +. 0.
@@ -57,7 +57,7 @@ let%expect_test "résolution et code" =
     |}]
 
 let%expect_test "erreurs de description" =
-  let bad k refs = { rect_trou with constraints = [ { Sketch_desc.kind = k; refs; value = None } ] } in
+  let bad k refs = { rect_trou with constraints = [ { Sketch_desc.kind = k; refs; value = None; expr = None } ] } in
   List.iter
     (fun d -> match Sketch_desc.solve d with Ok _ -> print_endline "ok ?" | Error e -> print_endline e)
     [ bad "length" [ 0 ]; bad "horizontal" [ 9 ]; bad "tangent" [ 0 ]; bad "glisse" [];
@@ -79,8 +79,8 @@ let oblong : Sketch_desc.t =
     arcs = [| (0, 2, 3); (1, 4, 5) |];
     constraints =
       Sketch_desc.
-        [ { kind = "arc_radius"; refs = [ 0 ]; value = Some 5. }; { kind = "tangent_arc"; refs = [ 0; 0 ]; value = None };
-          { kind = "tangent_arc"; refs = [ 0; 1 ]; value = None }; { kind = "tangent_arc"; refs = [ 1; 1 ]; value = None } ];
+        [ { kind = "arc_radius"; refs = [ 0 ]; value = Some 5.; expr = None }; { kind = "tangent_arc"; refs = [ 0; 0 ]; value = None; expr = None };
+          { kind = "tangent_arc"; refs = [ 0; 1 ]; value = None; expr = None }; { kind = "tangent_arc"; refs = [ 1; 1 ]; value = None; expr = None } ];
     loops = [ Sketch_desc.[ A 0; A 1 ] ] }
 
 let%expect_test "oblong : arcs dans un contour" =
@@ -116,7 +116,7 @@ let%expect_test "symétrie : point reflété par rapport à une droite" =
   let d : Sketch_desc.t =
     { points = [| (0., 0., true); (0., 10., true); (3., 4., true); (-1., 5., false) |];
       lines = [| (0, 1) |]; circles = [||]; arcs = [||];
-      constraints = [ { kind = "symmetric"; refs = [ 2; 3; 0 ]; value = None } ];
+      constraints = [ { kind = "symmetric"; refs = [ 2; 3; 0 ]; value = None; expr = None } ];
       loops = [] }
   in
   (match Sketch_desc.solve d with
@@ -137,8 +137,8 @@ let%expect_test "boucles imbriquées et décalage" =
         List.concat
           (List.init 4 (fun i ->
                Sketch_desc.
-                 [ { kind = "parallel"; refs = [ i; i + 4 ]; value = None };
-                   { kind = "point_line_distance"; refs = [ 4 + i; i ]; value = Some 3. } ]));
+                 [ { kind = "parallel"; refs = [ i; i + 4 ]; value = None; expr = None };
+                   { kind = "point_line_distance"; refs = [ 4 + i; i ]; value = Some 3.; expr = None } ]));
       loops = Sketch_desc.[ [ P 0; P 1; P 2; P 3 ]; [ P 4; P 5; P 6; P 7 ] ] }
   in
   (match Sketch_desc.solve d with
@@ -158,4 +158,18 @@ let%expect_test "boucles imbriquées et décalage" =
   [%expect {|
     dof 0, aire 204.0
     Sketch.(loop [ p0; p1; p2; p3 ] - loop [ p4; p5; p6; p7 ])
+    |}]
+
+let%expect_test "cote liée à un paramètre : expression écrite telle quelle" =
+  let d =
+    { rect_trou with
+      constraints =
+        [ { Sketch_desc.kind = "length"; refs = [ 0 ]; value = Some 30.; expr = Some "largeur /. 2." } ] }
+  in
+  String.split_on_char '\n' (Sketch_desc.to_code ~indent:0 d)
+  |> List.filter (fun l -> String.length l > 0 && (String.contains l '[' || String.contains l 'l' && String.sub l 0 3 = "Ske"))
+  |> List.iter print_endline;
+  [%expect {|
+        Sketch.[ length l0 (largeur /. 2.) ]
+    Sketch.(loop [ p0; p1; p2; p3 ] - disk c0)
     |}]

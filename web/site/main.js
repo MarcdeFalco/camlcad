@@ -181,7 +181,7 @@ function showFace(f) {
 // ---------- Esquisse ----------
 const sketch = new SketchEditor({
   scene: vp.scene, camera: vp.camera, controls: vp.controls, renderer: vp.renderer,
-  solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
+  params: () => journal?.params ?? [], solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
   mode: (on) => showTab(on ? 'sketch' : null),
   finish: (data) => {
     vp.threeQuarter(data.frame);
@@ -194,7 +194,7 @@ function startSketch(frame, code, data, editing, loops) { dialogs.close(true); s
 let verify = null;
 function editSketch(name) {
   if (sketch.active) return;
-  const r = prepareEdit(view.state.doc.toString(), name, allPlanes());
+  const r = prepareEdit(view.state.doc.toString(), name, allPlanes(), journal?.params ?? []);
   if (typeof r === 'string') { notify(r, true); return; }
   verify = r; worker.postMessage({ kind: 'sketch', id: 0, sketch: descOf(r.data), overrides: [] });
 }

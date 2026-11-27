@@ -321,7 +321,10 @@ let sketch id (o : Js.Unsafe.any) =
                let v : Js.Unsafe.any Js.Optdef.t = Js.Unsafe.get c "value" in
                { Cad.Sketch_desc.kind = Js.to_string (Js.Unsafe.get c "kind");
                  refs = Array.to_list (Array.map it (Js.to_array (Js.Unsafe.get c "refs")));
-                 value = Js.Optdef.to_option (Js.Optdef.map v (fun x -> x)) |> Option.map fl })
+                 value = Js.Optdef.to_option (Js.Optdef.map v (fun x -> x)) |> Option.map fl;
+                 expr =
+                   (let e : Js.Unsafe.any Js.Optdef.t = Js.Unsafe.get c "expr" in
+                    Js.Optdef.to_option (Js.Optdef.map e (fun x -> Js.to_string (Js.Unsafe.coerce x)))) })
              (arr "constraints"));
       (* élément de boucle : nombre = point, {a:k} = arc k, {r:k} = arc k à l'envers *)
       loops =

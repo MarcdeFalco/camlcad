@@ -131,6 +131,11 @@ du cache Playwright).
   point isolé (diamètre, traversant ou profondeur), Couper. Scénario `percages_points.spec.js`.
 - Lot 36, chapitre 8 (Draft Analysis) : Dépouille selon +z (vert en dépouille, jaune vertical,
   rouge en contre-dépouille). Scénario `plan3.spec.js` (couleur d'un pixel vérifiée).
+- Lot 37, chapitre 6 (Parameters) : cotes d'esquisse en expression de paramètres (« largeur »,
+  « largeur/2 ») : `Sketch_desc.constr.expr` (contrat, test d'expectation), écrite telle quelle
+  dans le code (`length l0 (largeur /. 2.)`), évaluée dans l'éditeur (`expr.js`) ; cote marquée
+  ƒ ; l'esquisse suit le paramètre et se rouvre (la vérification ignore désormais les positions
+  de départ, qui changent avec les paramètres). Scénario `cotes_parametres.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :

@@ -56,7 +56,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   de côtés dans la barre), point, Cote (D : ligne, cercle, deux points, deux lignes),
   lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe), réseau en x et réseau circulaire (dernier point choisi = centre) de la sélection, décalage d'un contour (une boucle dans une boucle est un trou), suppression (Suppr), projection du contour de la face d'appui, sélection (S, Maj pour plusieurs), avec élastique et
   mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,
-  double-clic sur une cote pour la modifier ; les contraintes proposées dépendent de la sélection et sont
+  double-clic sur une cote pour la modifier (nombre, ou expression de paramètres : `largeur/2`, cote ƒ) ; les contraintes proposées dépendent de la sélection et sont
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
   les degrés de liberté, la cote demandée et la liste des contraintes.
   « Nervure » épaissit et extrude les lignes ouvertes, « Tuyau » en fait un tube, « Perçages » perce aux points isolés ; « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,

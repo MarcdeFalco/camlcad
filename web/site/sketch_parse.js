@@ -1,4 +1,5 @@
 import { frameFromNumbers } from './planes.js';
+import { evalExpr } from './expr.js';
 
 // Relecture d'une esquisse écrite par l'éditeur (format de Cad.Sketch_desc.to_code) pour la
 // rouvrir à la souris (« Modifier l'esquisse », Black Book ch. 2). Le code reste la source :
@@ -19,7 +20,7 @@ export function findSketch(code, name) {
 }
 
 // Texte → structures de l'éditeur (pts, lines, circles, arcs, cons, loops) ; null si illisible.
-export function parseSketch(text) {
+export function parseSketch(text, params = []) {
   const pts = [], lines = [], circles = [], arcs = [], cons = [], loops = [];
   for (const m of text.matchAll(/\b(p\d+) = Sketch\.point( ~fixed:true)? (\(?-?[\d.]+\)?) (\(?-?[\d.]+\)?)/g)) pts[idx(m[1])] = { x: num(m[3]), y: num(m[4]), fixed: !!m[2] };
   for (const m of text.matchAll(/\b(l\d+) = Sketch\.line (p\d+) (p\d+)/g)) lines[idx(m[1])] = [idx(m[2]), idx(m[3])];
@@ -27,9 +28,12 @@ export function parseSketch(text) {
   for (const m of text.matchAll(/\b(a\d+) = Sketch\.arc (p\d+) (p\d+) (p\d+)/g)) arcs[idx(m[1])] = { c: idx(m[2]), a: idx(m[3]), b: idx(m[4]) };
   const cl = /Sketch\.\[([\s\S]*?)\]/.exec(text);
   if (cl) for (const item of cl[1].split(';').map((s) => s.trim()).filter(Boolean)) {
-    const w = item.split(/\s+/), kind = w[0], refs = [], vals = [];
-    for (const t of w.slice(1)) (/^[plca]\d+$/.test(t) ? refs.push(idx(t)) : vals.push(num(t)));
-    cons.push(vals.length ? { kind, refs, value: vals[0] } : { kind, refs });
+    const w = item.split(/\s+/), kind = w[0], refs = [];
+    let k = 1; while (k < w.length && /^[plca]\d+$/.test(w[k])) refs.push(idx(w[k++]));
+    const rest = w.slice(k).join(' ');
+    if (!rest) cons.push({ kind, refs });
+    else if (/^\(?-?[\d.]+\)?$/.test(rest)) cons.push({ kind, refs, value: num(rest) });
+    else { const expr = rest.replace(/^\((.*)\)$/, '$1'), v = evalExpr(expr, params); cons.push({ kind, refs, value: kind === 'radius' ? v : v, expr }); }
   }
   const reg = /Sketch\.\((.*)\)\s*$/.exec(text.trim());
   if (!reg) return null;
@@ -63,12 +67,16 @@ export function sketchPlane(code, name, planes) {
 }
 
 // Tout ce qu'il faut pour rouvrir l'esquisse `name` : { data, frame, planeCode, text } ou un message.
-export function prepareEdit(code, name, planes) {
-  const body = findSketch(code, name), data = body && parseSketch(body.text), pl = body && sketchPlane(code, name, planes);
+export function prepareEdit(code, name, planes, params = []) {
+  const body = findSketch(code, name), data = body && parseSketch(body.text, params), pl = body && sketchPlane(code, name, planes);
   if (!data || !pl) return `Esquisse « ${name} » : pas au format de l’éditeur, modifiez-la dans le code.`;
   return { data, frame: pl.frame ?? frameFromNumbers(pl.literal), planeCode: pl.code, text: body.text, name };
 }
-export const sameCode = (a, b) => a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim();
+// Même esquisse au sens de la structure : les positions et rayons initiaux (valeurs de départ
+// du solveur, qui bougent quand un paramètre change) ne comptent pas.
+const shape = (c) => c.replace(/(Sketch\.point(?: ~fixed:true)?) \(?-?[\d.]+\)? \(?-?[\d.]+\)?/g, '$1 _ _')
+  .replace(/(Sketch\.circle p\d+) \(?-?[\d.]+\)?/g, '$1 _').replace(/\s+/g, ' ').trim();
+export const sameCode = (a, b) => shape(a) === shape(b);
 // Esquisse utilisée par une feature (extrusion, révolution…) : le premier nom esquisseN de sa définition.
 export function sketchOf(code, feat) {
   const m = new RegExp(`let%feat ${feat} =([\\s\\S]{0,600}?)\\n  in\\n|let%feat ${feat} =([^\\n]*) in\\n`).exec(code);
