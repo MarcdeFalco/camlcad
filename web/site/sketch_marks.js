@@ -3,7 +3,7 @@
 // Classe de base de SketchEditor (sketch.js), qui fournit plane, pts, lines, circles, cons…
 import * as THREE from 'three';
 import { TYPED } from './sketch_input.js';
-import { TWO_CLICK, rubberShape } from './sketch_tools.js';
+import { TWO_CLICK, rubberShape, faceVertex } from './sketch_tools.js';
 import { arcPoints, loopPoints } from './sketch_arcs.js';
 import { parseDim } from './expr.js';
 
@@ -115,10 +115,10 @@ export class SketchMarks {
       l.computeLineDistances(); l.renderOrder = 5; g.add(l);
     };
     const snap = this.tool !== 'select' ? this.nearest(q) : null;
-    const at = snap && snap.kind === 'p' ? this.pts[snap.i] : q;
+    const fv = !snap && faceVertex(this, q), at = snap && snap.kind === 'p' ? this.pts[snap.i] : fv || q;
     if (this.tool === 'poly' && this.chain) line([this.pts[this.chain[this.chain.length - 1]], at]);
     if (TWO_CLICK[this.tool] && this.pending != null) line(rubberShape(this.tool, this.pts[this.pending], at, this.sides()));
-    if (snap && snap.kind === 'p') {
+    if ((snap && snap.kind === 'p') || fv) {
       const m = new THREE.Mesh(new THREE.RingGeometry(this.tol() * 0.45, this.tol() * 0.7, 16), new THREE.MeshBasicMaterial({ color: 0xff8a3d, depthTest: false, transparent: true }));
       m.position.set(at.x, at.y, 0); m.renderOrder = 6; g.add(m);
     }

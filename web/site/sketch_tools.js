@@ -235,3 +235,12 @@ export function orientAngle(ed, refs, v) {
   const th = ((((dir(refs[1]) - dir(refs[0])) * 180) / Math.PI + 540) % 360) - 180; // dans ]-180, 180]
   return Math.abs(th - v) <= Math.abs(th + v) ? refs : [refs[1], refs[0]];
 }
+
+// Esquisse sur une face : ses sommets accrochent le curseur (comme les arêtes du modèle dans
+// un modeleur) ; le point posé y est fixe. Rend le sommet (coordonnées du plan) ou null.
+export function faceVertex(ed, q) {
+  if (!ed.faceLoops || !q) return null;
+  let best = null, d0 = ed.tol();
+  for (const p of ed.faceLoops.flat()) { const d = Math.hypot(p.x - q.x, p.y - q.y); if (d < d0) { d0 = d; best = { x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100 }; } }
+  return best;
+}
