@@ -17,13 +17,27 @@ function edges(mesh) {
 
 // Vues : projection (x, y à l'écran, y vers le haut) d'un point 3D.
 const VIEWS = {
-  face: { name: 'Vue de face', f: (x, y, z) => [x, z] },
-  dessus: { name: 'Vue de dessus', f: (x, y, z) => [x, y] }, // dessous la face : l'arrière contre elle
-  gauche: { name: 'Vue de gauche', f: (x, y, z) => [-y, z] },
+  face: { name: 'Vue de face', f: (x, y, z) => [x, z], eye: [0, -1, 0] },
+  dessus: { name: 'Vue de dessus', f: (x, y, z) => [x, y], eye: [0, 0, 1] }, // dessous la face : l'arrière contre elle
+  gauche: { name: 'Vue de gauche', f: (x, y, z) => [-y, z], eye: [-1, 0, 0] },
 };
 
+// Arête cachée : la pièce coupe le rayon qui va de son milieu vers l'observateur
+// (au-delà de 20 000 triangles, toutes les arêtes sont tracées en trait plein).
+function hiddenTest(mesh) {
+  if (mesh.triangles.length / 3 > 20000) return () => false;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(mesh.vertices, 3)); g.setIndex(new THREE.BufferAttribute(mesh.triangles, 1));
+  const obj = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })), rc = new THREE.Raycaster();
+  return (a, b, eye) => {
+    const m = new THREE.Vector3((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2), d = new THREE.Vector3(...eye);
+    rc.set(m.clone().addScaledVector(d, 0.02), d); rc.far = 1e4;
+    return rc.intersectObject(obj).some((h) => h.distance > 0.02);
+  };
+}
+
 export function drawingSVG(mesh, title) {
-  const E = edges(mesh), V = mesh.vertices;
+  const E = edges(mesh), V = mesh.vertices, hidden = hiddenTest(mesh);
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i < V.length; i += 3) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], V[i + k]); hi[k] = Math.max(hi[k], V[i + k]); }
   const [W, D, H] = [0, 1, 2].map((k) => hi[k] - lo[k]);
@@ -43,8 +57,11 @@ export function drawingSVG(mesh, title) {
     const [px, py] = place[k];
     svg += `<g class="view" data-view="${k}" stroke="#000" stroke-width="0.25" fill="none">`;
     for (let i = 0; i < E.length; i += 6) {
-      const [a, b] = v.f(E[i], E[i + 1], E[i + 2]), [c, d] = v.f(E[i + 3], E[i + 4], E[i + 5]);
-      svg += `<line x1="${r(px + a * s)}" y1="${r(py - b * s)}" x2="${r(px + c * s)}" y2="${r(py - d * s)}"/>`;
+      const P = [E[i], E[i + 1], E[i + 2]], Q = [E[i + 3], E[i + 4], E[i + 5]];
+      const [a, b] = v.f(...P), [c, d] = v.f(...Q);
+      if (Math.hypot(c - a, d - b) * s < 0.05) continue; // arête vue de bout
+      const h = hidden(P, Q, v.eye);
+      svg += `<line${h ? ' class="hidden" stroke-dasharray="1.2 0.8" stroke-width="0.18"' : ''} x1="${r(px + a * s)}" y1="${r(py - b * s)}" x2="${r(px + c * s)}" y2="${r(py - d * s)}"/>`;
     }
     svg += `</g>\n`;
   }

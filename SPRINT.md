@@ -77,6 +77,9 @@ du cache Playwright).
   Scénario `plan.spec.js`.
 - Lot 17, chapitre 10 (Auto Explode) : MÉCANISME, Éclater : curseur d'écartement des pièces
   depuis le centre de l'assemblage, rassemblées à la fermeture. Scénario `eclate.spec.js`.
+- Lot 18, chapitres 11 et 6 : mise en plan avec arêtes cachées en traits interrompus (rayon
+  vers l'observateur) ; paramètres utilisateur créés depuis le dialogue Paramètres (« + Ajouter »,
+  écrits en tête de `model`). Scénarios `plan.spec.js`, `parametres.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
@@ -90,6 +93,5 @@ du cache Playwright).
 ## Écarts connus avec Fusion (pas encore traités)
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Pas d'échelle (`Shape.scale` absent du noyau).
-- Mise en plan : toutes les arêtes vives en trait plein (pas de traits cachés en pointillés).
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
 - Pas de flèche de distance dans la vue pour l'extrusion, pas de choix de régions de profil.

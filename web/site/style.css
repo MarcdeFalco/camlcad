@@ -189,3 +189,4 @@ button { font:inherit; color:inherit; }
 .more-menu button:hover { background:var(--accent-soft); }
 #dialog:has(.drawing-preview) { width:440px; }
 .drawing-preview { width:100%; border:1px solid var(--line); background:#fff; margin-bottom:6px; }
+.prow.padd { display:grid; grid-template-columns: 1.4fr 1fr .8fr auto; gap:4px; margin-top:4px; }
