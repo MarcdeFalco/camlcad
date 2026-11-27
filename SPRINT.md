@@ -227,6 +227,10 @@ du cache Playwright).
   de part et d'autre du plan d'esquisse). Scénario `revolution_sym.spec.js` (boîte englobante).
 - Lot 64, chapitre 4 (Rectangular Pattern, Symmetric) : case Symétrique du réseau
   rectangulaire (copies centrées sur l'original). Scénario `reseau_sym.spec.js`.
+- Lot 65, chapitre 8 (Inspect) pour l'impression 3D : analyse d'épaisseur (rayon le long de la
+  normale rentrante de chaque triangle) : épaisseur minimale, parois sous le seuil en rouge,
+  sous le double en jaune, part de surface trop fine. Scénario `epaisseur.spec.js` (bac à
+  parois de 1 mm).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la

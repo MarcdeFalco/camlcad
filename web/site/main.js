@@ -14,7 +14,7 @@ import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
-import { initFiles, saveBlob } from './files.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js';
+import { initFiles, saveBlob } from './files.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
 import { jointDialog, linkDialog } from './mech_joint.js'; import { motionStudy } from './mech_study.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -247,7 +247,7 @@ const COMMANDS = {
   delete: () => needSel() && timeline.remove(selected),
   look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
   fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
-  motion: () => mech.panel(), study: () => motionStudy(mech, dialogs), importstl: () => importStl(dialogs, worker), appearance: () => appearanceDialog(dialogs, vp), video: () => mech.record((b) => download(b, 'webm')) && notify('Enregistrement d’un cycle (4 s)…'), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
+  motion: () => mech.panel(), study: () => motionStudy(mech, dialogs), importstl: () => importStl(dialogs, worker), appearance: () => appearanceDialog(dialogs, vp), thickness: () => thicknessDialog(dialogs, vp), video: () => mech.record((b) => download(b, 'webm')) && notify('Enregistrement d’un cycle (4 s)…'), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
   joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }), link: () => linkDialog(dialogs, view, mech.state?.coords ?? [], () => { clearTimeout(debounce); evalCode(); }),
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
