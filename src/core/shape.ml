@@ -15,6 +15,7 @@ and view =
   | Scale of Geom.V3.t * t
   | Loft of (Geom.Frame.t * Profile.t) list
   | Sweep of Profile.t * Geom.V3.t list
+  | Mesh of Mesh.t
 
 type key =
   | KEmpty
@@ -31,6 +32,7 @@ type key =
   | KScale of Geom.V3.t * int
   | KLoft of (Geom.Frame.t * int) list
   | KSweep of int * Geom.V3.t list
+  | KMesh of string
 
 let key = function
   | Empty -> KEmpty
@@ -47,6 +49,7 @@ let key = function
   | Scale (f, a) -> KScale (f, a.id)
   | Loft l -> KLoft (List.map (fun (f, p) -> (f, Profile.id p)) l)
   | Sweep (p, path) -> KSweep (Profile.id p, path)
+  | Mesh m -> KMesh (Digest.string (Marshal.to_string m []))
 
 let empty = { id = 0; v = Empty }
 let table : (key, t) Hashtbl.t = Hashtbl.create 256
@@ -91,6 +94,7 @@ let scale ?about f s =
 
 let loft sections = mk (Loft sections)
 let sweep profile path = mk (Sweep (profile, path))
+let of_mesh m = mk (Mesh m)
 let id s = s.id
 let equal a b = a.id = b.id
 
@@ -102,7 +106,7 @@ let subterms s =
       match s.v with
       | Union (a, b) | Difference (a, b) | Intersection (a, b) -> go a; go b
       | Place (_, a) | Mirror (_, a) | Scale (_, a) -> go a
-      | Empty | Cube _ | Cylinder _ | Sphere _ | Extrude _ | Revolve _ | Loft _ | Sweep _ -> ()
+      | Empty | Cube _ | Cylinder _ | Sphere _ | Extrude _ | Revolve _ | Loft _ | Sweep _ | Mesh _ -> ()
     end
   in
   go s;

@@ -201,6 +201,11 @@ du cache Playwright).
   milieu d'un côté ; cote : apothème par « distance point-droite ») et bascule profil ↔
   construction des lignes sélectionnées (touche X ou bouton Construction ; contours
   recalculés). Scénario `esquisse_construction.spec.js` (volume de l'hexagone seul).
+- Lot 56, chapitre 1 (Insert Mesh) : `Shape.of_mesh` et `Cad_export.Stl.of_file` (contrats,
+  loi « maillage importé »), message `file` du worker (système de fichiers du toplevel),
+  commande Insérer STL : le fichier choisi est gardé dans le navigateur et redonné au worker à
+  chaque démarrage ; le code le lit par son nom. Scénario `importer.spec.js` (volume, reprise
+  après rechargement).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la

@@ -72,6 +72,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `esquisse_points.spec.js` | Black Book ch. 2 : rectangle par trois points (aire), cercles par deux et trois points, arc par trois points |
 | `couches.spec.js` | Impression 3D : 150 couches de 0,2 mm sur l'équerre, première couche (contour), couche du milieu au clavier, couches de 0,3 mm |
 | `esquisse_construction.spec.js` | Black Book ch. 2 : hexagone circonscrit (apothème), rectangle passé en construction (X) puis rétabli, seul l'hexagone extrudé |
+| `importer.spec.js` | Black Book ch. 1 : STL binaire choisi au sélecteur de fichiers, corps importé (volume), revenu après rechargement |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

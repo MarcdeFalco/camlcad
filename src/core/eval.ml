@@ -116,6 +116,7 @@ module Make (K : Kernel.S) = struct
               match Loft.outline ~segments:(segments q ~r:(radius p) ~deg:360.) p with
               | None -> K.empty
               | Some o -> K.of_mesh (Loft.mesh (Loft.sweep_sections o path)))
+          | Mesh m -> K.of_mesh m
         in
         c.calls <- c.calls + 1;
         Hashtbl.replace c.solids (Shape.id s) k;

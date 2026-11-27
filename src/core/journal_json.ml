@@ -53,6 +53,7 @@ let rec op s =
   | Scale (_, s) -> op s
   | Loft _ -> "loft"
   | Sweep _ -> "sweep"
+  | Mesh _ -> "mesh"
   | Place (_, s) -> op s
 
 let feature (f : Doc.feature_info) =

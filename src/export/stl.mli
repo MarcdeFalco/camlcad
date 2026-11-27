@@ -7,4 +7,9 @@ val to_string : Cad.Mesh.t -> string
 val to_file : string -> Cad.Mesh.t -> unit
 
 val of_string : string -> Cad.Mesh.t
-(** Relecture, sommets fusionnés à l'identique ; sert aux tests aller-retour. *)
+(** Relecture d'un STL binaire, sommets fusionnés à l'identique. Lève [Invalid_argument]
+    si le fichier est tronqué. *)
+
+val of_file : string -> Cad.Mesh.t
+(** [of_string] du contenu du fichier (STL binaire) : pièce importée ([Shape.of_mesh]).
+    Lève [Sys_error] si le fichier n'existe pas. *)

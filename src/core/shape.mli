@@ -49,6 +49,10 @@ val sweep : Profile.t -> Geom.V3.t list -> t
     {!Loft.sweep_sections}). Solide vide pour un profil booléen ou un chemin de moins de deux
     points. *)
 
+val of_mesh : Mesh.t -> t
+(** Solide d'un maillage fermé et orienté, par exemple un STL importé
+    ([Cad_export.Stl.of_file]) ; solide vide si ce n'est pas une variété close. *)
+
 val id : t -> int
 val equal : t -> t -> bool
 
@@ -71,5 +75,6 @@ type view =
   | Scale of Geom.V3.t * t
   | Loft of (Geom.Frame.t * Profile.t) list
   | Sweep of Profile.t * Geom.V3.t list
+  | Mesh of Mesh.t
 
 val view : t -> view
