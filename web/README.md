@@ -22,7 +22,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
 
 - **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé, Plan milieu, Plan à un angle, Plan par 3 points (construction, listés dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, taraudé M2–M12, traversant), Filetage (tige filetée ISO), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Pousser/tirer (une face plane cliquée), Congé et Chanfrein d'arête (ses deux faces cliquées), Coque (d'une extrusion : parois et fond, dessus ouvert), Diviser (par un plan, moitiés séparées pour l'impression), Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
   (modifier la sélection), Paramètres (tableau, OK écrit les valeurs dans le
-  code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F), Mesurer (points, faces), Coupe (plan de découpe, matière coupée en rouge), Zébrures, Propriétés (volume, centre de gravité, masse imprimée). Boîte,
+  code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F), Mesurer (points, faces), Coupe (plan de découpe, matière coupée en rouge), Zébrures, Dépouille, Propriétés (volume, centre de gravité, masse imprimée). Boîte,
   cylindre et sphère ouvrent un dialogue avec aperçu (opération Joindre,
   Couper ou Intersection) ; OK insère la feature avant le `Doc.return` et la
   combine au résultat.
@@ -56,10 +56,10 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   de côtés dans la barre), point, Cote (D : ligne, cercle, deux points, deux lignes),
   lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe), réseau en x et réseau circulaire (dernier point choisi = centre) de la sélection, décalage d'un contour (une boucle dans une boucle est un trou), suppression (Suppr), projection du contour de la face d'appui, sélection (S, Maj pour plusieurs), avec élastique et
   mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,
-  double-clic sur une cote pour la modifier ; les contraintes proposées dépendent de la sélection et sont
+  double-clic sur une cote pour la modifier (nombre, ou expression de paramètres : `largeur/2`, cote ƒ) ; les contraintes proposées dépendent de la sélection et sont
   résolues par le solveur OCaml à chaque ajout ; la palette d'esquisse montre
   les degrés de liberté, la cote demandée et la liste des contraintes.
-  « Nervure » épaissit et extrude les lignes ouvertes, « Tuyau » en fait un tube ; « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
+  « Nervure » épaissit et extrude les lignes ouvertes, « Tuyau » en fait un tube, « Perçages » perce aux points isolés ; « Terminer l'esquisse » ouvre le dialogue Extrusion (direction : un côté,
   côté opposé, symétrique ; distance, aussi en tirant la flèche dans la vue ; opération), avec aperçu ; OK insère le
   plan, le `let%sketch` et la feature ; Annuler revient à l'esquisse.
   Limites : le plan d'une face est écrit en littéral. Une esquisse insérée se rouvre à la

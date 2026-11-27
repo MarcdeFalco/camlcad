@@ -19,6 +19,9 @@ type constr = {
       ["on_circle"] : point, cercle ; ["symmetric"] : point, point, ligne ; ["point_line_distance"] : point, ligne (valeur) ; ["arc_radius"] : arc ; ["tangent_arc"] : ligne, arc. *)
   refs : int list;  (** indices dans [lines], [points], [circles] ou [arcs] selon [kind] *)
   value : float option;  (** longueur, distance, angle (degrés) ou rayon *)
+  expr : string option;
+  (** expression OCaml de la valeur (paramètres : [largeur /. 2.]), écrite telle quelle dans le
+      code par [to_code] à la place de [value] ; [value] en est la valeur, pour résoudre. *)
 }
 
 type item = P of int | A of int | Rev of int

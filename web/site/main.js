@@ -181,11 +181,11 @@ function showFace(f) {
 // ---------- Esquisse ----------
 const sketch = new SketchEditor({
   scene: vp.scene, camera: vp.camera, controls: vp.controls, renderer: vp.renderer,
-  solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
+  params: () => journal?.params ?? [], solve: (desc) => worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }),
   mode: (on) => showTab(on ? 'sketch' : null),
   finish: (data) => {
     vp.threeQuarter(data.frame);
-    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (data.kind === 'rib' || data.kind === 'pipe' ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
+    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (['rib', 'pipe', 'holes'].includes(data.kind) ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
@@ -194,7 +194,7 @@ function startSketch(frame, code, data, editing, loops) { dialogs.close(true); s
 let verify = null;
 function editSketch(name) {
   if (sketch.active) return;
-  const r = prepareEdit(view.state.doc.toString(), name, allPlanes());
+  const r = prepareEdit(view.state.doc.toString(), name, allPlanes(), journal?.params ?? []);
   if (typeof r === 'string') { notify(r, true); return; }
   verify = r; worker.postMessage({ kind: 'sketch', id: 0, sketch: descOf(r.data), overrides: [] });
 }
@@ -217,7 +217,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-holes').onclick = () => sketch.finish('holes'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {
@@ -237,7 +237,7 @@ const COMMANDS = {
   torus: () => dialogs.primitive('torus'), coil: () => dialogs.primitive('coil'), thread: () => feats.threadRod(dialogs),
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
-  measure: () => inspect.startMeasure(), zebra: () => notify(vp.toggleZebra() ? 'Analyse zébrée : bandes réfléchies.' : 'Analyse zébrée retirée.'), section: () => inspect.section(), props: () => inspect.properties(),
+  measure: () => inspect.startMeasure(), zebra: () => notify(vp.toggleZebra() ? 'Analyse zébrée : bandes réfléchies.' : 'Analyse zébrée retirée.'), draft: () => notify(vp.toggleDraft() ? 'Dépouille (démoulage selon +z) : vert en dépouille, jaune vertical, rouge en contre-dépouille.' : 'Analyse de dépouille retirée.'), section: () => inspect.section(), props: () => inspect.properties(),
   shell: () => needSel() && paths.shell(dialogs, journal.features[selected], featureDef(journal.features[selected].name)), split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }), angleplane: () => dialogs.anglePlane((f) => insertPlane(`(* construction *) ${frameCode(f)}`)),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),

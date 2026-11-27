@@ -1,4 +1,4 @@
-type constr = { kind : string; refs : int list; value : float option }
+type constr = { kind : string; refs : int list; value : float option; expr : string option }
 type item = P of int | A of int | Rev of int
 
 type t = {
@@ -168,7 +168,8 @@ let to_code ?(indent = 4) d =
   in
   let constr k =
     String.concat " "
-      ((k.kind :: List.mapi (ref_name k.kind) k.refs) @ match k.value with Some v -> [ num v ] | None -> [])
+      ((k.kind :: List.mapi (ref_name k.kind) k.refs)
+      @ match (k.expr, k.value) with Some e, _ -> [ "(" ^ e ^ ")" ] | None, Some v -> [ num v ] | None, None -> [])
   in
   (match d.constraints with
   | [] -> line "let+ () = Sketch.constrain [] in"

@@ -104,3 +104,33 @@ export function shell(d, f, def) {
     },
   });
 }
+
+// Perçages aux points (ch. 4, Hole « from sketch points ») : un trou à chaque point isolé de
+// l'esquisse, vers l'intérieur de la matière (côté opposé à la normale du plan), Couper.
+export function holes(d, sk, back) {
+  const P = { dia: 3.4, depth: 10, thru: true };
+  const f = sk.frame;
+  const preview = () => {
+    const g = new THREE.Group(), h = P.thru ? 30 : P.depth;
+    for (const p of sk.points) { const m = new THREE.Mesh(new THREE.CylinderGeometry(P.dia / 2, P.dia / 2, h, 24)); m.rotation.x = Math.PI / 2; m.position.set(p.x, p.y, -h / 2); g.add(m); }
+    g.matrixAutoUpdate = false; g.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin);
+    d.setPreview(g, 0xe74c3c);
+  };
+  const depth = num(P.depth, (v) => { P.depth = v; preview(); }, { min: 0 }); depth.disabled = true;
+  const thru = Object.assign(el('input', { type: 'checkbox', checked: true }), { onchange: (e) => { P.thru = e.target.checked; depth.disabled = P.thru; preview(); } });
+  d.open('PERÇAGES AUX POINTS', [
+    row('Points', el('span', { className: 'hint', textContent: `${sk.points.length} point(s)` })),
+    row('Diamètre', num(P.dia, (v) => { P.dia = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+    row('Traversant', thru), row('Profondeur', depth, el('span', { className: 'unit', textContent: 'mm' })),
+  ], {
+    key: 'holes', cancel: back,
+    ok: () => {
+      if (!(P.dia > 0)) return false;
+      const n = d.ctx.nextIndex(), name = `percage${n}`, r = (x) => litp(Math.round(x * 100) / 100 + 0), h = P.thru ? 1000 : P.depth;
+      const cyl = sk.points.map((p) => `cylinder ~r:${r(P.dia / 2)} ~h:${r(h + 0.01)} () |> translate (Geom.V3.v ${r(p.x)} ${r(p.y)} ${r(-h)})`);
+      const pl = /^[a-z_][\w']*$/.test(sk.planeCode) ? sk.planeCode : `(${sk.planeCode})`;
+      d.ctx.insert(`  let%feat ${name} =\n    Shape.(union [ ${cyl.join(';\n      ')} ] |> place ${pl})\n  in\n`, name, 'cut', n);
+    },
+  });
+  preview();
+}

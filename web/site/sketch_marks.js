@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { TWO_CLICK, rubberShape } from './sketch_tools.js';
 import { arcPoints } from './sketch_arcs.js';
+import { parseDim } from './expr.js';
 
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
 
@@ -57,7 +58,7 @@ export class SketchMarks {
       const key = `${Math.round(at.x * 10)},${Math.round(at.y * 10)}`, n = seen.get(key) ?? 0; seen.set(key, n + 1);
       const el = document.createElement('div');
       if (c.value != null) {
-        el.className = 'dim'; el.textContent = c.kind === 'radius' ? `Ø${fmt(2 * c.value)}` : (c.kind === 'arc_radius' ? 'R' : '') + fmt(c.value) + (c.kind === 'angle' ? '°' : '');
+        el.className = 'dim' + (c.expr ? ' fx' : ''); el.textContent = (c.expr ? 'ƒ ' : '') + (c.kind === 'radius' ? `Ø${fmt(2 * c.value)}` : (c.kind === 'arc_radius' ? 'R' : '') + fmt(c.value) + (c.kind === 'angle' ? '°' : ''));
         el.title = `${this.consText(c)}\nDouble-clic : modifier la cote`;
         el.ondblclick = (e) => { e.stopPropagation(); this.editDim(i, el); };
       } else { el.className = 'glyph'; el.textContent = SketchMarks.GLYPH[c.kind] ?? '·'; el.title = this.consText(c); }
@@ -79,9 +80,9 @@ export class SketchMarks {
   editDim(i, el) {
     const c = this.cons[i], input = document.createElement('input');
     const k = c.kind === 'radius' ? 2 : 1; // cercle : saisi au diamètre
-    input.type = 'number'; input.step = 'any'; input.value = fmt(k * c.value); input.className = 'dim-edit';
+    input.value = c.expr && k === 1 ? c.expr.replace(/([+*/-])\./g, '$1') : fmt(k * c.value); input.className = 'dim-edit';
     input.style.left = el.style.left; input.style.top = el.style.top;
-    const done = (ok) => { if (ok && input.value !== '' && Number.isFinite(Number(input.value))) { c.value = Number(input.value) / k; this.changed(); } else this.redraw(); };
+    const done = (ok) => { if (ok && input.value !== '') { const d = parseDim(input.value, this.ctx.params?.() ?? []); if (!d) { this.redraw(); return; } c.value = d.value / k; if (d.expr) c.expr = k === 2 ? `(${d.expr}) /. 2.` : d.expr; else delete c.expr; this.changed(); } else this.redraw(); };
     input.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); };
     input.onblur = () => done(true);
     el.replaceWith(input); input.select();
