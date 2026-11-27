@@ -50,7 +50,7 @@ export function slot(ed, c1, q, avoid = []) {
   const A = ed.pts[c1], L = Math.hypot(q.x - A.x, q.y - A.y);
   if (L < 1e-6) return false;
   // Second centre accroché au premier (ou au centre d'un oblong par le centre) : point neuf, sinon l'oblong est nul.
-  let c2 = ed.pointAt(q); if (c2 === c1 || avoid.includes(c2)) c2 = add(ed, q.x, q.y);
+  let c2 = ed.pointAt(q); if (c2 === c1 || (Array.isArray(avoid) && avoid.includes(c2))) c2 = add(ed, q.x, q.y);
   const ux = (q.x - A.x) / L, uy = (q.y - A.y) / L, r = L / 6, nx = -uy * r, ny = ux * r;
   const B = ed.pts[c2];
   const p1 = add(ed, A.x + nx, A.y + ny), p2 = add(ed, A.x - nx, A.y - ny), p3 = add(ed, B.x - nx, B.y - ny), p4 = add(ed, B.x + nx, B.y + ny);

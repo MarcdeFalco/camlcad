@@ -23,7 +23,7 @@ test('arcs : congé, oblong, arc par le centre', async ({ page }) => {
   await page.getByRole('button', { name: 'Oblong' }).click();
   await clickSketch(page, -25, -28);
   await page.mouse.move(...await sketchPoint(page, -5, -28), { steps: 5 });
-  await expect(page.locator('#sketch-live')).toHaveText('entraxe 20 mm');
+  await expect(page.locator('#sketch-live')).toHaveText('entraxe 20 mm · tapez la cote');
   await shot(page, '43-oblong-elastique');
   await clickSketch(page, -5, -28);
 
