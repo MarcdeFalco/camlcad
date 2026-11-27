@@ -13,6 +13,7 @@ and view =
   | Place of Geom.Frame.t * t
   | Mirror of Geom.V3.t * t
   | Scale of Geom.V3.t * t
+  | Loft of (Geom.Frame.t * Profile.t) list
 
 type key =
   | KEmpty
@@ -27,6 +28,7 @@ type key =
   | KPlace of Geom.Frame.t * int
   | KMirror of Geom.V3.t * int
   | KScale of Geom.V3.t * int
+  | KLoft of (Geom.Frame.t * int) list
 
 let key = function
   | Empty -> KEmpty
@@ -41,6 +43,7 @@ let key = function
   | Place (f, a) -> KPlace (f, a.id)
   | Mirror (n, a) -> KMirror (n, a.id)
   | Scale (f, a) -> KScale (f, a.id)
+  | Loft l -> KLoft (List.map (fun (f, p) -> (f, Profile.id p)) l)
 
 let empty = { id = 0; v = Empty }
 let table : (key, t) Hashtbl.t = Hashtbl.create 256
@@ -83,6 +86,7 @@ let scale ?about f s =
   | None -> mk (Scale (f, s))
   | Some p -> translate p (mk (Scale (f, translate (Geom.V3.neg p) s)))
 
+let loft sections = mk (Loft sections)
 let id s = s.id
 let equal a b = a.id = b.id
 
@@ -94,7 +98,7 @@ let subterms s =
       match s.v with
       | Union (a, b) | Difference (a, b) | Intersection (a, b) -> go a; go b
       | Place (_, a) | Mirror (_, a) | Scale (_, a) -> go a
-      | Empty | Cube _ | Cylinder _ | Sphere _ | Extrude _ | Revolve _ -> ()
+      | Empty | Cube _ | Cylinder _ | Sphere _ | Extrude _ | Revolve _ | Loft _ -> ()
     end
   in
   go s;

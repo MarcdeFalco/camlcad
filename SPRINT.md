@@ -167,6 +167,12 @@ du cache Playwright).
   jusqu'à la première ligne rencontrée et y reste, « sur la droite ») et Couper (la ligne
   cliquée et celle qui la croise sont scindées au point commun, les contours passent par lui).
   Scénario `prolonger.spec.js`.
+- Lot 48, chapitre 3 (Loft) : `Kernel.S.of_mesh` (manifold natif par MeshGL, JS par `Mesh`),
+  module pur `Loft` (contours rééchantillonnés en gardant leurs sommets, alignés, extrémités
+  triangulées par oreilles ; test d'expectation : prisme, tronc de pyramide exact) et
+  `Shape.loft [ (plan, profil); … ]`, loi « lissage » dans les suites. Bouton Lissage de la
+  palette : garder l'esquisse seule, ou lisser vers une esquisse du code. Scénario
+  `lissage.spec.js` (carré sur XY → cercle sur un plan décalé).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -177,7 +183,8 @@ du cache Playwright).
 ## Suivant (ordre proposé)
 - Chapitre 2 : ajuster, prolonger, couper contre cercles et arcs, texte d'esquisse, cote de
   l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
-- Chapitre 3 : balayage (Sweep) et lissage (Loft) — demandent `Shape.sweep` / `loft` au noyau.
+- Chapitre 3 : balayage (Sweep) le long d'un chemin, par `Loft.mesh` sur les repères du chemin ;
+  lissage de profils à trous.
 - Chapitre 6 : coque d'un corps quelconque.
 - Chapitre 7 : liaisons choisies dans la vue (ports affichés), étude de mouvement.
 - Frise : réordonner les étapes par glisser (Source_edit « move »).

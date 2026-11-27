@@ -75,6 +75,22 @@ let transform f = function
 
 let mirror ~normal = function Empty -> Empty | M x -> M (call x "mirror" [ vec3 normal ])
 let scale f = function Empty -> Empty | M x -> M (call x "scale" [ vec3 f ])
+let of_mesh (m : Cad.Mesh.t) =
+  if Array.length m.triangles = 0 then Empty
+  else
+    let typed ctor a = Js.Unsafe.new_obj (Js.Unsafe.get Js.Unsafe.global ctor) [| arr (Array.to_list a) |] in
+    let mesh =
+      Js.Unsafe.new_obj (Js.Unsafe.get (wasm ()) "Mesh")
+        [| Js.Unsafe.inject
+             (Js.Unsafe.obj
+                [| ("numProp", int 3);
+                   ("vertProperties", typed "Float32Array" (Array.map num m.vertices));
+                   ("triVerts", typed "Uint32Array" (Array.map int m.triangles)) |]) |]
+    in
+    match Js.Unsafe.new_obj (manifold ()) [| Js.Unsafe.inject mesh |] with
+    | x -> if Js.to_bool (call x "isEmpty" []) then Empty else M x
+    | exception _ -> Empty
+
 let is_empty = function Empty -> true | M x -> Js.to_bool (call x "isEmpty" [])
 let volume = function Empty -> 0. | M x -> to_float (call x "volume" [])
 

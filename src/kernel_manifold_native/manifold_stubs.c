@@ -116,6 +116,24 @@ CAMLprim value cc_mirror(value m, value x, value y, value z) {
 CAMLprim value cc_scale(value m, value x, value y, value z) {
   return wrap_m(manifold_scale(manifold_alloc_manifold(), M_val(m), Double_val(x), Double_val(y), Double_val(z)));
 }
+/* Maillage (sommets x y z à plat, triangles) vers solide ; en cas d'erreur (pas une variété
+   close), solide vide. */
+CAMLprim value cc_of_mesh(value vs, value ts) {
+  size_t nv = Wosize_val(vs) / Double_wosize / 3, nt = Wosize_val(ts) / 3;
+  float *props = malloc(sizeof(float) * 3 * (nv ? nv : 1));
+  uint32_t *tris = malloc(sizeof(uint32_t) * 3 * (nt ? nt : 1));
+  for (size_t i = 0; i < 3 * nv; i++) props[i] = (float)Double_flat_field(vs, i);
+  for (size_t i = 0; i < 3 * nt; i++) tris[i] = (uint32_t)Long_val(Field(ts, i));
+  ManifoldMeshGL *g = manifold_meshgl(manifold_alloc_meshgl(), props, nv, 3, tris, nt);
+  free(props); free(tris);
+  ManifoldManifold *m = manifold_of_meshgl(manifold_alloc_manifold(), g);
+  manifold_delete_meshgl(g);
+  if (manifold_status(m) != MANIFOLD_NO_ERROR) {
+    manifold_delete_manifold(m);
+    m = manifold_empty(manifold_alloc_manifold());
+  }
+  return wrap_m(m);
+}
 
 CAMLprim value cc_is_empty(value m) { return Val_bool(manifold_is_empty(M_val(m))); }
 CAMLprim value cc_volume(value m) { return caml_copy_double(manifold_volume(M_val(m))); }
@@ -180,6 +198,7 @@ CAMLprim value cc_intersection(value a0, value a1) { MISSING; return Val_unit; }
 CAMLprim value cc_transform(value a0, value a1) { MISSING; return Val_unit; }
 CAMLprim value cc_mirror(value a0, value a1, value a2, value a3) { MISSING; return Val_unit; }
 CAMLprim value cc_scale(value a0, value a1, value a2, value a3) { MISSING; return Val_unit; }
+CAMLprim value cc_of_mesh(value a0, value a1) { MISSING; return Val_unit; }
 CAMLprim value cc_is_empty(value a0) { MISSING; return Val_unit; }
 CAMLprim value cc_volume(value a0) { MISSING; return Val_unit; }
 CAMLprim value cc_genus(value a0) { MISSING; return Val_unit; }
