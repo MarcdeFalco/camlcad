@@ -68,7 +68,7 @@ export function slot(ed, c1, q, avoid = []) {
 export function centerArc(ed, c, a, q) {
   const C = ed.pts[c], A = ed.pts[a], r = Math.hypot(A.x - C.x, A.y - C.y), t = Math.atan2(q.y - C.y, q.x - C.x);
   const b = add(ed, C.x + r * Math.cos(t), C.y + r * Math.sin(t));
-  ed.arcs.push({ c, a, b });
+  ed.openArcs = new Set([...(ed.openArcs ?? []), ed.arcs.push({ c, a, b }) - 1]); // arc de profil (contour à refermer)
   return true;
 }
 

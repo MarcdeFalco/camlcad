@@ -27,7 +27,7 @@ function copy(ed, items, map, flip) {
       if (ed.openProfile?.includes(k(a, b))) ed.openProfile = [...ed.openProfile, k(map(a), map(b))]; // une ligne de profil reste du profil
     }
     if (kind === 'c') { const c = ed.circles[i]; ed.circles.push({ c: map(c.c), r: c.r }); cons(ed, 'equal_radius', [i, ed.circles.length - 1]); }
-    if (kind === 'a') { const a = ed.arcs[i]; A.set(i, ed.arcs.length); ed.arcs.push(flip ? { c: map(a.c), a: map(a.b), b: map(a.a) } : { c: map(a.c), a: map(a.a), b: map(a.b) }); }
+    if (kind === 'a') { const a = ed.arcs[i]; A.set(i, ed.arcs.length); ed.arcs.push(flip ? { c: map(a.c), a: map(a.b), b: map(a.a) } : { c: map(a.c), a: map(a.a), b: map(a.b) }); if (ed.openArcs?.has(i)) ed.openArcs.add(ed.arcs.length - 1); }
   }
   // Boucles entièrement choisies : recopiées (à l'envers si l'orientation est inversée).
   const hasLine = (p, q) => ed.lines.some(([a, b], k) => L.has(k) && ((a === p && b === q) || (a === q && b === p)));
