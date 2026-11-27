@@ -217,3 +217,5 @@ button { font:inherit; color:inherit; }
 .prow.unused .pname { color:var(--muted); font-style:italic; }
 .perr { margin-top:6px; padding:4px 8px; border-radius:4px; background:#fdecea; color:var(--err); font-size:12px; }
 .punused { color:#9a6b00; }
+#appbar button { white-space:nowrap; flex-shrink:0; }
+#status { min-width:0; flex:0 1 auto; }

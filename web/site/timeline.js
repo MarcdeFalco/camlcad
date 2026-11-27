@@ -21,7 +21,7 @@ export class Timeline {
     this.bar = document.getElementById('timeline'); this.tree = document.getElementById('tree');
     this.menu = document.getElementById('ctxmenu');
     this.journal = null; this.selected = null; this.marker = null; this.doc = ''; this.sketches = []; this.mech = null;
-    this.open = new Set(['doc', 'params', 'origin', 'planes', 'features', 'sketches', 'mech']);
+    this.open = new Set(['doc', 'params', 'origin', 'planes', 'bodies', 'sketches', 'mech']);
     document.addEventListener('pointerdown', (e) => { if (!this.menu.contains(e.target)) this.hideMenu(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.hideMenu(); });
     for (const b of document.querySelectorAll('[data-tl]')) b.onclick = () => this.player(b.dataset.tl);
@@ -166,16 +166,20 @@ export class Timeline {
     if (this.sketches.length)
       kids.push(this.folder('sketches', `Esquisses (${this.sketches.length})`, this.sketches.map((s) =>
         this.leaf('✎', s.name, { title: 'Clic : aller au code · double-clic : modifier l’esquisse', onclick: () => this.ctx.gotoLine(s.line), ondblclick: () => this.ctx.editSketch(s.name) }))));
-    if (j)
-      kids.push(this.folder('features', `Features (${j.features.length})`, j.features.map((f) => {
-        const li = this.leaf(ICONS[f.op] ?? '◇', f.name, {
-          cls: (f.suppressed ? 'off' : '') + (f.id === this.selected ? ' sel' : '') + (this.marker != null && f.id >= this.marker ? ' future' : ''),
-          eye: this.eye(!f.suppressed, f.suppressed ? 'Réactiver' : 'Supprimer temporairement', () => this.run({ op: 'suppress', fid: f.id, on: !f.suppressed })),
-          title: KIND[f.op] ?? f.op,
+    // Corps : les solides que rien n'utilise plus (le résultat). L'historique, lui, est la frise.
+    if (j) {
+      const used = new Set(j.features.flatMap((f) => f.deps)), bodies = j.features.filter((f) => !used.has(f.id));
+      const shown = this.ctx.partVisible();
+      kids.push(this.folder('bodies', `Corps (${bodies.length})`, bodies.map((f, i) => {
+        const li = this.leaf('⬢', /^resultat\d+$/.test(f.name) ? `Corps ${i + 1}` : f.name, {
+          cls: (f.id === this.selected ? 'sel' : '') + (shown ? '' : ' off'),
+          eye: this.eye(shown, shown ? 'Masquer le corps' : 'Afficher le corps', () => { this.ctx.togglePart(); this.renderTree(); }),
+          title: `Solide « ${f.name} » · clic : sélectionner · double-clic : modifier la dernière étape · historique : la frise en bas`,
         });
         this.bindFeature(li.firstChild, f);
         return li;
       })));
+    }
     if (this.mech)
       kids.push(this.folder('mech', `Pièces (${this.mech.length})`, this.mech.map((p) => this.leaf('⬢', p.name, {}))));
     const doc = this.folder('doc', this.doc || 'Document', kids);

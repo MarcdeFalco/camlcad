@@ -157,7 +157,7 @@ export class Viewport {
   applyStyle() {
     const render = this.style === 3, r = this.renderer;
     this.material.wireframe = this.style === 2;
-    if (this.edges) this.edges.visible = this.style === 0;
+    if (this.edges) this.edges.visible = this.style === 0 && !this.partHidden;
     if (render && !this.env) this.env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environment = render ? this.env : null;
     r.toneMapping = render ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; r.toneMappingExposure = 0.8;
@@ -235,11 +235,14 @@ export class Viewport {
     this.part = new THREE.Mesh(g, this.material);
     this.edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: 0x1c2733 }));
     this.scene.add(this.part, this.edges);
+    this.part.visible = !this.partHidden;
     this.applyStyle();
     if (this.zebra || this.draftOn) { g.computeVertexNormals(); this.part.material = this.zebra ? this.zebraMat : this.draftMat; }
     if (this.clip) this.setClip(this.clip);
     if (!this.fitted) { this.fit(); this.fitted = true; }
   }
+  // Corps masqué (œil du navigateur) : reste masqué d'une évaluation à l'autre.
+  togglePart() { this.partHidden = !this.partHidden; if (this.part) { this.part.visible = !this.partHidden; this.applyStyle(); } }
   clearPart() {
     if (this.inside) { this.scene.remove(this.inside); this.inside = null; }
     for (const o of [this.part, this.edges]) if (o) { this.scene.remove(o); o.geometry.dispose(); }

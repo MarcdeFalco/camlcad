@@ -283,7 +283,7 @@ const timeline = new Timeline({
   apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
   openEdit: (fid, rename) => dialogs.feature(fid, rename), openParams,
   sketchOn: (k) => { const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
-  gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
+  gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible, togglePart: () => vp.togglePart(), partVisible: () => !vp.partHidden,
   rollback: (k) => {
     rollbackAt = k; bodies.cancel();
     vp.setHighlight(null);
