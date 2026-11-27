@@ -14,7 +14,7 @@ import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
-import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
+import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { openParams as paramsDialog } from './params.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
 import { jointDialog, linkDialog } from './mech_joint.js'; import { motionStudy } from './mech_study.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -79,6 +79,7 @@ worker.onmessage = ({ data: m }) => {
   const fromEval = sentCode != null;
   if (fromEval) evaluatedCode = sentCode;
   onResult(m);
+  if (fromEval && afterEval && !pending) { const f = afterEval; afterEval = null; if (m.ok && $('dialog').hidden && !sketch.active) f(); }
   if (pending) { const p = pending; pending = null; send(p); }
 };
 
@@ -316,26 +317,8 @@ function renderTimeline() {
   timeline.update(journal, selected, { doc: docName(), sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }
 // ---------- Paramètres ----------
-function openParams() {
-  const saved = new Map(overrides);
-  dialogs.params({
-    overrides,
-    preview: (name, v) => { overrides.set(name, v); evalParams(); },
-    // Écrit chaque valeur essayée à la place de son littéral par défaut.
-    commit: () => {
-      const changes = [];
-      for (const p of journal.params) {
-        const v = overrides.get(p.name);
-        if (v == null || !p.loc) continue;
-        let lit = fmt(v); if (!/[.e]/.test(lit)) lit += '.';
-        changes.push({ ...locRange(p.loc), insert: lit });
-      }
-      overrides.clear();
-      if (changes.length) view.dispatch({ changes }); else evalParams();
-    },
-    revert: () => { overrides = saved; evalParams(); },
-  });
-}
+let afterEval = null; // une fois le code réévalué (dialogue des paramètres rouvert après un ajout)
+function openParams() { paramsDialog({ dialogs, journal: () => journal, overrides: () => overrides, setOverrides: (m) => { overrides = m; }, evalParams, code: () => view.state.doc.toString(), write: (changes) => view.dispatch({ changes }), locRange, addParam: insertParam, afterEval: (f) => { afterEval = f; } }); }
 // ---------- Résultats ----------
 function onResult(m) {
   const t = m.timings || {};

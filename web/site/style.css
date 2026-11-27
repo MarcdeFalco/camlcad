@@ -214,3 +214,6 @@ button { font:inherit; color:inherit; }
 #empty-hint p { margin:6px 0 10px; color:var(--muted); font-size:13px; }
 #toolbar button.pulse i { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.25); filter: drop-shadow(0 0 4px var(--accent)); } }
+.prow.unused .pname { color:var(--muted); font-style:italic; }
+.perr { margin-top:6px; padding:4px 8px; border-radius:4px; background:#fdecea; color:var(--err); font-size:12px; }
+.punused { color:#9a6b00; }

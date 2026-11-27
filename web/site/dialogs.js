@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { el, fmt, KIND } from './timeline.js';
 import { basePlanes } from './planes.js';
 import { distanceHandle } from './gizmo.js';
+import { paramName } from './params.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(12)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
@@ -332,11 +333,19 @@ export class Dialogs {
       ctx.append('…' + l.before, el('b', { textContent: l.text }), l.after + '…');
       const promote = el('button', { textContent: 'ƒx', title: 'Remplacer cette cote par un paramètre (let%param)' });
       promote.onclick = () => {
-        const pn = el('input', { value: `${f.name}_${(l.label ?? '').replace(/[~?]/g, '') || 'cote' + (i + 1)}`, spellcheck: false, className: 'noenter' });
-        const go = () => this.ctx.run({ op: 'promote', fid, index: i, name: pn.value }, `paramètre « ${pn.value} » créé`);
+        // Nom d'un paramètre existant (proposé) : la cote s'y lie ; sinon, nouveau paramètre.
+        const params = (this.ctx.journal()?.params ?? []).map((p) => p.name), list = el('datalist', { id: `params-${i}` }, ...params.map((n) => new Option(n)));
+        const pn = el('input', { value: `${f.name}_${(l.label ?? '').replace(/[~?]/g, '') || 'cote' + (i + 1)}`, spellcheck: false, className: 'noenter', title: 'Nom d’un paramètre existant, ou d’un nouveau' });
+        pn.setAttribute('list', list.id);
+        const go = () => {
+          if (params.includes(pn.value.trim())) { this.ctx.run({ op: 'use_param', fid, index: i, name: pn.value.trim() }, `cote liée à « ${pn.value.trim()} »`); return; }
+          const r = paramName(pn.value, this.ctx.codeText());
+          if (r.error) { this.ctx.notify(r.error, true); return; }
+          this.ctx.run({ op: 'promote', fid, index: i, name: r.name }, `paramètre « ${r.name} » créé`);
+        };
         pn.onkeydown = (e) => { if (e.key === 'Enter') go(); };
         const ok = el('button', { textContent: 'créer' }); ok.onclick = go;
-        promote.replaceWith(el('span', { className: 'promote' }, pn, ok)); pn.select();
+        promote.replaceWith(el('span', { className: 'promote' }, pn, list, ok)); pn.select();
       };
       return el('div', { className: 'lit' }, row(label, input, promote), ctx);
     });
@@ -349,32 +358,6 @@ export class Dialogs {
 
   // ---------- Paramètres (tableau) ----------
   // overrides : Map nom → valeur (essais sans recompilation) ; commit() écrit dans le code.
-  params({ overrides, preview, commit, revert }) {
-    const j = this.ctx.journal() ?? { params: [] };
-    const head = el('div', { className: 'prow phead' }, ...['Nom', 'Valeur', '', 'Plage'].map((t) => el('span', { textContent: t })));
-    const rows = j.params.map((p) => {
-      const [lo, hi] = p.range ?? [p.default / 4, p.default * 4 || 10];
-      const v = overrides.get(p.name) ?? p.value;
-      const slider = el('input', { type: 'range', min: lo, max: hi, step: 10 ** Math.floor(Math.log10((hi - lo) / 100)), value: v });
-      const box = num(v, (x) => { slider.value = x; preview(p.name, x); });
-      slider.oninput = () => { box.value = fmt(Number(slider.value)); preview(p.name, Number(slider.value)); };
-      return el('div', { className: 'prow' }, el('span', { className: 'pname', textContent: p.name }), box,
-        el('span', { className: 'unit', textContent: p.unit ?? '' }), el('span', { className: 'range' }, slider));
-    });
-    // Paramètre utilisateur (Black Book ch. 6, Change Parameters : « + ») : écrit en tête du modèle.
-    const nName = el('input', { placeholder: 'nom', spellcheck: false, className: 'noenter', id: 'param-new-name' });
-    const nVal = el('input', { type: 'number', step: 'any', value: '10', className: 'noenter', id: 'param-new-value' });
-    const nUnit = choice({ mm: 'mm', deg: '°', '': '—' }, 'mm', () => {});
-    const add = el('button', { textContent: '+ Ajouter' });
-    add.onclick = () => {
-      const name = nName.value.trim(), v = Number(nVal.value);
-      if (!/^[a-z_][a-z0-9_']*$/.test(name) || !Number.isFinite(v)) { this.ctx.notify('Paramètre : nom en minuscules (lettres, chiffres, _) et valeur numérique.', true); return; }
-      this.close(true); this.ctx.addParam(name, v, nUnit.value);
-    };
-    const addRow = el('div', { className: 'prow padd' }, nName, nVal, nUnit, add);
-    this.open('PARAMÈTRES', [head, ...rows, el('div', { className: 'hint', textContent: 'Nouveau paramètre (utilisable dans le code et par ƒx) :' }), addRow], { key: 'params', ok: commit, cancel: revert });
-  }
-
   // Panneau libre (mouvement d'un mécanisme…).
   panel(title, rows, key) { this.open(title, rows, { key, okLabel: 'Fermer', cancel: false }); }
 }

@@ -50,6 +50,11 @@ val promote : string -> Loc.t -> int -> name:string -> (string, string) result
     pour un entier. Refusé si [name] n'est pas un identifiant libre du source
     ou si la liaison est un [and]. *)
 
+val use_param : string -> Loc.t -> int -> name:string -> (string, string) result
+(** Lie le [i]-ième littéral à un paramètre existant : le remplace par [name]
+    ([(Float.to_int name)] pour un entier). Refusé si aucun
+    [let%param name] ne précède la liaison. *)
+
 val set_suppressed : string -> Loc.t -> bool -> (string, string) result
 (** Ajoute [ [@@suppress]] à la fin de la liaison, ou l'en retire.
     Idempotent. *)

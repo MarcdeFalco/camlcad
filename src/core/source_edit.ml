@@ -268,6 +268,14 @@ let promote src loc i ~name =
     let use = if l.int then "(Float.to_int " ^ name ^ ")" else name in
     Ok (apply src [ (kw, kw, decl); (l.range.start, l.range.stop, use) ])
 
+let use_param src loc i ~name =
+  let* b, l = nth_literal src loc i in
+  let kw = b.toks.(b.kw).s and t = tokens src in
+  let declared = ref false in
+  Array.iteri (fun j tk -> if tk.txt = "let%param" && tk.s < kw && is_id t (j + 1) name then declared := true) t;
+  if not !declared then Error (Printf.sprintf "« %s » n'est pas un paramètre déclaré avant cette étape" name)
+  else Ok (apply src [ (l.range.start, l.range.stop, if l.int then "(Float.to_int " ^ name ^ ")" else name) ])
+
 (* ---------- Suppression temporaire ---------- *)
 
 let suppress_attr b =

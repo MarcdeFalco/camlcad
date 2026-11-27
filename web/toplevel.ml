@@ -8,7 +8,7 @@
            {kind:"export3mf", id}             (dernier résultat ; mécanisme : pièces à la pose courante)
            {kind:"edit", id, code, op, fid, index?, value?, name?, on?}
              (réécrit [code] pour la feature [fid] du dernier journal, voir Cad.Source_edit ;
-              op : "literals" | "set_literal" | "promote" | "suppress" | "rename" | "delete")
+              op : "literals" | "set_literal" | "promote" | "use_param" | "suppress" | "rename" | "delete")
            {kind:"sketch", id, sketch}         (résout une esquisse décrite comme Cad.Sketch_desc.t :
              {points:[[x,y,fixe]], lines:[[i,j]], circles:[[c,r]], constraints:[{kind, refs, value?}], loops})
    sortie  {kind:"ready", ms}
@@ -290,6 +290,7 @@ let edit id (d : Js.Unsafe.any) =
             [ ("ok", Js.Unsafe.inject Js._true); ("literals", jsarr (List.map lit (S.literals code loc))) ]
         | "set_literal" -> result (S.set_literal code loc (int_of_float (fnum "index")) (fnum "value"))
         | "promote" -> result (S.promote code loc (int_of_float (fnum "index")) ~name:(fstr "name"))
+        | "use_param" -> result (S.use_param code loc (int_of_float (fnum "index")) ~name:(fstr "name"))
         | "suppress" -> result (S.set_suppressed code loc (Js.to_bool (Js.Unsafe.get d "on")))
         | "rename" -> result (S.rename code loc (fstr "name"))
         | "delete" -> result (S.delete code loc)
