@@ -46,6 +46,21 @@ function polygon(ed, o, q, n) {
   return true;
 }
 
+// Polygone circonscrit : q est le milieu d'un côté ; la cote est l'apothème (distance du
+// centre au côté), côtés et rayons égaux.
+function cpolygon(ed, o, q, n) {
+  const O = ed.pts[o], r = Math.hypot(q.x - O.x, q.y - O.y), a0 = Math.atan2(q.y - O.y, q.x - O.x), R = r / Math.cos(Math.PI / n);
+  if (r < 1e-6) return false;
+  const vs = Array.from({ length: n }, (_, k) => { const a = a0 - Math.PI / n + (2 * Math.PI * k) / n; return add(ed, O.x + R * Math.cos(a), O.y + R * Math.sin(a)); });
+  const l = ed.lines.length;
+  vs.forEach((v, k) => ed.lines.push([v, vs[(k + 1) % n]]));
+  vs.forEach((v) => ed.lines.push([o, v]));
+  ed.loops.push(vs);
+  for (let k = 1; k < n; k++) { cons(ed, 'equal_length', [l, l + k]); cons(ed, 'equal_length', [l + n, l + n + k]); }
+  cons(ed, 'point_line_distance', [o, l], r);
+  return true;
+}
+
 function circle(ed, c, q) {
   const C = ed.pts[c];
   ed.circles.push({ c, r: Math.max(0.5, Math.hypot(q.x - C.x, q.y - C.y)) });
@@ -136,6 +151,7 @@ export const TWO_CLICK = {
   circle: [circle, (A, q) => `R ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   slot: [slot, (A, q) => `entraxe ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   polygon: [polygon, (A, q) => `R ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
+  cpolygon: [cpolygon, (A, q) => `apothème ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
 };
 
 // Contour élastique (pointillés) de l'outil en cours, en coordonnées du plan.

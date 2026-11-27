@@ -176,3 +176,19 @@ function cycles(lines) {
   }
   return out;
 }
+
+// Construction (Black Book ch. 2, touche X) : les lignes sélectionnées passent de profil à
+// construction ou l'inverse ; les contours de lignes sont recalculés sur les lignes de profil.
+export function toggleConstruction(ed) {
+  const lines = ed.sel.filter((s) => s.kind === 'l').map((s) => s.i);
+  if (!lines.length) return false;
+  const profile = new Set(ed.openProfile ?? []);
+  for (const l of ed.loops) if (l.every((x) => typeof x === 'number')) l.forEach((p, k) => profile.add(key(p, l[(k + 1) % l.length])));
+  for (const i of lines) { const k = key(...ed.lines[i]); if (profile.has(k)) profile.delete(k); else profile.add(k); }
+  const prof = ed.lines.filter(([a, b]) => profile.has(key(a, b))), found = cycles(prof);
+  ed.loops = [...ed.loops.filter((l) => !l.every((x) => typeof x === 'number')), ...found];
+  const closed = new Set(found.flatMap((l) => l.map((p, k) => key(p, l[(k + 1) % l.length]))));
+  ed.openProfile = prof.map(([a, b]) => key(a, b)).filter((k) => !closed.has(k));
+  ed.sel = [];
+  return true;
+}

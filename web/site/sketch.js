@@ -7,7 +7,8 @@ import { TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseO
 import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
-import { trimAt, extendAt, breakAt } from './sketch_trim.js';
+import { trimAt, extendAt, breakAt, toggleConstruction } from './sketch_trim.js';
+export { toggleConstruction };
 const CLICK1 = { ellipse: ellipseClick, spline: splineClick, trim: trimAt, extend: extendAt, break: breakAt }; // outils à un clic
 import { arcPoints, arcRadius, loopPoints, loopOutline, splinePoints, centerArc, fillet } from './sketch_arcs.js';
 
@@ -188,7 +189,7 @@ export class SketchEditor extends SketchMarks {
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.sel.length) { e.preventDefault(); this.remove(); return; }
     const tools = { r: 'rect', l: 'poly', c: 'circle', a: 'arc', p: 'polygon', d: 'dim', s: 'select', t: 'trim' };
-    if (tools[e.key]) this.setTool(tools[e.key]);
+    if (e.key === 'x' && this.sel.length) { if (toggleConstruction(this)) this.changed(); } else if (tools[e.key]) this.setTool(tools[e.key]);
   }
   project() { if (projectFace(this)) this.changed(); }
   remove() { if (deleteSelection(this)) { this.asking = null; this.changed(); } }

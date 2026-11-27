@@ -197,6 +197,10 @@ du cache Playwright).
   hauteur de couche (0,1 à 0,3 mm) et curseur de couche : la pièce orientée est coupée en haut
   de la couche, le contour de la couche (intersection du maillage) tracé en orange, sa
   longueur affichée. Scénario `couches.spec.js`.
+- Lot 55, chapitre 2 (Polygon circumscribed, Construction) : polygone circonscrit (centre,
+  milieu d'un côté ; cote : apothème par « distance point-droite ») et bascule profil ↔
+  construction des lignes sélectionnées (touche X ou bouton Construction ; contours
+  recalculés). Scénario `esquisse_construction.spec.js` (volume de l'hexagone seul).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
