@@ -1,7 +1,7 @@
 // Black Book, chapitre 6 (Solid Editing) : combiner deux corps, déplacer la pièce ;
 // et la frise : une étape par opération (Joindre visible sur l'étape), retour arrière.
 import { test, expect } from './fixtures.js';
-import { open, shot, code, triangles } from './lib.js';
+import { open, shot, code, triangles, cmd } from './lib.js';
 
 const bbox = (page) => page.evaluate(() => {
   const g = window.camlcadView.part.geometry; g.computeBoundingBox();
@@ -16,7 +16,7 @@ test('combiner, déplacer, frise d’opérations', async ({ page }) => {
   await field(page, 'Longueur').fill('40'); await field(page, 'Largeur').fill('40'); await field(page, 'Hauteur').fill('10');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBe(12);
-  await page.getByRole('button', { name: 'Cylindre' }).click();
+  await cmd(page, 'Cylindre');
   await field(page, 'Rayon').fill('8'); await field(page, 'Hauteur').fill('30');
   const pos = page.locator('#dialog .drow', { hasText: 'Position' }).locator('input');
   await pos.nth(0).fill('20'); await pos.nth(1).fill('20');
@@ -34,7 +34,7 @@ test('combiner, déplacer, frise d’opérations', async ({ page }) => {
   await expect(page.locator('#status')).toContainText('triangles');
 
   // Combiner : résultat − boîte = la partie du cylindre au-dessus de la boîte.
-  await page.getByRole('button', { name: 'Combiner' }).click();
+  await cmd(page, 'Combiner');
   await field(page, 'Corps outil').selectOption('boite1');
   await field(page, 'Opération').selectOption('cut');
   await page.getByRole('button', { name: 'OK' }).click();
@@ -42,7 +42,7 @@ test('combiner, déplacer, frise d’opérations', async ({ page }) => {
   expect(await code(page)).toContain('let%feat combinaison');
 
   // Déplacer de -10 en z.
-  await page.getByRole('button', { name: 'Déplacer' }).click();
+  await cmd(page, 'Déplacer');
   await field(page, 'Translation z').fill('-10');
   await shot(page, '71-deplacer-apercu');
   await page.getByRole('button', { name: 'OK' }).click();

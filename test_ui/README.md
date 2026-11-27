@@ -35,6 +35,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `pousser.spec.js` | Black Book ch. 4 et 6 : tirer puis pousser la face du dessus d'une boîte ; ressort et tore (boîtes englobantes) |
 | `liaison.spec.js` | Black Book ch. 7 : deux pièces tapées dans le code, liaison pivot créée au dialogue, pilotée au curseur |
 | `esquisse_supprimer.spec.js` | Black Book ch. 2 et 3 : Suppr d'un cercle et d'un côté (contour ouvert), projection du contour d'une face, cercle accroché à un coin projeté |
+| `conge.spec.js` | Black Book ch. 6 : congé R3 puis chanfrein 2 sur deux arêtes d'une boîte (volumes) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |
