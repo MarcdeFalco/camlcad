@@ -26,4 +26,11 @@ test('plan par trois points, analyse zébrée', async ({ page }) => {
   await shot(page, '125-zebrures');
   await cmd(page, 'Zébrures');
   expect(await img()).toBe(before);
+  // Dépouille : faces verticales en jaune (un pixel du milieu de la face avant de la boîte).
+  await cmd(page, 'Dépouille');
+  await expect(page.locator('#notice')).toContainText('contre-dépouille');
+  const [px, py] = await worldPoint(page, [15, 0, 5]);
+  const rgb = await page.evaluate(([x, y]) => new Promise((ok) => { const vp = window.camlcadView, c = vp.renderer.domElement, r = c.getBoundingClientRect(); const img = new Image(); img.onload = () => { const k = document.createElement('canvas'); k.width = c.width; k.height = c.height; const g = k.getContext('2d'); g.drawImage(img, 0, 0); const d = g.getImageData(Math.round((x - r.left) * c.width / r.width), Math.round((y - r.top) * c.height / r.height), 1, 1).data; ok([d[0], d[1], d[2]]); }; img.src = vp.capture(); }), [px, py]);
+  expect(rgb[0]).toBeGreaterThan(200); expect(rgb[1]).toBeGreaterThan(170); expect(rgb[2]).toBeLessThan(90); // jaune
+  await shot(page, '130-depouille');
 });

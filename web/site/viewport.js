@@ -168,6 +168,18 @@ export class Viewport {
     return this.zebra;
   }
 
+  // Analyse de dépouille (Black Book ch. 8, Draft Analysis) : direction de démoulage +z ; vert si
+  // la face est en dépouille (> 1°), jaune si verticale, rouge si en contre-dépouille.
+  toggleDraft() {
+    this.draftOn = !this.draftOn;
+    if (!this.draftMat) this.draftMat = new THREE.ShaderMaterial({
+      vertexShader: 'varying vec3 vN; void main() { vN = normalize(normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'varying vec3 vN; void main() { float s = normalize(vN).z; vec3 c = s > 0.0175 ? vec3(0.2, 0.7, 0.3) : (s > -0.0175 ? vec3(0.95, 0.8, 0.2) : vec3(0.85, 0.25, 0.2)); gl_FragColor = vec4(c, 1.0); }',
+    });
+    if (this.part) { if (this.draftOn) this.part.geometry.computeVertexNormals(); this.part.material = this.draftOn ? this.draftMat : this.material; }
+    return this.draftOn;
+  }
+
   // Capture d'image (Black Book ch. 1, Capture Image) : la vue telle qu'affichée, en PNG.
   capture() { this.renderer.render(this.scene, this.camera); return this.renderer.domElement.toDataURL('image/png'); }
 
@@ -198,7 +210,7 @@ export class Viewport {
     this.edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: 0x1c2733 }));
     this.scene.add(this.part, this.edges);
     this.applyStyle();
-    if (this.zebra) { g.computeVertexNormals(); this.part.material = this.zebraMat; }
+    if (this.zebra || this.draftOn) { g.computeVertexNormals(); this.part.material = this.zebra ? this.zebraMat : this.draftMat; }
     if (this.clip) this.setClip(this.clip);
     if (!this.fitted) { this.fit(); this.fitted = true; }
   }

@@ -129,6 +129,8 @@ du cache Playwright).
   retirée (dessus ouvert) ; reste liée à l'esquisse. Scénario `coque.spec.js` (volume exact).
 - Lot 35, chapitre 4 (Hole from sketch points) : Perçages depuis l'esquisse : un trou à chaque
   point isolé (diamètre, traversant ou profondeur), Couper. Scénario `percages_points.spec.js`.
+- Lot 36, chapitre 8 (Draft Analysis) : Dépouille selon +z (vert en dépouille, jaune vertical,
+  rouge en contre-dépouille). Scénario `plan3.spec.js` (couleur d'un pixel vérifiée).
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
