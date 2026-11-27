@@ -12,7 +12,7 @@ import { Decoration } from '@codemirror/view';
 import { SketchEditor, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
 import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
-import { groupMenus, shortcutsHelp } from './toolbar.js';
+import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
 import { initFiles, saveBlob } from './files.js';
 import { jointDialog, linkDialog } from './mech_joint.js';
@@ -251,7 +251,7 @@ const COMMANDS = {
   joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }), link: () => linkDialog(dialogs, view, mech.state?.coords ?? [], () => { clearTimeout(debounce); evalCode(); }),
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
-groupMenus();
+groupMenus(); foldablePalette();
 markingMenu(canvas, [['Esquisse', '✎', COMMANDS.sketch], ['Extrusion', '⬆', COMMANDS.extrude], ['Pousser/tirer', '⇕', COMMANDS.presspull], ['Congé', '◟', COMMANDS.fillet],
   ['Perçage', '⊙', COMMANDS.hole], ['Mesurer', '📏', COMMANDS.measure], ['Ajuster', '⤢', COMMANDS.fit], ['Annuler', '↶', () => undo(view)]], () => !sketch.active);
 $('animate').onclick = () => mech.toggle();

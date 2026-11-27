@@ -57,7 +57,9 @@ import { slot } from './sketch_arcs.js';
 // Inférence (comme un modeleur) : un point posé sur une ligne y est contraint (au milieu s'il
 // en est proche), posé sur un cercle aussi ; n : élément le plus proche (SketchEditor.nearest).
 export function inferPoint(ed, q, n) {
-  const at = { x: q.x, y: q.y }, t = ed.tol();
+  // Grille d'accroche (option de la palette) : au millimètre, hors accroche sur un élément.
+  const grid = !n && document.getElementById('snap-grid')?.checked;
+  const at = grid ? { x: Math.round(q.x), y: Math.round(q.y) } : { x: q.x, y: q.y }, t = ed.tol();
   let c = null;
   if (n?.kind === 'l') {
     const [a, b] = ed.lines[n.i], A = ed.pts[a], B = ed.pts[b], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1;

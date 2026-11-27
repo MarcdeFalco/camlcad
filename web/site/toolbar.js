@@ -34,3 +34,9 @@ export function shortcutsHelp(dialogs) {
   const rows = SHORTCUTS.map(([k, v]) => { const r = document.createElement('div'); r.className = 'drow'; r.innerHTML = '<label></label><div class="dctrl"></div>'; r.firstChild.textContent = k; r.lastChild.textContent = v; return r; });
   dialogs.open('RACCOURCIS', rows, { key: 'help', okLabel: 'Fermer', cancel: false });
 }
+
+// Palette d'esquisse repliable (comme celle d'un modeleur) : un clic sur son titre.
+export function foldablePalette() {
+  const head = document.getElementById('palette-head'), pal = document.getElementById('palette');
+  head.onclick = () => { pal.classList.toggle('folded'); head.querySelector('.fold').textContent = pal.classList.contains('folded') ? '▸' : '▾'; };
+}

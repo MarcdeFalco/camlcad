@@ -150,9 +150,10 @@
     <div id="hint" hidden></div>
     <div id="dialog" hidden></div>
     <div id="palette" hidden>
-      <div class="dhead"><span>PALETTE D'ESQUISSE</span></div>
+      <div class="dhead" id="palette-head" title="Replier / déplier la palette"><span>PALETTE D'ESQUISSE</span><span class="fold">▾</span></div>
       <div class="dbody">
         <div id="sketch-status" class="status"></div>
+        <label class="opt"><input type="checkbox" id="snap-grid"> Accrocher à la grille (1 mm)</label>
         <div id="sketch-ask" class="ask" hidden></div>
         <div class="hint">Contraintes</div>
         <ol id="sketch-list"></ol>

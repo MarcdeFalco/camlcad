@@ -145,6 +145,8 @@ du cache Playwright).
   le dernier point sont le même ; contrat, test d'expectation), élément `S` des boucles de
   `Sketch_desc` ; outil Courbe (cliquer le premier point ferme), relue à la réouverture.
   Scénario `courbe.spec.js`.
+- Lot 41, chapitre 2 (Sketch Palette) : accroche à la grille d'un millimètre (option), palette
+  repliable d'un clic sur son titre (elle cachait la zone de dessin). Scénario `palette.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
