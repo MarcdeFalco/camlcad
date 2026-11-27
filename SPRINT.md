@@ -233,10 +233,12 @@ du cache Playwright).
   parois de 1 mm).
 
 ## En cours
-- Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
-  branche `claude/project-thread-tywefr` est remise sur `origin/main`, le lot y est appliqué
-  (cherry-pick), l'ancienne branche distante fusionnée sans changement (le mode auto refuse
-  le force-push), puis PR, CI, fusion.
+- Fin du sprint (27/11, 6 h) : les lots 44 à 65 partent en PR groupées de 2 à 6 lots (la CI
+  prend ~15 min par PR, le job `ui` grossit avec les scénarios). Une PR rouge se corrige dans
+  la PR suivante (ex. PR 44 : scénario des paramètres trop pressé sur une CI lente).
+- Méthode : chaque lot est un commit ; la branche `claude/project-thread-tywefr` est remise sur
+  `origin/main`, les lots y sont appliqués (cherry-pick), l'ancienne branche distante fusionnée
+  sans changement (le mode auto refuse le force-push), puis PR, CI, fusion.
 
 ## Suivant (ordre proposé)
 - Chapitre 2 : ajuster un arc, prolonger et couper contre cercles et arcs d'esquisse, cote de
@@ -251,6 +253,10 @@ du cache Playwright).
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Coque seulement pour une extrusion simple ; centre d'échelle écrit en littéral.
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
+- Le dialogue Paramètres lit le dernier journal : ouvert pendant une réévaluation, il montre
+  l'état précédent (le rouvrir suffit).
+- Lissage, balayage, dépouille : profils simples (sans trou) ; « Jusqu'à » et texte écrivent des
+  littéraux (pas liés à la face si elle bouge).
 - Choix des profils par cases, pas encore par clic sur la région dans la vue.
 - Plans de face, nervures, tuyaux et perçages aux points : géométrie écrite en littéral
   (pas liée à la pièce si elle change).
