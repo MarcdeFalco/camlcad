@@ -206,3 +206,11 @@ button { font:inherit; color:inherit; }
 .swatches { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
 .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #d0d5db; cursor: pointer; padding: 0; }
 .swatch.on { border-color: #1f6feb; box-shadow: 0 0 0 2px #1f6feb55; }
+/* Document : nom modifiable, exemples à part, carte de départ sur une vue vide. */
+#docname { width:130px; padding:2px 6px; border:1px solid transparent; border-radius:4px; background:transparent; font:inherit; font-weight:600; }
+#docname:hover, #docname:focus { border-color:var(--line); background:#fff; }
+#examples { max-width:110px; }
+#empty-hint { position:absolute; left:16px; bottom:64px; z-index:3; max-width:330px; padding:12px 14px; border:1px solid var(--line); border-radius:8px; background:var(--panel); box-shadow:0 2px 10px rgba(0,0,0,.08); }
+#empty-hint p { margin:6px 0 10px; color:var(--muted); font-size:13px; }
+#toolbar button.pulse i { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.25); filter: drop-shadow(0 0 4px var(--accent)); } }

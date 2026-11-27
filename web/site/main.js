@@ -14,7 +14,7 @@ import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
-import { initFiles, saveBlob } from './files.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
+import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
 import { jointDialog, linkDialog } from './mech_joint.js'; import { motionStudy } from './mech_study.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -29,7 +29,6 @@ import * as feats from './dialogs_features.js';
 import * as paths from './dialogs_paths.js';
 
 const $ = (id) => document.getElementById(id);
-const EXAMPLES = ['nouveau', 'support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
 
 // ---------- Worker ----------
 const worker = new Worker('worker.js', { type: 'module' });
@@ -58,6 +57,7 @@ function evalParams() { send({ kind: 'params' }); }
 const featureMesh = (fid, id) => worker.postMessage({ kind: 'feature', id, fid, overrides: [] });
 
 const t0 = performance.now();
+const docName = () => docs.name();
 worker.onmessage = ({ data: m }) => {
   if (m.kind === 'ready') {
     ready = true; sendImports(worker);
@@ -145,7 +145,7 @@ const dialogs = new Dialogs({
   onClose: () => { if (picking) stopPicking(); },
 });
 const inspect = new Inspect({ viewport: vp, dialogs, notify, mesh: () => (rollbackAt == null ? lastMesh : null) });
-const print = new Print3D({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download: (b, ext, name) => download(b, ext, name) });
+const print = new Print3D({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => docName(), download: (b, ext, name) => download(b, ext, name) });
 const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] }) });
 
 // Clic (sans glisser) : plan d'esquisse, face plane, ou feature sous la souris.
@@ -309,7 +309,8 @@ function selectFeature(fid, moveCursor) {
   featureMesh(fid, 0);
 }
 function renderTimeline() {
-  timeline.update(journal, selected, { doc: $('example').value, sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
+  docs.showEmpty(!journal?.features?.length && !sketch.active && $('dialog').hidden && $('hint').hidden);
+  timeline.update(journal, selected, { doc: docName(), sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }
 // ---------- Paramètres ----------
 function openParams() {
@@ -375,25 +376,21 @@ function onResult(m) {
 // ---------- Export ----------
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
 $('print3d').onclick = () => print.open(); $('undo').onclick = () => undo(view); $('redo').onclick = () => redo(view);
-$('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download });
-const download = (blob, ext, name) => saveBlob(blob, `${name ?? ($('example').value || 'piece')}.${ext}`);
+$('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => docName(), download });
+const download = (blob, ext, name) => saveBlob(blob, `${name ?? (docName())}.${ext}`);
 $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, overrides: [] });
-// ---------- Exemples ----------
-for (const e of EXAMPLES) $('example').append(new Option(e, e));
-const BLANK = 'open Cad\n\n(* Commencez par « Esquisse » ou « Boîte » dans la barre d\'outils. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';
-async function loadExample(name, text) {
+// ---------- Documents ----------
+async function loadDoc(name, code) {
   if (sketch.active) sketch.stop();
   dialogs.close(true); stopPicking();
   $("status").textContent = lastStatus = `ouverture de « ${name} »…`; $('status').classList.remove('err');
   $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = $('drawing').disabled = true; // rien à exporter avant le premier résultat
-  const code = text ?? (name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text());
-  if (![...$('example').options].some((o) => o.value === name)) $('example').append(new Option(name, name));
   if (journal) selectFeature(null, false);
   timeline.setMarker(null); // avant de vider : remettrait l'ancienne pièce
   overrides = new Map(); vp.fitted = false; journal = null; lastMesh = null; vp.clearPart();
-  $('example').value = name;
+  docs.setName(name);
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
 }
-$('example').onchange = () => loadExample($('example').value);
+const docs = initDocuments({ load: loadDoc, notify });
 if (innerWidth < 1100) toggleCode();
-if (!initFiles({ view, load: loadExample, name: () => $('example').value || 'piece', download, notify })()) loadExample('engrenage');
+if (!initFiles({ view, load: loadDoc, name: docName, download, notify })()) docs.fresh();

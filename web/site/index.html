@@ -18,7 +18,9 @@
 <!-- Barre d'application : document, état, code, export. -->
 <header id="appbar">
   <strong class="logo">camlcad</strong>
-  <select id="example" title="Document"></select>
+  <button id="file-new" class="hist" title="Nouveau document vide">Nouveau</button>
+  <input id="docname" value="sans titre" spellcheck="false" title="Nom du document (nom du fichier .ml enregistré)">
+  <select id="examples" title="Ouvrir une pièce d'exemple"><option value="">Exemples…</option></select>
   <button id="file-open" class="hist" title="Ouvrir un fichier .ml">Ouvrir…</button><button id="file-save" class="hist" title="Enregistrer le code (.ml)">Enregistrer</button>
   <button id="undo" class="hist" title="Annuler (Ctrl+Z)">↶</button><button id="redo" class="hist" title="Rétablir (Ctrl+Maj+Z)">↷</button>
   <span id="status">chargement du toplevel…</span>
@@ -168,6 +170,11 @@
     <button id="home" title="Vue de départ (isométrique)">⌂</button>
     <div id="notice" hidden></div>
     <div id="hint" hidden></div>
+    <div id="empty-hint" hidden>
+      <b>Document vide</b>
+      <p>Commencez par <b>✎ Esquisse</b> (touche S) : choisissez un plan, dessinez, puis <b>Terminer l'esquisse</b> pour l'extruder.
+      Ou partez d'une <b>Boîte</b>, ou d'une pièce du menu <b>Exemples…</b></p>
+    </div>
     <div id="dialog" hidden></div>
     <div id="palette" hidden>
       <div class="dhead" id="palette-head" title="Replier / déplier la palette"><span>PALETTE D'ESQUISSE</span><span class="fold">▾</span></div>

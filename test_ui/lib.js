@@ -18,10 +18,12 @@ export async function open(page, doc) {
   page.on('pageerror', (e) => console.log('pageerror', e.message));
   await page.goto('/');
   await expect(page.locator('#status')).toContainText('triangles', { timeout: 90_000 });
-  if (doc) {
-    await page.locator('#example').selectOption(doc);
-    if (doc === 'nouveau') await expect(page.locator('#timeline .feat')).toHaveCount(0);
-    else await expect(page.locator('#status')).toContainText(/triangles|pièces/);
+  // On part d'un document vide ; un exemple se choisit dans le menu « Exemples… ».
+  if (doc === 'nouveau') await expect(page.locator('#timeline .feat')).toHaveCount(0);
+  else if (doc) {
+    await page.locator('#examples').selectOption(doc);
+    await expect(page.locator('#docname')).toHaveValue(doc);
+    await expect(page.locator('#status')).toContainText(/triangles|pièces/);
   }
 }
 
