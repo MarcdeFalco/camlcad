@@ -30,7 +30,7 @@ export class SketchEditor extends SketchMarks {
     this.plane = plane; this.planeCode = planeCode; this.editing = editing; this.faceLoops = faceLoops;
     this.pts = []; this.lines = []; this.circles = []; this.arcs = []; this.ellipses = []; this.cons = []; this.loops = [];
     if (data) Object.assign(this, structuredClone(data));
-    this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
+    this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null; this.code = null;
     this.show();
     if (data) this.changed();
   }
@@ -381,7 +381,7 @@ export class SketchEditor extends SketchMarks {
     $('sketch-project').disabled = !this.faceLoops;
     $('sketch-holes').disabled = !this.freePoints().length || !!this.error;
     $('sketch-rib').disabled = $('sketch-pipe').disabled = $('sketch-sweep').disabled = !(this.openLines().length && !this.error);
-    $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
+    $('sketch-finish').disabled = $('sketch-revolve').disabled = $('sketch-loft').disabled = $('sketch-keep').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
 }
