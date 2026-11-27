@@ -182,6 +182,9 @@ du cache Playwright).
   décalé en onglet par `Loft.offset_outline`, solide réglé par `of_mesh` ; tests d'expectation
   et loi « dépouille » : tronc de pyramide exact), champ Dépouille du dialogue d'extrusion
   (aperçu approché). Scénario `depouille.spec.js`.
+- Lot 51, chapitre 7 (Motion Study) : commande Étude de l'onglet MÉCANISME : une articulation
+  menante, des étapes (temps, valeur ; « + Étape » prend la pose actuelle), lecture interpolée
+  qui pilote le mécanisme et s'arrête sur la dernière étape. Scénario `etude.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -194,7 +197,7 @@ du cache Playwright).
   l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
 - Chapitre 3 : lissage et balayage de profils à trous, chemin courbe (arcs, courbes).
 - Chapitre 6 : coque d'un corps quelconque.
-- Chapitre 7 : liaisons choisies dans la vue (ports affichés), étude de mouvement.
+- Chapitre 7 : liaisons choisies dans la vue (ports affichés) ; étude de mouvement enregistrée dans le code.
 - Frise : réordonner les étapes par glisser (Source_edit « move »).
 
 ## Écarts connus avec Fusion (pas encore traités)
