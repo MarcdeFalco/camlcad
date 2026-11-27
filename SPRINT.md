@@ -189,6 +189,10 @@ du cache Playwright).
   ponctuation ; minuscules et accents ramenés ; contrat, test d'expectation, loi « texte »),
   commande Texte sur une face cliquée : relief (Joindre) ou gravure (Couper), hauteur,
   épaisseur, rotation ; axe du texte = X du monde projeté sur la face. Scénario `texte.spec.js`.
+- Lot 53, chapitre 2 (3-Point Rectangle, 2-Point / 3-Point Circle, 3-Point Arc) : outils à
+  trois clics de l'esquisse (rectangle incliné : perpendiculaire et parallèles ; cercle par
+  trois points : « sur le cercle » ; arc par début, fin et un point) et cercle par deux points
+  (centre au milieu du diamètre), dans le menu ▾ de CRÉER. Scénario `esquisse_points.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la

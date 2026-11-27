@@ -3,7 +3,7 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
-import { TWO_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
+import { TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
 import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
@@ -133,10 +133,10 @@ export class SketchEditor extends SketchMarks {
     if (TWO_CLICK[this.tool]) {
       if (this.pending == null) { this.pending = this.pointAt(q); this.redraw(); }
       else { const a = this.pending; this.pending = null; if (TWO_CLICK[this.tool][0](this, a, q, this.sides())) this.changed(); else this.redraw(); }
-    } else if (this.tool === 'arc') {
+    } else if (this.tool === 'arc' || THREE_CLICK[this.tool]) {
       if (this.pending == null) this.pending = this.pointAt(q);
       else if (this.pending2 == null) this.pending2 = this.pointAt(q);
-      else { centerArc(this, this.pending, this.pending2, q); this.pending = this.pending2 = null; this.changed(); return; }
+      else { if ((THREE_CLICK[this.tool] ?? centerArc)(this, this.pending, this.pending2, q)) { this.pending = this.pending2 = null; this.changed(); return; } }
       this.redraw();
     } else if (this.tool === 'offset') {
       const n = this.nearest(q);
