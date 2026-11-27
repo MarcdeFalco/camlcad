@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
-import { parseDim } from './expr.js';
+import { parseDim } from './expr.js'; import { typedDims } from './sketch_input.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { trimAt, extendAt, breakAt, toggleConstruction } from './sketch_trim.js';
@@ -183,7 +183,7 @@ export class SketchEditor extends SketchMarks {
   }
 
   key(e) {
-    if (e.target.closest('input,select,.cm-editor')) return;
+    if (e.target.closest('input,select,.cm-editor') || typedDims(this, e)) return;
     if (e.key === 'Escape') {
       if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else this.stop();
     }
@@ -314,6 +314,8 @@ export class SketchEditor extends SketchMarks {
 
   redraw() {
     if (!this.group) return;
+    // Ajuster, prolonger, couper : une cote posée sur la courbe ne capte pas le clic (il va à la courbe).
+    document.getElementById('sketch-dims')?.classList.toggle('through', ['trim', 'extend', 'break'].includes(this.tool));
     const g = this.group;
     for (const o of [...g.children]) { g.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.dispose(); }); }
     const isSel = (k, i) => this.sel.some((s) => s.kind === k && s.i === i);

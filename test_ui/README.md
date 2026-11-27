@@ -92,3 +92,5 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `tuto_extrusion_face.spec.js` | Audit UX (ch. 3, Extrude d'une face) : face cliquée puis E (Joindre), Extrusion puis face, Couper dans la matière (volume) |
 | `tuto_parametres.spec.js` | Audit UX (ch. 6) : noms « Largeur », « Épaisseur totale » ramenés à des identifiants, « type » et doublon refusés dans le dialogue, paramètres non liés signalés, cote d'esquisse et hauteur liées (ƒx), aperçu direct |
 | `tuto_navigateur.spec.js` | Audit UX (ch. 1, Browser / Timeline) : esquisse, face extrudée, perçage ; navigateur Esquisses + Corps (œil), trois étapes dans la frise seulement |
+| `tuto_practical1.spec.js` | Black Book ch. 5, Practical 1 : cercles Ø50 et Ø20, rectangle par le centre 5 × 25, quatre ajustements (arcs coupés, diagonale de construction ignorée), extrusion de 25 : bague à alésage rainuré (volume) |
+| `tuto_cotes_trace.spec.js` | Black Book ch. 5 (Practical 2, début) : rectangle par le centre 60 Tab 50 Entrée et cercle 20 Entrée tapés pendant le tracé, cotés d'office ; palette sous le navigateur ; plaque percée (volume) |

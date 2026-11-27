@@ -3,11 +3,13 @@
     directement ([solve]) et se traduit en code OCaml ([to_code]) que
     l'éditeur insère dans le source sous un [let%sketch].
 
-    Région produite : les boucles, dans l'ordre de leur profondeur d'imbrication (nombre
-    d'autres boucles qui contiennent leur premier point, d'après les positions initiales) ;
-    profondeur paire ajoutée, impaire retirée (une boucle dans une boucle est un trou, comme
-    dans un modeleur) ; puis les cercles retirés s'il y a au moins une boucle (perçages),
-    sinon l'union des disques. *)
+    Région produite : les boucles et les cercles, dans l'ordre de leur profondeur
+    d'imbrication (nombre d'autres boucles ou cercles qui contiennent leur premier point, ou
+    le point d'angle 0 d'un cercle, d'après les positions initiales, arcs compris) ;
+    profondeur paire ajoutée, impaire retirée, comme les régions d'un modeleur : un cercle
+    dans un contour est un perçage, deux cercles concentriques une bague, un contour dans un
+    cercle un trou. Puis les ellipses retirées s'il y a une boucle ou un cercle, sinon
+    réunies. *)
 
 type constr = {
   kind : string;
@@ -36,7 +38,7 @@ type t = {
   (** centre, début, fin (indices de points) ; sens trigonométrique du début à la fin *)
   ellipses : (int * int * float) array;
   (** centre, extrémité du grand axe (indices de points), demi-petit axe ; régions comme
-      les cercles (retirées des boucles, sinon réunies) *)
+      les cercles d'avant (retirées des boucles et des cercles, sinon réunies) *)
   constraints : constr list;
   loops : item list list;  (** boucles fermées, éléments dans l'ordre (voir [Sketch.path]) *)
 }

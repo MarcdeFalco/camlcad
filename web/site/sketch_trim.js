@@ -5,9 +5,12 @@
 // Prolonger (Extend) : l'extrémité libre la plus proche du clic va jusqu'à la première ligne
 // rencontrée. Couper (Break) : la ligne cliquée et celle qui la croise sont scindées au point
 // d'intersection le plus proche du clic. Ajuster coupe aussi contre les cercles, et un cercle
-// cliqué devient un arc (trou de serrure) ; Prolonger et Couper : lignes seulement.
+// cliqué devient un arc (trou de serrure), un arc cliqué se raccourcit ou se scinde ; seules
+// les lignes de profil coupent un élément de profil (pas la diagonale d'un rectangle par le
+// centre). Prolonger et Couper : lignes seulement.
 import { deleteSelection } from './sketch_delete.js';
 import { SketchMarks } from './sketch_marks.js';
+import { loopPoints } from './sketch_arcs.js';
 
 const EPS = 1e-6;
 const KEEP_DUP = new Set(['horizontal', 'vertical']); // recopiées sur le nouveau morceau
@@ -47,6 +50,44 @@ function nearestLine(ed, q) {
     if (d < best) { best = d; li = i; tc = t; dd = d; }
   });
   return { li, tc, d: dd };
+}
+// Arcs (CCW de a à b) : centre, rayon, angle de départ, ouverture.
+const TAU = 2 * Math.PI, ccwd = (x) => ((x % TAU) + TAU) % TAU;
+function arcGeo(ed, k) {
+  const { c, a, b } = ed.arcs[k], C = ed.pts[c], A = ed.pts[a], B = ed.pts[b], ta = Math.atan2(A.y - C.y, A.x - C.x);
+  return { C, r: Math.hypot(A.x - C.x, A.y - C.y), ta, span: ccwd(Math.atan2(B.y - C.y, B.x - C.x) - ta) || TAU };
+}
+// Paramètres t ∈ [lo, hi] où le segment [P, Q] coupe le cercle (C, r).
+function circleTs(P, Q, C, r, lo = EPS, hi = 1 - EPS) {
+  const dx = Q.x - P.x, dy = Q.y - P.y, fx = P.x - C.x, fy = P.y - C.y, qa = dx * dx + dy * dy, qb = 2 * (fx * dx + fy * dy), disc = qb * qb - 4 * qa * (fx * fx + fy * fy - r * r);
+  if (qa < 1e-12 || disc <= 0) return [];
+  return [(-qb - Math.sqrt(disc)) / (2 * qa), (-qb + Math.sqrt(disc)) / (2 * qa)].filter((t) => t > lo && t < hi);
+}
+// Lignes qui coupent : celles du profil quand on ajuste un élément de profil (une ligne de
+// construction, comme la diagonale d'un rectangle par le centre, ne coupe pas) ; toutes sinon.
+function cutters(ed, profile, all) {
+  const prof = ed.lines.map(([a, b]) => profile.has(key(a, b)));
+  return all || !prof.some(Boolean) ? ed.lines.map(() => true) : prof;
+}
+// Boucles qui passent par l'arc k : défaites, leurs lignes et arcs redeviennent du profil ouvert.
+function dissolve(ed, k, profile) {
+  ed.loops = ed.loops.filter((l) => {
+    if (!l.some((it) => typeof it !== 'number' && (it.a ?? it.r) === k)) return true;
+    const arcsIn = l.filter((it) => typeof it !== 'number' && !it.s).map((it) => it.a ?? it.r), pairs = new Set(arcsIn.map((j) => key(ed.arcs[j].a, ed.arcs[j].b)));
+    const s = loopPoints(ed, l);
+    s.forEach((p, i) => { const q = s[(i + 1) % s.length]; if (p !== q && !pairs.has(key(p, q))) profile.add(key(p, q)); });
+    ed.openArcs = new Set([...(ed.openArcs ?? []), ...arcsIn]);
+    return false;
+  });
+}
+// L'arc k est scindé au point n (sur l'arc) : [a, n] et [n, b], rayon recopié.
+function splitArc(ed, k, n, profile) {
+  dissolve(ed, k, profile);
+  const { c, b } = ed.arcs[k], k2 = ed.arcs.push({ c, a: n, b }) - 1;
+  ed.arcs[k] = { ...ed.arcs[k], b: n };
+  for (const x of [...ed.cons]) if (x.kind === 'arc_radius' && x.refs[0] === k) ed.cons.push({ ...x, refs: [k2] });
+  ed.openArcs = new Set([...(ed.openArcs ?? []), k, k2]);
+  return k2;
 }
 const degree = (ed, p) => ed.lines.filter((l) => l.includes(p)).length;
 
@@ -100,16 +141,21 @@ export function trimAt(ed, q) {
   const { li, tc, d } = nearestLine(ed, q);
   let ci = -1, dc = ed.tol();
   ed.circles.forEach((c, i) => { const C = ed.pts[c.c], e = Math.abs(Math.hypot(q.x - C.x, q.y - C.y) - c.r); if (e < dc && e < d) { dc = e; ci = i; } });
-  if (li < 0 && ci < 0) return false;
+  let ai = -1;
+  ed.arcs.forEach((_, k) => { const g = arcGeo(ed, k), e = Math.abs(Math.hypot(q.x - g.C.x, q.y - g.C.y) - g.r); if (e < dc && e < d && ccwd(Math.atan2(q.y - g.C.y, q.x - g.C.x) - g.ta) < g.span) { dc = e; ai = k; ci = -1; } });
+  if (li < 0 && ci < 0 && ai < 0) return false;
   // Arêtes de profil (dans une boucle de lignes) avant l'opération.
   const profile = new Set();
   for (const l of ed.loops) if (l.every((x) => typeof x === 'number')) l.forEach((p, k) => profile.add(key(p, l[(k + 1) % l.length])));
   // Arêtes de profil d'un contour ouvert par un ajustement précédent (pas encore refermé).
   for (const k of ed.openProfile ?? []) if (ed.lines.some(([a, b]) => key(a, b) === k)) profile.add(k);
   if (ci >= 0) return trimCircle(ed, ci, q, profile);
-  const [p, q2] = ed.lines[li], P = ed.pts[p], Q = ed.pts[q2];
+  if (ai >= 0) return trimArc(ed, ai, q, profile);
+  const [p, q2] = ed.lines[li], P = ed.pts[p], Q = ed.pts[q2], cut = cutters(ed, profile, !profile.has(key(p, q2)));
   const hits = [];
-  ed.lines.forEach(([a, b], j) => { if (j !== li) { const x = cross(P, Q, ed.pts[a], ed.pts[b]); if (x) hits.push({ ...x, j }); } });
+  ed.lines.forEach(([a, b], j) => { if (j !== li && cut[j]) { const x = cross(P, Q, ed.pts[a], ed.pts[b]); if (x) hits.push({ ...x, j }); } });
+  // Arcs qui coupent la ligne (dans leur ouverture) : sommet commun, l'arc est scindé.
+  ed.arcs.forEach((_, k) => { const g = arcGeo(ed, k); for (const t of circleTs(P, Q, g.C, g.r)) { const th = ccwd(Math.atan2(P.y + t * (Q.y - P.y) - g.C.y, P.x + t * (Q.x - P.x) - g.C.x) - g.ta); if (th > 1e-6 && th < g.span - 1e-6) hits.push({ t, arc: k }); } });
   // Cercles qui coupent la ligne : sommet nouveau, « sur le cercle ».
   ed.circles.forEach(({ c, r }, k) => {
     const C = ed.pts[c], dx = Q.x - P.x, dy = Q.y - P.y, fx = P.x - C.x, fy = P.y - C.y, qa = dx * dx + dy * dy, qb = 2 * (fx * dx + fy * dy), disc = qb * qb - 4 * qa * (fx * fx + fy * fy - r * r);
@@ -120,6 +166,7 @@ export function trimAt(ed, q) {
   // Sommet à l'intersection : extrémité de l'autre ligne si elle y aboutit, sinon nouveau point qui la scinde.
   const vertex = (h) => {
     if (h.circle != null) { const n = ed.pts.push({ x: P.x + h.t * (Q.x - P.x), y: P.y + h.t * (Q.y - P.y), fixed: false }) - 1; ed.cons.push({ kind: 'on_circle', refs: [n, h.circle] }); return n; }
+    if (h.arc != null) { const n = ed.pts.push({ x: P.x + h.t * (Q.x - P.x), y: P.y + h.t * (Q.y - P.y), fixed: false }) - 1; splitArc(ed, h.arc, n, profile); return n; }
     const [a, b] = ed.lines[h.j];
     if (h.s < EPS) return a;
     if (h.s > 1 - EPS) return b;
@@ -161,7 +208,8 @@ function relink(ed, profile, li = -1) {
   ed.loops = ed.loops.filter((l) => !l.every((x) => typeof x === 'number'));
   if (ed.sel.length) {
     if (ed.sel[0].kind === 'l') isProf.splice(li, 1);
-    deleteSelection(ed); // renumérote points, lignes, contraintes (ordre des lignes et arcs conservé)
+    const M = deleteSelection(ed); // renumérote points, lignes, contraintes (ordre des lignes et arcs conservé)
+    if (M) ed.openArcs = new Set([...(ed.openArcs ?? [])].filter((k) => M.a.has(k)).map((k) => M.a.get(k)));
   }
   const prof = ed.lines.filter((_, i) => isProf[i]);
   const inLoops = new Set(ed.loops.flatMap((l) => l.filter((x) => typeof x !== 'number' && !x.s).map((x) => x.a ?? x.r)));
@@ -179,8 +227,9 @@ function relink(ed, profile, li = -1) {
 // sont des sommets des lignes coupées (scindées si besoin). Sans deux intersections : cercle retiré.
 function trimCircle(ed, ci, q, profile) {
   const { c, r } = ed.circles[ci], C = ed.pts[c], ang = (x, y) => Math.atan2(y - C.y, x - C.x);
-  const hits = [];
+  const hits = [], cut = cutters(ed, profile, false);
   ed.lines.forEach(([a, b], j) => {
+    if (!cut[j]) return;
     const A = ed.pts[a], B = ed.pts[b], dx = B.x - A.x, dy = B.y - A.y, fx = A.x - C.x, fy = A.y - C.y;
     const qa = dx * dx + dy * dy, qb = 2 * (fx * dx + fy * dy), qc = fx * fx + fy * fy - r * r, disc = qb * qb - 4 * qa * qc;
     if (qa < 1e-12 || disc < 0) return;
@@ -207,6 +256,42 @@ function trimCircle(ed, ci, q, profile) {
   if (rad) ed.cons.push({ ...rad, kind: 'arc_radius', refs: [k], value: rad.value });
   ed.openArcs = new Set([...(ed.openArcs ?? []), k]);
   ed.sel = [{ kind: 'c', i: ci }];
+  return relink(ed, profile);
+}
+
+// Ajuster un arc : le morceau entre les intersections voisines du clic (lignes de profil)
+// est retiré ; il reste un ou deux arcs. Sans intersection : l'arc entier part.
+function trimArc(ed, k, q, profile) {
+  const g = arcGeo(ed, k), tq = ccwd(Math.atan2(q.y - g.C.y, q.x - g.C.x) - g.ta), cut = cutters(ed, profile, false), hits = [];
+  ed.lines.forEach(([a, b], j) => {
+    if (!cut[j]) return;
+    const A = ed.pts[a], B = ed.pts[b];
+    for (const t of circleTs(A, B, g.C, g.r, -1e-6, 1 + 1e-6)) {
+      const th = ccwd(Math.atan2(A.y + t * (B.y - A.y) - g.C.y, A.x + t * (B.x - A.x) - g.C.x) - g.ta);
+      if (th > 1e-6 && th < g.span - 1e-6) hits.push({ j, t, th });
+    }
+  });
+  const lo = hits.filter((h) => h.th < tq).sort((u, v) => v.th - u.th)[0], hi = hits.filter((h) => h.th > tq).sort((u, v) => u.th - v.th)[0];
+  dissolve(ed, k, profile);
+  const { c, a, b } = ed.arcs[k];
+  const vertex = (h) => {
+    const [u, v] = ed.lines[h.j];
+    if (h.t < 1e-6) return u;
+    if (h.t > 1 - 1e-6) return v;
+    const n = ed.pts.push({ x: g.C.x + g.r * Math.cos(g.ta + h.th), y: g.C.y + g.r * Math.sin(g.ta + h.th), fixed: false }) - 1;
+    const prof = profile.has(key(u, v));
+    split(ed, h.j, n);
+    if (prof) { profile.add(key(u, n)); profile.add(key(n, v)); }
+    return n;
+  };
+  const pieces = [...(lo ? [{ c, a, b: vertex(lo) }] : []), ...(hi ? [{ c, a: vertex(hi), b }] : [])];
+  if (!pieces.length) { ed.sel = [{ kind: 'a', i: k }]; return relink(ed, profile); }
+  ed.arcs[k] = pieces[0];
+  if (pieces[1]) { const k2 = ed.arcs.push(pieces[1]) - 1; for (const x of [...ed.cons]) if (x.kind === 'arc_radius' && x.refs[0] === k) ed.cons.push({ ...x, refs: [k2] }); ed.openArcs = new Set([...(ed.openArcs ?? []), k2]); }
+  ed.openArcs = new Set([...(ed.openArcs ?? []), k]);
+  // Extrémités de l'arc d'origine plus utilisées : supprimées.
+  const used = (x) => ed.lines.some((l) => l.includes(x)) || ed.circles.some((cc) => cc.c === x) || ed.arcs.some((r) => [r.c, r.a, r.b].includes(x));
+  ed.sel = [a, b].filter((x) => !used(x)).map((i) => ({ kind: 'p', i }));
   return relink(ed, profile);
 }
 

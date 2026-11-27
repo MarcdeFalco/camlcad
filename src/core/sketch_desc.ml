@@ -57,11 +57,22 @@ let check d =
     d.constraints;
   match !err with Some m -> Error m | None -> Ok ()
 
-(* Boucles ordonnées par profondeur d'imbrication, avec leur signe (true : ajoutée). *)
+(* Régions (boucles et cercles) ordonnées par profondeur d'imbrication, avec leur signe
+   (true : ajoutée). Arcs échantillonnés pour les tests d'appartenance. *)
+type region = Loop of item list | Disk of int
+
 let nested d =
   let pt i = let x, y, _ = d.points.(i) in (x, y) in
-  let corners l = List.concat_map (function P i -> [ pt i ] | S l -> List.map pt l | A k | Rev k -> let _, a, b = d.arcs.(k) in [ pt a; pt b ]) l in
-  let inside (x, y) poly =
+  let arc k rev =
+    let c, a, b = d.arcs.(k) in
+    let (cx, cy), (ax, ay), (bx, by) = (pt c, pt a, pt b) in
+    let t0 = atan2 (ay -. cy) (ax -. cx) and r = hypot (ax -. cx) (ay -. cy) in
+    let sw = let s = atan2 (by -. cy) (bx -. cx) -. t0 in if s <= 1e-9 then s +. (2. *. Float.pi) else s in
+    let ps = List.init 17 (fun i -> let t = t0 +. (sw *. float i /. 16.) in (cx +. (r *. cos t), cy +. (r *. sin t))) in
+    if rev then List.rev ps else ps
+  in
+  let corners l = List.concat_map (function P i -> [ pt i ] | S l -> List.map pt l | A k -> arc k false | Rev k -> arc k true) l in
+  let in_poly (x, y) poly =
     let n = List.length poly and a = Array.of_list poly in
     let c = ref false in
     for i = 0 to n - 1 do
@@ -70,8 +81,18 @@ let nested d =
     done;
     !c
   in
-  let depth l = match corners l with [] -> 0 | p :: _ -> List.length (List.filter (fun m -> m != l && inside p (corners m)) d.loops) in
-  List.map (fun l -> (depth l, l)) d.loops |> List.stable_sort (fun (a, _) (b, _) -> compare a b) |> List.map (fun (k, l) -> (k mod 2 = 0, l))
+  let regs = List.map (fun l -> Loop l) d.loops @ List.init (Array.length d.circles) (fun i -> Disk i) in
+  let probe = function
+    | Loop l -> (match corners l with [] -> None | p :: _ -> Some p)
+    | Disk i -> let c, r = d.circles.(i) in let x, y = pt c in Some (x +. r, y)
+  in
+  let contains reg p =
+    match reg with
+    | Loop l -> in_poly p (corners l)
+    | Disk i -> let c, r = d.circles.(i) in let cx, cy = pt c in hypot (fst p -. cx) (snd p -. cy) < r -. 1e-6
+  in
+  let depth g = match probe g with None -> 0 | Some p -> List.length (List.filter (fun m -> m != g && contains m p) regs) in
+  List.map (fun g -> (depth g, g)) regs |> List.stable_sort (fun (a, _) (b, _) -> compare a b) |> List.map (fun (k, g) -> (k mod 2 = 0, g))
 
 let rec mapm f = function
   | [] -> Sketch.return []
@@ -124,13 +145,13 @@ let build d =
            | P i -> Sketch.pt ps.(i) | A k -> Sketch.along arcs.(k) | Rev k -> Sketch.back arcs.(k)
            | S l -> Sketch.spline (List.map (fun i -> ps.(i)) l)
          in
-         let loops = List.map (fun (plus, l) -> (plus, Sketch.path (List.map edge l))) (nested d) in
-         let disks = Array.to_list (Array.map Sketch.disk cs) @ List.map Sketch.oval ovals in
-         match (loops, disks) with
-         | (_, l) :: rest, _ ->
-             let r = List.fold_left (fun r (plus, x) -> if plus then Sketch.( + ) r x else Sketch.( - ) r x) l rest in
-             List.fold_left Sketch.( - ) r disks
-         | [], d :: rest -> List.fold_left Sketch.( + ) d rest
+         let reg = function Loop l -> Sketch.path (List.map edge l) | Disk i -> Sketch.disk cs.(i) in
+         let regs = List.map (fun (plus, g) -> (plus, reg g)) (nested d) and ovals = List.map Sketch.oval ovals in
+         match (regs, ovals) with
+         | (_, r0) :: rest, _ ->
+             let r = List.fold_left (fun r (plus, x) -> if plus then Sketch.( + ) r x else Sketch.( - ) r x) r0 rest in
+             List.fold_left Sketch.( - ) r ovals
+         | [], o :: rest -> List.fold_left Sketch.( + ) o rest
          | [], [] -> Sketch.loop [])
 
 let solve d = match build d with Error e -> Error e | Ok m -> Sketch.solve m
@@ -198,13 +219,14 @@ let to_code ?(indent = 4) d =
                 | S l -> "spline [ " ^ String.concat "; " (List.map p l) ^ " ]")
               ls))
   in
-  let disks = Array.to_list (Array.mapi (fun i _ -> Printf.sprintf "disk %s" (c i)) d.circles) @ Array.to_list (Array.mapi (fun i _ -> Printf.sprintf "oval %s" (e i)) d.ellipses) in
+  let ovals = Array.to_list (Array.mapi (fun i _ -> Printf.sprintf "oval %s" (e i)) d.ellipses) in
+  let reg = function Loop l -> loop l | Disk i -> "disk " ^ c i in
   let region =
-    match (nested d, disks) with
-    | (_, l) :: rest, ds ->
-        String.concat "" (loop l :: List.map (fun (plus, x) -> (if plus then " + " else " - ") ^ loop x) rest)
-        ^ String.concat "" (List.map (fun x -> " - " ^ x) ds)
-    | [], ds when ds <> [] -> String.concat " + " ds
+    match (nested d, ovals) with
+    | (_, g) :: rest, os ->
+        String.concat "" (reg g :: List.map (fun (plus, x) -> (if plus then " + " else " - ") ^ reg x) rest)
+        ^ String.concat "" (List.map (fun x -> " - " ^ x) os)
+    | [], os when os <> [] -> String.concat " + " os
     | _ -> "loop []"
   in
   line "Sketch.(%s)" region;
