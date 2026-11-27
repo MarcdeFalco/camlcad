@@ -18,9 +18,9 @@ Disposition d'un modeleur paramétrique (commandes secondaires dans le menu ▾ 
 barre d'outils à onglets en haut, navigateur à gauche, vue 3D au centre (cube de
 vue cliquable, flèches vers la face voisine, ⌂ vue de départ, barre de navigation : orbite, panoramique,
 ajuster, regarder une face, style, grille), dialogues de commande à droite,
-menu circulaire au clic droit dans la vue, frise en bas, code repliable à droite (`</> Code`, Ctrl+E).
+menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (↶ ↷, Ctrl+Z : historique du code), code repliable à droite (`</> Code`, Ctrl+E).
 
-- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé (construction, listé dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, taraudé M2–M12, traversant), Filetage (tige filetée ISO), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Pousser/tirer (une face plane cliquée), Congé et Chanfrein d'arête (ses deux faces cliquées), Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
+- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé, Plan milieu, Plan à un angle (construction, listés dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, taraudé M2–M12, traversant), Filetage (tige filetée ISO), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Pousser/tirer (une face plane cliquée), Congé et Chanfrein d'arête (ses deux faces cliquées), Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
   (modifier la sélection), Paramètres (tableau, OK écrit les valeurs dans le
   code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F), Mesurer (points, faces), Coupe (plan de découpe, matière coupée en rouge), Propriétés (volume, centre de gravité, masse imprimée). Boîte,
   cylindre et sphère ouvrent un dialogue avec aperçu (opération Joindre,

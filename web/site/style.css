@@ -195,3 +195,4 @@ button { font:inherit; color:inherit; }
 #marking button { position:absolute; transform:translate(-50%,-50%); display:flex; align-items:center; gap:5px; padding:4px 9px; border:1px solid var(--line); border-radius:14px; background:var(--panel2, #fff); box-shadow:0 3px 10px rgba(0,0,0,.18); font-size:12px; white-space:nowrap; cursor:pointer; }
 #marking button i { font-style:normal; color:var(--accent); }
 #marking button:hover { background:var(--accent-soft); }
+#appbar .hist { border:1px solid var(--line); background:var(--panel2, #fff); border-radius:4px; padding:1px 7px; cursor:pointer; font-size:14px; }

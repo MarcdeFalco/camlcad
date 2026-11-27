@@ -3,7 +3,7 @@
 // à gauche, vue au centre (cube de vue, barre de navigation), dialogues à
 // droite, frise en bas, code repliable. Le code reste la seule source de vérité.
 import { EditorView, basicSetup } from 'codemirror';
-import { undo } from '@codemirror/commands';
+import { undo, redo } from '@codemirror/commands';
 import { StreamLanguage } from '@codemirror/language';
 import { oCaml } from '@codemirror/legacy-modes/mode/mllike';
 import { setDiagnostics } from '@codemirror/lint';
@@ -133,7 +133,6 @@ const { insertFeature, insertResult, insertParam, insertPlane, constructionPlane
   view, notify, changed: () => { clearTimeout(debounce); evalCode(); },
   beforeInsert: () => { if (selected != null) selectFeature(null, false); showFace(null); },
 });
-
 // ---------- Vue 3D ----------
 const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
@@ -209,7 +208,7 @@ function startPicking() {
   hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
 }
 // Perçage : un clic sur une face plane donne la position et la direction (Black Book ch. 4).
-const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs });
+const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs, insertPlane });
 const selGeo = () => vp.highlight?.geometry;
 function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
@@ -237,7 +236,7 @@ const COMMANDS = {
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
   measure: () => inspect.startMeasure(), section: () => inspect.section(), props: () => inspect.properties(),
   combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
-  offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }),
+  offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }), angleplane: () => dialogs.anglePlane((f) => insertPlane(`(* construction *) ${frameCode(f)}`)),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
   edit: () => needSel() && dialogs.feature(selected),
   params: openParams,
@@ -263,6 +262,8 @@ for (const b of document.querySelectorAll('[data-nav]')) b.onclick = () => {
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'e') { e.preventDefault(); toggleCode(); return; }
   if (e.target.closest('input,select,textarea,.cm-editor')) return;
+  // Annuler / rétablir : l'historique du code (toute action de l'éditeur est une réécriture).
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !sketch.active) { e.preventDefault(); (e.shiftKey ? redo : undo)(view); return; }
   if (sketch.active) { sketch.key(e); return; }
   if (e.key === 'Escape' && picking) { stopPicking(); return; }
   if (e.key === 'Escape' && faces.active) { faces.cancel(); return; }
@@ -370,7 +371,7 @@ function onResult(m) {
 }
 // ---------- Export ----------
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
-$('print3d').onclick = () => print.open();
+$('print3d').onclick = () => print.open(); $('undo').onclick = () => undo(view); $('redo').onclick = () => redo(view);
 $('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download });
 function download(blob, ext, name) {
   const a = document.createElement('a');
@@ -378,7 +379,6 @@ function download(blob, ext, name) {
   a.download = `${name ?? ($('example').value || 'piece')}.${ext}`; a.click();
 }
 $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, overrides: [] });
-
 // ---------- Exemples ----------
 for (const e of EXAMPLES) $('example').append(new Option(e, e));
 const BLANK = 'open Cad\n\n(* Commencez par « Esquisse » ou « Boîte » dans la barre d\'outils. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';

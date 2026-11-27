@@ -3,6 +3,7 @@
 // paramètres. Un OK écrit le code ; l'aperçu est dessiné par three.js en attendant.
 import * as THREE from 'three';
 import { el, fmt, KIND } from './timeline.js';
+import { basePlanes } from './planes.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(12)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
@@ -247,6 +248,23 @@ export class Dialogs {
       row('Référence', choice({ XY: 'Plan XY', XZ: 'Plan XZ', YZ: 'Plan YZ' }, P.ref, (v) => { P.ref = v; preview(); })),
       row('Distance', num(P.d, (v) => { P.d = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
     ], { key: 'offsetplane', ok: () => done(`Geom.Plane.offset ${litp(P.d)} Geom.Plane.${P.ref.toLowerCase()}`) });
+    preview();
+  }
+
+  // ---------- Plan à un angle (construction) ----------
+  // Plan d'origine tourné autour de son axe x ou y local ; done(repère three.js).
+  anglePlane(done) {
+    const P = { ref: 'XY', axis: 'x', deg: 45 };
+    const frame = () => {
+      const b = basePlanes[P.ref].frame, ax = P.axis === 'x' ? b.x : b.y, q = new THREE.Quaternion().setFromAxisAngle(ax, (P.deg * Math.PI) / 180);
+      return { origin: b.origin.clone(), x: b.x.clone().applyQuaternion(q), y: b.y.clone().applyQuaternion(q), z: b.z.clone().applyQuaternion(q) };
+    };
+    const preview = () => { const f = frame(), m = new THREE.Mesh(new THREE.PlaneGeometry(40, 40)); m.matrixAutoUpdate = false; m.matrix.makeBasis(f.x, f.y, f.z); this.setPreview(m, 0xe0a030); };
+    this.open('PLAN À UN ANGLE', [
+      row('Référence', choice({ XY: 'Plan XY', XZ: 'Plan XZ', YZ: 'Plan YZ' }, P.ref, (v) => { P.ref = v; preview(); })),
+      row('Axe', choice({ x: 'x du plan', y: 'y du plan' }, P.axis, (v) => { P.axis = v; preview(); })),
+      row('Angle', num(P.deg, (v) => { P.deg = v; preview(); }), el('span', { className: 'unit', textContent: '°' })),
+    ], { key: 'angleplane', ok: () => done(frame()) });
     preview();
   }
 
