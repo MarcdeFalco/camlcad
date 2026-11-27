@@ -47,3 +47,7 @@ let of_string s =
     List.rev !verts |> List.concat_map (fun (x, y, z) -> [ x; y; z ]) |> Array.of_list
   in
   { Cad.Mesh.vertices; triangles = tris }
+
+let of_file path =
+  let ic = open_in_bin path in
+  Fun.protect ~finally:(fun () -> close_in ic) (fun () -> of_string (really_input_string ic (in_channel_length ic)))

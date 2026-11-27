@@ -55,6 +55,10 @@ module type S = sig
   val scale : Geom.V3.t -> solid -> solid
   (** Homothétie (ou affinité) de centre l'origine, facteurs selon x, y, z. *)
 
+  val of_mesh : Mesh.t -> solid
+  (** Solide d'un maillage fermé et orienté (normales sortantes) ; vide si le maillage n'est
+      pas une variété close. *)
+
   (** {2 Requêtes} *)
 
   val is_empty : solid -> bool

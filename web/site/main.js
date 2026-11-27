@@ -9,13 +9,13 @@ import { oCaml } from '@codemirror/legacy-modes/mode/mllike';
 import { setDiagnostics } from '@codemirror/lint';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
-import { SketchEditor, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
+import { SketchEditor, toggleConstruction, planarFace, basePlanes, frameCode, descOf } from './sketch.js';
 import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
-import { initFiles, saveBlob } from './files.js';
-import { jointDialog, linkDialog } from './mech_joint.js';
+import { initFiles, saveBlob } from './files.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
+import { jointDialog, linkDialog } from './mech_joint.js'; import { motionStudy } from './mech_study.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
 import { Dialogs } from './dialogs.js';
@@ -60,7 +60,7 @@ const featureMesh = (fid, id) => worker.postMessage({ kind: 'feature', id, fid, 
 const t0 = performance.now();
 worker.onmessage = ({ data: m }) => {
   if (m.kind === 'ready') {
-    ready = true;
+    ready = true; sendImports(worker);
     $('status').textContent = `prêt en ${((performance.now() - t0) / 1000).toFixed(1)} s`;
     evalCode();
     return;
@@ -131,7 +131,7 @@ function toggleCode() {
 }
 $('toggle-code').onclick = toggleCode;
 
-const { insertFeature, insertResult, insertParam, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode } = codeEdits({
+const { insertFeature, insertLets, insertResult, insertParam, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode } = codeEdits({
   view, notify, changed: () => { clearTimeout(debounce); evalCode(); },
   beforeInsert: () => { if (selected != null) selectFeature(null, false); showFace(null); },
 });
@@ -140,7 +140,7 @@ const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
 const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
+  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertLets, pickFace: (t, cb) => faces.start(t, cb), codeText: () => view.state.doc.toString(), allPlanes, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });
@@ -185,7 +185,7 @@ const sketch = new SketchEditor({
   mode: (on) => showTab(on ? 'sketch' : null),
   finish: (data) => {
     vp.threeQuarter(data.frame);
-    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (['rib', 'pipe', 'holes'].includes(data.kind) ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
+    if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (['rib', 'pipe', 'holes', 'loft', 'sweep', 'keep'].includes(data.kind) ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
   done: () => showFace(null),
 });
 window.camlcadSketch = sketch; // inspection (tests)
@@ -217,7 +217,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-holes').onclick = () => sketch.finish('holes'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-loft').onclick = () => sketch.finish('loft'); $('sketch-sweep').onclick = () => sketch.finish('sweep'); $('sketch-keep').onclick = () => sketch.finish('keep'); $('sketch-construct').onclick = () => { if (toggleConstruction(sketch)) sketch.changed(); }; $('sketch-holes').onclick = () => sketch.finish('holes'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {
@@ -247,11 +247,11 @@ const COMMANDS = {
   delete: () => needSel() && timeline.remove(selected),
   look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
   fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
-  motion: () => mech.panel(), video: () => mech.record((b) => download(b, 'webm')) && notify('Enregistrement d’un cycle (4 s)…'), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
+  motion: () => mech.panel(), study: () => motionStudy(mech, dialogs), importstl: () => importStl(dialogs, worker), appearance: () => appearanceDialog(dialogs, vp), thickness: () => thicknessDialog(dialogs, vp), video: () => mech.record((b) => download(b, 'webm')) && notify('Enregistrement d’un cycle (4 s)…'), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
   joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }), link: () => linkDialog(dialogs, view, mech.state?.coords ?? [], () => { clearTimeout(debounce); evalCode(); }),
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
-groupMenus(); foldablePalette();
+groupMenus(); foldablePalette(); applyLook(vp);
 markingMenu(canvas, [['Esquisse', '✎', COMMANDS.sketch], ['Extrusion', '⬆', COMMANDS.extrude], ['Pousser/tirer', '⇕', COMMANDS.presspull], ['Congé', '◟', COMMANDS.fillet],
   ['Perçage', '⊙', COMMANDS.hole], ['Mesurer', '📏', COMMANDS.measure], ['Ajuster', '⤢', COMMANDS.fit], ['Annuler', '↶', () => undo(view)]], () => !sketch.active);
 $('animate').onclick = () => mech.toggle();

@@ -3,11 +3,12 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
-import { TWO_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
+import { TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
 import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
-import { trimAt, extendAt, breakAt } from './sketch_trim.js';
+import { trimAt, extendAt, breakAt, toggleConstruction } from './sketch_trim.js';
+export { toggleConstruction };
 const CLICK1 = { ellipse: ellipseClick, spline: splineClick, trim: trimAt, extend: extendAt, break: breakAt }; // outils à un clic
 import { arcPoints, arcRadius, loopPoints, loopOutline, splinePoints, centerArc, fillet } from './sketch_arcs.js';
 
@@ -29,7 +30,7 @@ export class SketchEditor extends SketchMarks {
     this.plane = plane; this.planeCode = planeCode; this.editing = editing; this.faceLoops = faceLoops;
     this.pts = []; this.lines = []; this.circles = []; this.arcs = []; this.ellipses = []; this.cons = []; this.loops = [];
     if (data) Object.assign(this, structuredClone(data));
-    this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
+    this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null; this.code = null;
     this.show();
     if (data) this.changed();
   }
@@ -133,10 +134,10 @@ export class SketchEditor extends SketchMarks {
     if (TWO_CLICK[this.tool]) {
       if (this.pending == null) { this.pending = this.pointAt(q); this.redraw(); }
       else { const a = this.pending; this.pending = null; if (TWO_CLICK[this.tool][0](this, a, q, this.sides())) this.changed(); else this.redraw(); }
-    } else if (this.tool === 'arc') {
+    } else if (this.tool === 'arc' || THREE_CLICK[this.tool]) {
       if (this.pending == null) this.pending = this.pointAt(q);
       else if (this.pending2 == null) this.pending2 = this.pointAt(q);
-      else { centerArc(this, this.pending, this.pending2, q); this.pending = this.pending2 = null; this.changed(); return; }
+      else { if ((THREE_CLICK[this.tool] ?? centerArc)(this, this.pending, this.pending2, q)) { this.pending = this.pending2 = null; this.changed(); return; } }
       this.redraw();
     } else if (this.tool === 'offset') {
       const n = this.nearest(q);
@@ -188,7 +189,7 @@ export class SketchEditor extends SketchMarks {
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.sel.length) { e.preventDefault(); this.remove(); return; }
     const tools = { r: 'rect', l: 'poly', c: 'circle', a: 'arc', p: 'polygon', d: 'dim', s: 'select', t: 'trim' };
-    if (tools[e.key]) this.setTool(tools[e.key]);
+    if (e.key === 'x' && this.sel.length) { if (toggleConstruction(this)) this.changed(); } else if (tools[e.key]) this.setTool(tools[e.key]);
   }
   project() { if (projectFace(this)) this.changed(); }
   remove() { if (deleteSelection(this)) { this.asking = null; this.changed(); } }
@@ -296,7 +297,7 @@ export class SketchEditor extends SketchMarks {
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
   finish(kind = 'extrude') {
-    const rib = ((kind === 'rib' || kind === 'pipe') && this.openLines().length && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
+    const rib = (['rib', 'pipe', 'sweep'].includes(kind) && this.openLines().length && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
@@ -379,8 +380,8 @@ export class SketchEditor extends SketchMarks {
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
     $('sketch-project').disabled = !this.faceLoops;
     $('sketch-holes').disabled = !this.freePoints().length || !!this.error;
-    $('sketch-rib').disabled = $('sketch-pipe').disabled = !(this.openLines().length && !this.error);
-    $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
+    $('sketch-rib').disabled = $('sketch-pipe').disabled = $('sketch-sweep').disabled = !(this.openLines().length && !this.error);
+    $('sketch-finish').disabled = $('sketch-revolve').disabled = $('sketch-loft').disabled = $('sketch-keep').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
 }

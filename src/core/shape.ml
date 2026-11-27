@@ -5,7 +5,7 @@ and view =
   | Cube of { size : Geom.V3.t; center : bool }
   | Cylinder of { r : float; h : float; center : bool }
   | Sphere of float
-  | Extrude of { profile : Profile.t; h : float; twist : float; scale_top : float }
+  | Extrude of { profile : Profile.t; h : float; twist : float; scale_top : float; taper : float }
   | Revolve of { profile : Profile.t; deg : float }
   | Union of t * t
   | Difference of t * t
@@ -13,13 +13,16 @@ and view =
   | Place of Geom.Frame.t * t
   | Mirror of Geom.V3.t * t
   | Scale of Geom.V3.t * t
+  | Loft of (Geom.Frame.t * Profile.t) list
+  | Sweep of Profile.t * Geom.V3.t list
+  | Mesh of Mesh.t
 
 type key =
   | KEmpty
   | KCube of Geom.V3.t * bool
   | KCylinder of float * float * bool
   | KSphere of float
-  | KExtrude of int * float * float * float
+  | KExtrude of int * float * float * float * float
   | KRevolve of int * float
   | KUnion of int * int
   | KDifference of int * int
@@ -27,13 +30,16 @@ type key =
   | KPlace of Geom.Frame.t * int
   | KMirror of Geom.V3.t * int
   | KScale of Geom.V3.t * int
+  | KLoft of (Geom.Frame.t * int) list
+  | KSweep of int * Geom.V3.t list
+  | KMesh of string
 
 let key = function
   | Empty -> KEmpty
   | Cube { size; center } -> KCube (size, center)
   | Cylinder { r; h; center } -> KCylinder (r, h, center)
   | Sphere r -> KSphere r
-  | Extrude { profile; h; twist; scale_top } -> KExtrude (Profile.id profile, h, twist, scale_top)
+  | Extrude { profile; h; twist; scale_top; taper } -> KExtrude (Profile.id profile, h, twist, scale_top, taper)
   | Revolve { profile; deg } -> KRevolve (Profile.id profile, deg)
   | Union (a, b) -> KUnion (a.id, b.id)
   | Difference (a, b) -> KDifference (a.id, b.id)
@@ -41,6 +47,9 @@ let key = function
   | Place (f, a) -> KPlace (f, a.id)
   | Mirror (n, a) -> KMirror (n, a.id)
   | Scale (f, a) -> KScale (f, a.id)
+  | Loft l -> KLoft (List.map (fun (f, p) -> (f, Profile.id p)) l)
+  | Sweep (p, path) -> KSweep (Profile.id p, path)
+  | Mesh m -> KMesh (Digest.string (Marshal.to_string m []))
 
 let empty = { id = 0; v = Empty }
 let table : (key, t) Hashtbl.t = Hashtbl.create 256
@@ -61,8 +70,8 @@ let cube ?(center = false) size = mk (Cube { size; center })
 let cylinder ?(center = false) ~r ~h () = mk (Cylinder { r; h; center })
 let sphere ~r = mk (Sphere r)
 
-let extrude ?(twist = 0.) ?(scale_top = 1.) ~h profile =
-  mk (Extrude { profile; h; twist; scale_top })
+let extrude ?(twist = 0.) ?(scale_top = 1.) ?(taper = 0.) ~h profile =
+  mk (Extrude { profile; h; twist; scale_top; taper })
 
 let revolve ?(deg = 360.) profile = mk (Revolve { profile; deg })
 let ( + ) a b = mk (Union (a, b))
@@ -83,6 +92,9 @@ let scale ?about f s =
   | None -> mk (Scale (f, s))
   | Some p -> translate p (mk (Scale (f, translate (Geom.V3.neg p) s)))
 
+let loft sections = mk (Loft sections)
+let sweep profile path = mk (Sweep (profile, path))
+let of_mesh m = mk (Mesh m)
 let id s = s.id
 let equal a b = a.id = b.id
 
@@ -94,7 +106,7 @@ let subterms s =
       match s.v with
       | Union (a, b) | Difference (a, b) | Intersection (a, b) -> go a; go b
       | Place (_, a) | Mirror (_, a) | Scale (_, a) -> go a
-      | Empty | Cube _ | Cylinder _ | Sphere _ | Extrude _ | Revolve _ -> ()
+      | Empty | Cube _ | Cylinder _ | Sphere _ | Extrude _ | Revolve _ | Loft _ | Sweep _ | Mesh _ -> ()
     end
   in
   go s;

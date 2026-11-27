@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { el } from './timeline.js';
 import { num, choice, row, OPS } from './dialogs.js';
+import { sketchPlane } from './sketch_parse.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(10)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
@@ -133,4 +134,72 @@ export function holes(d, sk, back) {
     },
   });
   preview();
+}
+
+// Esquisses du code avec leur plan (« place X » d'une feature, ou « let planN » de esquisseN).
+function sketchTargets(d) {
+  const code = d.ctx.codeText(), planes = d.ctx.allPlanes();
+  return [...code.matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => m[1]).map((name) => {
+    const k = /(\d+)$/.exec(name)?.[1], own = k && new RegExp(`let plan${k} = `).test(code) ? `plan${k}` : null;
+    const pl = sketchPlane(code, name, planes)?.code ?? own;
+    return pl ? { name, plane: /^[a-z_][\w']*$/.test(pl) ? pl : `(${pl})` } : null;
+  }).filter(Boolean);
+}
+// Esquisse posée seule dans le code (plan compris), sans feature.
+const sketchDecl = (sk, n) => `  let plan${n} = ${sk.planeCode} in\n  let%sketch esquisse${n} =\n${sk.code}  in\n`;
+export function keep(d, sk) { d.ctx.insertLets(sketchDecl(sk, d.ctx.nextIndex())); d.close(); }
+
+// Lissage (ch. 3, Loft) : solide réglé entre le contour de l'esquisse qu'on termine et celui
+// d'une esquisse déjà dans le code (Shape.loft), ou esquisse gardée seule pour un lissage à
+// venir (dans les deux cas, « let planN = … » la place).
+export function loft(d, sk, back) {
+  const others = sketchTargets(d);
+  const P = { to: others.length ? others[others.length - 1].name : '', op: 'join' };
+  const decl = (n) => sketchDecl(sk, n);
+  d.open('LISSAGE', [
+    others.length
+      ? row('Vers l’esquisse', choice(Object.fromEntries(others.map((o) => [o.name, o.name])), P.to, (v) => { P.to = v; }))
+      : el('div', { className: 'hint', textContent: 'Aucune autre esquisse : gardez celle-ci, puis dessinez la seconde sur un autre plan.' }),
+    row('Opération', d.ctx.isEmpty() ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; })),
+    row('Esquisse seule', Object.assign(el('button', { textContent: 'Garder l’esquisse', id: 'loft-keep' }), {
+      onclick: () => keep(d, sk),
+    })),
+  ], {
+    key: 'loft', cancel: back,
+    ok: () => {
+      const o = others.find((x) => x.name === P.to);
+      if (!o) return false;
+      const n = d.ctx.nextIndex(), name = `lissage${n}`;
+      d.ctx.insert(`${decl(n)}  let%feat ${name} = Shape.loft [ (${o.plane}, ${o.name}); (plan${n}, esquisse${n}) ] in\n`, name, P.op, n);
+    },
+  });
+}
+
+// Balayage (ch. 3, Sweep) : le profil d'une esquisse du code suit le chemin formé par les
+// lignes ouvertes de l'esquisse qu'on termine (une seule ligne brisée), posé perpendiculaire
+// à son départ (Shape.sweep). Le chemin est écrit dans le plan de l'esquisse.
+export function sweep(d, sk, back) {
+  const key = (p) => `${Math.round(p.x * 1e6)},${Math.round(p.y * 1e6)}`, adj = new Map(), at = new Map();
+  for (const [a, b] of sk.ribs) for (const [p, q] of [[a, b], [b, a]]) { at.set(key(p), p); adj.set(key(p), [...(adj.get(key(p)) ?? []), key(q)]); }
+  const ends = [...adj].filter(([, v]) => v.length === 1).map(([k]) => k);
+  if ([...adj.values()].some((v) => v.length > 2) || ends.length !== 2) { d.ctx.notify('Balayage : le chemin doit être une seule ligne brisée ouverte.', true); back(); return; }
+  const path = [ends[0]];
+  while (path.length <= sk.ribs.length) path.push(adj.get(path[path.length - 1]).find((k) => k !== path[path.length - 2]));
+  const pts = path.map((k) => at.get(k));
+  const others = sketchTargets(d);
+  if (!others.length) { d.ctx.notify('Balayage : gardez d’abord une esquisse de profil (bouton Garder).', true); back(); return; }
+  const P = { prof: others[others.length - 1].name, op: 'join' };
+  d.open('BALAYAGE', [
+    row('Chemin', el('span', { className: 'hint', textContent: `${pts.length - 1} segment(s)` })),
+    row('Profil', choice(Object.fromEntries(others.map((o) => [o.name, o.name])), P.prof, (v) => { P.prof = v; })),
+    el('div', { className: 'hint', textContent: 'Le profil est posé perpendiculairement au départ du chemin.' }),
+    row('Opération', d.ctx.isEmpty() ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; })),
+  ], {
+    key: 'sweep', cancel: back,
+    ok: () => {
+      const n = d.ctx.nextIndex(), name = `balayage${n}`;
+      const list = pts.map((p) => `(${litp(Math.round(p.x * 1000) / 1000 + 0)}, ${litp(Math.round(p.y * 1000) / 1000 + 0)})`).join('; ');
+      d.ctx.insert(`  let plan${n} = ${sk.planeCode} in\n  let%feat ${name} =\n    Shape.sweep ${P.prof} (List.map (fun (x, y) -> Geom.Frame.apply plan${n} (Geom.V3.v x y 0.)) [ ${list} ])\n  in\n`, name, P.op, n);
+    },
+  });
 }

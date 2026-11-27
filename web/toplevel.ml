@@ -1,9 +1,8 @@
-(* Worker de l'éditeur : toplevel OCaml + ppx camlcad + noyau manifold-3d.
-
-   Protocole (objets JS) :
+(* Worker de l'éditeur : toplevel OCaml + ppx camlcad + noyau manifold-3d. Protocole (objets JS) :
    entrée  {kind:"eval", id, code, overrides:[[nom, valeur]...]}
            {kind:"params", id, overrides}     (réévalue le dernier modèle, sans recompiler)
            {kind:"feature", id, fid}          (maillage d'une feature du dernier journal)
+           {kind:"file", name, data}          (fichier importé, data : Uint8Array ; sans réponse)
            {kind:"pose", id, overrides}       (mécanisme : pilotes → pose résolue)
            {kind:"pick", id, point:[x,y,z]}   (feature sous un point de la surface)
            {kind:"export3mf", id}             (dernier résultat ; mécanisme : pièces à la pose courante)
@@ -11,20 +10,17 @@
              (réécrit [code] pour la feature [fid] du dernier journal, voir Cad.Source_edit ;
               op : "literals" | "set_literal" | "promote" | "suppress" | "rename" | "delete")
            {kind:"sketch", id, sketch}         (résout une esquisse décrite comme Cad.Sketch_desc.t :
-             {points:[[x,y,fixe]], lines:[[i,j]], circles:[[c,r]],
-              constraints:[{kind, refs:[...], value?}], loops:[[i...]]})
+             {points:[[x,y,fixe]], lines:[[i,j]], circles:[[c,r]], constraints:[{kind, refs, value?}], loops})
    sortie  {kind:"ready", ms}
            {kind:"result", id, ok, journal, error, vertices, triangles, timings}
            {kind:"feature", id, fid, vertices, triangles}
-           mécanisme : {kind:"result", mode:"mech", parts:[{name, color, vertices, triangles}],
-             coords:[{name, lo, hi, unit}], matrices (16 par pièce), interferences, pose}
+           mécanisme : {kind:"result", mode:"mech", parts, coords:[{name, lo, hi, unit}], matrices, interferences, pose}
            {kind:"pose", id, ok, matrices, interferences, pose, error}
            {kind:"pick", id, fid}             (fid = -1 si aucune)
            {kind:"export3mf", id, data}       (Uint8Array, paquet 3MF)
            {kind:"sketch", id, ok, points:[[x,y]], radii, dof, redundant, code, error}
            {kind:"edit", id, op, ok, code, error, literals:[{value, int, label, before, text, after}]}
-   [journal] est la chaîne JSON de [Cad.Journal_json] ; [error] vaut null ou
-   {message, line, col, end_line, end_col} (lignes à partir de 1). *)
+   [journal] : JSON de [Cad.Journal_json] ; [error] : null ou {message, line, col, end_line, end_col}. *)
 
 open Js_of_ocaml
 module Top = Js_of_ocaml_toplevel
@@ -394,5 +390,9 @@ let () =
              let c i = Js.float_of_number (Js.Unsafe.get (Js.Unsafe.get d "point") i) in
              pick id (Geom.V3.v (c 0) (c 1) (c 2))
          | "feature" -> feature id (int_of_float (Js.float_of_number (Js.Unsafe.get d "fid")))
+         | "file" (* STL importé, lu par Cad_export.Stl.of_file "nom" *) ->
+             let name = Filename.concat (Sys.getcwd ()) (Js.to_string (Js.Unsafe.get d "name")) in
+             let content = Typed_array.String.of_uint8Array (Js.Unsafe.get d "data") in
+             if Sys.file_exists name then Sys_js.update_file ~name ~content else Sys_js.create_file ~name ~content
          | k -> prerr_endline ("message inconnu : " ^ k)));
   post (obj [ ("kind", str "ready"); ("ms", num (now () -. t0)) ]) (Js.Unsafe.inject (Js.array [||]))

@@ -64,6 +64,25 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `echelle.spec.js` | Black Book ch. 6 : pièce ×2 autour de son centre (volume × 8), puis z × 0,5 |
 | `ajuster.spec.js` | Black Book ch. 2 : deux rectangles chevauchants, quatre morceaux intérieurs ajustés (T), un contour extrudé (volume de l'union) |
 | `prolonger.spec.js` | Black Book ch. 2 : ligne prolongée jusqu'au bord d'un rectangle, ligne coupée au croisement puis bout ajusté |
+| `lissage.spec.js` | Black Book ch. 3 : carré gardé seul sur XY, cercle sur un plan décalé, lissage (Shape.loft, volume) |
+| `balayage.spec.js` | Black Book ch. 3 : cercle gardé seul, chemin en L, balayage (Shape.sweep, coude en onglet, volume) |
+| `depouille.spec.js` | Black Book ch. 3 : carré de 20 extrudé de 10 avec dépouille atan(0,5) : tronc de pyramide (volume) |
+| `etude.spec.js` | Black Book ch. 7 : bielle-manivelle, étude de mouvement à trois étapes lue dans la vue |
+| `texte.spec.js` | Black Book ch. 2 et 3 : texte en relief puis gravé sur le dessus d'un pavé (Cad_parts.Text, volumes) |
+| `esquisse_points.spec.js` | Black Book ch. 2 : rectangle par trois points (aire), cercles par deux et trois points, arc par trois points |
+| `couches.spec.js` | Impression 3D : 150 couches de 0,2 mm sur l'équerre, première couche (contour), couche du milieu au clavier, couches de 0,3 mm |
+| `esquisse_construction.spec.js` | Black Book ch. 2 : hexagone circonscrit (apothème), rectangle passé en construction (X) puis rétabli, seul l'hexagone extrudé |
+| `importer.spec.js` | Black Book ch. 1 : STL binaire choisi au sélecteur de fichiers, corps importé (volume), revenu après rechargement |
+| `exemplaires.spec.js` | Impression 3D : 4 puis 16 équerres en grille, encombrement, écart, STL à 4 × les triangles |
+| `copier.spec.js` | Black Book ch. 6 : pavé copié à 30 mm, puis la paire copiée tournée de 90° (volume × 4) |
+| `trou_serrure.spec.js` | Black Book ch. 2 : cercle et rectangle ajustés en trou de serrure (un contour lignes + arc, aire) |
+| `liaison_limites.spec.js` | Black Book ch. 7 : pivot créé avec limites 0°–90° et position initiale 30°, curseur borné |
+| `apparence.spec.js` | Black Book ch. 6 et 10 : équerre en PLA rouge puis en aluminium, apparence revenue après rechargement |
+| `jusqua.spec.js` | Black Book ch. 3 : cylindre extrudé « jusqu'à » la face du dessus d'une boîte (h = 10, volume) |
+| `revolution_sym.spec.js` | Black Book ch. 3 : demi-tour symétrique autour de l'axe de l'esquisse (boîte englobante) |
+| `reseau_sym.spec.js` | Black Book ch. 4 : trois boîtes au pas de 30 centrées sur l'original (−30 à 50 en x, volume × 3) |
+| `epaisseur.spec.js` | Black Book ch. 8 : bac à parois de 1 mm (coque), épaisseur minimale 1 mm, parois sous le seuil colorées |
+| `oblong_centre.spec.js` | Black Book ch. 2 : oblong par le centre, extrudé (centré, volume) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

@@ -167,25 +167,98 @@ du cache Playwright).
   jusqu'à la première ligne rencontrée et y reste, « sur la droite ») et Couper (la ligne
   cliquée et celle qui la croise sont scindées au point commun, les contours passent par lui).
   Scénario `prolonger.spec.js`.
+- Lot 48, chapitre 3 (Loft) : `Kernel.S.of_mesh` (manifold natif par MeshGL, JS par `Mesh`),
+  module pur `Loft` (contours rééchantillonnés en gardant leurs sommets, alignés, extrémités
+  triangulées par oreilles ; test d'expectation : prisme, tronc de pyramide exact) et
+  `Shape.loft [ (plan, profil); … ]`, loi « lissage » dans les suites. Bouton Lissage de la
+  palette : garder l'esquisse seule, ou lisser vers une esquisse du code. Scénario
+  `lissage.spec.js` (carré sur XY → cercle sur un plan décalé).
+- Lot 49, chapitre 3 (Sweep) : `Loft.sweep_sections` (repère par sommet, x transporté
+  parallèlement, coudes en onglet : volume = aire × longueur du chemin, testé) et
+  `Shape.sweep profil chemin`, loi « balayage » dans les suites. Palette : bouton Garder
+  (esquisse seule, sans feature, comme « Terminer l'esquisse » de Fusion) et Balayage (les
+  lignes ouvertes forment le chemin, une esquisse gardée le profil). Scénario `balayage.spec.js`.
+- Lot 50, chapitre 3 (Extrude, Taper Angle) : `Shape.extrude ?taper` (degrés, contour du haut
+  décalé en onglet par `Loft.offset_outline`, solide réglé par `of_mesh` ; tests d'expectation
+  et loi « dépouille » : tronc de pyramide exact), champ Dépouille du dialogue d'extrusion
+  (aperçu approché). Scénario `depouille.spec.js`.
+- Lot 51, chapitre 7 (Motion Study) : commande Étude de l'onglet MÉCANISME : une articulation
+  menante, des étapes (temps, valeur ; « + Étape » prend la pose actuelle), lecture interpolée
+  qui pilote le mécanisme et s'arrête sur la dernière étape. Scénario `etude.spec.js`.
+- Lot 52, chapitres 2 et 3 (Text, Emboss) : `Cad_parts.Text` (police à traits A-Z, 0-9,
+  ponctuation ; minuscules et accents ramenés ; contrat, test d'expectation, loi « texte »),
+  commande Texte sur une face cliquée : relief (Joindre) ou gravure (Couper), hauteur,
+  épaisseur, rotation ; axe du texte = X du monde projeté sur la face. Scénario `texte.spec.js`.
+- Lot 53, chapitre 2 (3-Point Rectangle, 2-Point / 3-Point Circle, 3-Point Arc) : outils à
+  trois clics de l'esquisse (rectangle incliné : perpendiculaire et parallèles ; cercle par
+  trois points : « sur le cercle » ; arc par début, fin et un point) et cercle par deux points
+  (centre au milieu du diamètre), dans le menu ▾ de CRÉER. Scénario `esquisse_points.spec.js`.
+- Lot 54, chapitre 1 (3D Print, aperçu façon trancheur) : dans le dialogue Impression 3D,
+  hauteur de couche (0,1 à 0,3 mm) et curseur de couche : la pièce orientée est coupée en haut
+  de la couche, le contour de la couche (intersection du maillage) tracé en orange, sa
+  longueur affichée. Scénario `couches.spec.js`.
+- Lot 55, chapitre 2 (Polygon circumscribed, Construction) : polygone circonscrit (centre,
+  milieu d'un côté ; cote : apothème par « distance point-droite ») et bascule profil ↔
+  construction des lignes sélectionnées (touche X ou bouton Construction ; contours
+  recalculés). Scénario `esquisse_construction.spec.js` (volume de l'hexagone seul).
+- Lot 56, chapitre 1 (Insert Mesh) : `Shape.of_mesh` et `Cad_export.Stl.of_file` (contrats,
+  loi « maillage importé »), message `file` du worker (système de fichiers du toplevel),
+  commande Insérer STL : le fichier choisi est gardé dans le navigateur et redonné au worker à
+  chaque démarrage ; le code le lit par son nom. Scénario `importer.spec.js` (volume, reprise
+  après rechargement).
+- Lot 57, impression 3D (Arrange) : exemplaires (1 à 64) en grille centrée avec un écart,
+  dans l'aperçu, l'encombrement, les couches et le STL exporté. Scénario `exemplaires.spec.js`.
+- Lot 58, chapitre 6 (Move/Copy, Create Copy) : case Copie du dialogue Déplacer : l'original
+  reste et la copie déplacée y est jointe (`copieN`). Scénario `copier.spec.js` (volume × 4).
+- Lot 59, chapitre 2 (Trim contre un cercle) : Ajuster coupe une ligne aux cercles (sommet
+  « sur le cercle ») et un cercle cliqué devient l'arc restant entre ses intersections
+  voisines, les lignes scindées à ses extrémités ; les contours se recalculent avec les arcs
+  (lignes et arcs, format `{a}`/`{r}`). Scénario `trou_serrure.spec.js` (aire de l'union).
+- Lot 60, chapitre 7 (Joint Limits, Rest Position) : limites et position initiale dans le
+  dialogue Liaison (`~limits`, `~init` de `Joint.revolute` / `prismatic`), vérifiées ; le
+  curseur du mouvement les respecte. Scénario `liaison_limites.spec.js`.
+- Lot 61, chapitres 6 et 10 (Appearance) : commande Apparence (PLA de couleurs, PETG
+  translucide, aluminium, laiton), appliquée dans tous les styles de vue et gardée dans le
+  navigateur. Scénario `apparence.spec.js`.
+- Lot 62, chapitre 3 (Extrude, Extent « To ») : bouton « Jusqu'à… » du dialogue d'extrusion :
+  on clique une face plane parallèle, la distance et le sens en sont tirés (valeur écrite en
+  littéral). Scénario `jusqua.spec.js`.
+- Lot 63, chapitre 3 (Revolve, Symmetric) : case Symétrique de la révolution (angle réparti
+  de part et d'autre du plan d'esquisse). Scénario `revolution_sym.spec.js` (boîte englobante).
+- Lot 64, chapitre 4 (Rectangular Pattern, Symmetric) : case Symétrique du réseau
+  rectangulaire (copies centrées sur l'original). Scénario `reseau_sym.spec.js`.
+- Lot 65, chapitre 8 (Inspect) pour l'impression 3D : analyse d'épaisseur (rayon le long de la
+  normale rentrante de chaque triangle) : épaisseur minimale, parois sous le seuil en rouge,
+  sous le double en jaune, part de surface trop fine. Scénario `epaisseur.spec.js` (bac à
+  parois de 1 mm).
+- Lot 67, chapitre 2 (Center Point Slot) : oblong par le centre (centre, centre d'une
+  extrémité ; centre tenu au milieu par une ligne de construction). Scénario `oblong_centre.spec.js`.
 
 ## En cours
-- Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
-  branche `claude/project-thread-tywefr` est remise sur `origin/main`, le lot y est appliqué
-  (cherry-pick), l'ancienne branche distante fusionnée sans changement (le mode auto refuse
-  le force-push), puis PR, CI, fusion.
+- Fin du sprint (27/11, 6 h) : les lots 44 à 65 partent en PR groupées de 2 à 6 lots (la CI
+  prend ~15 min par PR, le job `ui` grossit avec les scénarios). Une PR rouge se corrige dans
+  la PR suivante (ex. PR 44 : scénario des paramètres trop pressé sur une CI lente).
+- Méthode : chaque lot est un commit ; la branche `claude/project-thread-tywefr` est remise sur
+  `origin/main`, les lots y sont appliqués (cherry-pick), l'ancienne branche distante fusionnée
+  sans changement (le mode auto refuse le force-push), puis PR, CI, fusion.
 
 ## Suivant (ordre proposé)
-- Chapitre 2 : ajuster, prolonger, couper contre cercles et arcs, texte d'esquisse, cote de
-  l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
-- Chapitre 3 : balayage (Sweep) et lissage (Loft) — demandent `Shape.sweep` / `loft` au noyau.
+- Chapitre 2 : ajuster un arc, prolonger et couper contre cercles et arcs d'esquisse, cote de
+  l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue ;
+  texte dans l'esquisse elle-même (police à contours).
+- Chapitre 3 : lissage et balayage de profils à trous, chemin courbe (arcs, courbes).
 - Chapitre 6 : coque d'un corps quelconque.
-- Chapitre 7 : liaisons choisies dans la vue (ports affichés), étude de mouvement.
+- Chapitre 7 : liaisons choisies dans la vue (ports affichés) ; étude de mouvement enregistrée dans le code.
 - Frise : réordonner les étapes par glisser (Source_edit « move »).
 
 ## Écarts connus avec Fusion (pas encore traités)
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Coque seulement pour une extrusion simple ; centre d'échelle écrit en littéral.
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
+- Le dialogue Paramètres lit le dernier journal : ouvert pendant une réévaluation, il montre
+  l'état précédent (le rouvrir suffit).
+- Lissage, balayage, dépouille : profils simples (sans trou) ; « Jusqu'à » et texte écrivent des
+  littéraux (pas liés à la face si elle bouge).
 - Choix des profils par cases, pas encore par clic sur la région dans la vue.
 - Plans de face, nervures, tuyaux et perçages aux points : géométrie écrite en littéral
   (pas liée à la pièce si elle change).

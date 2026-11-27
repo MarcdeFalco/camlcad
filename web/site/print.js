@@ -4,13 +4,14 @@
 import * as THREE from 'three';
 import { el, fmt, stlBlob } from './timeline.js';
 import { choice, row } from './dialogs.js';
+import { Layers } from './print_layers.js';
 
 export const PRINTERS = { mk4: ['Prusa MK4', 250, 210, 220], bambu: ['Bambu Lab X1/P1', 256, 256, 256], ender: ['Creality Ender 3', 220, 220, 250], mini: ['Prusa Mini', 180, 180, 180] };
 const COS45 = Math.SQRT1_2;
 
 export class Print3D {
   // ctx : viewport, dialogs, notify, mesh() (maillage évalué), download(blob, ext, nom), name()
-  constructor(ctx) { this.ctx = ctx; this.preview = null; this.plate = null; this.q = new THREE.Quaternion(); this.printer = 'mk4'; }
+  constructor(ctx) { this.ctx = ctx; this.preview = null; this.plate = null; this.q = new THREE.Quaternion(); this.printer = 'mk4'; this.layers = new Layers(this); this.copies = 1; this.gap = 5; }
   get active() { return this.preview != null; }
 
   open() {
@@ -21,7 +22,10 @@ export class Print3D {
     this.ctx.dialogs.open('IMPRESSION 3D', [
       row('Imprimante', choice(Object.fromEntries(Object.entries(PRINTERS).map(([k, p]) => [k, `${p[0]} (${p[1]} × ${p[2]} × ${p[3]})`])), this.printer, (v) => { this.printer = v; this.update(); })),
       el('div', { className: 'hint', textContent: 'Cliquez la face à poser sur le plateau. Rouge : surplombs de plus de 45° (supports).' }),
+      row('Exemplaires', Object.assign(el('input', { type: 'number', min: 1, max: 64, step: 1, value: this.copies, id: 'print-copies' }), { oninput: (e) => { const n = Math.round(Number(e.target.value)); if (n >= 1 && n <= 64) { this.copies = n; this.update(); } } }),
+        el('span', { className: 'unit', textContent: 'écart' }), Object.assign(el('input', { type: 'number', min: 0, step: 'any', value: this.gap, id: 'print-gap' }), { oninput: (e) => { const g = Number(e.target.value); if (g >= 0) { this.gap = g; this.update(); } } }), el('span', { className: 'unit', textContent: 'mm' })),
       info,
+      ...this.layers.rows(),
       Object.assign(el('button', { textContent: 'Exporter le STL orienté' }), { onclick: () => this.export() }),
     ], { key: 'print', okLabel: 'Fermer', cancel: false });
     this.ctx.dialogs.ctx.onCloseExtra = () => this.close();
@@ -36,9 +40,19 @@ export class Print3D {
       v.set(V[3 * i], V[3 * i + 1], V[3 * i + 2]).applyQuaternion(this.q);
       for (let k = 0; k < 3; k++) { out[3 * i + k] = v.getComponent(k); lo[k] = Math.min(lo[k], out[3 * i + k]); hi[k] = Math.max(hi[k], out[3 * i + k]); }
     }
-    const sh = [-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]];
+    const sh = [-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]], size = hi.map((h, k) => h - lo[k]);
     for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) out[3 * i + k] += sh[k];
-    return { vertices: out, triangles: T, size: hi.map((h, k) => h - lo[k]) };
+    // Exemplaires (Arrange) : grille presque carrée, centrée, écart this.gap entre les pièces.
+    const c = this.copies;
+    if (c <= 1) return { vertices: out, triangles: T, size };
+    const cols = Math.ceil(Math.sqrt(c)), rows = Math.ceil(c / cols), sx = size[0] + this.gap, sy = size[1] + this.gap;
+    const V2 = new Float32Array(out.length * c), T2 = new T.constructor(T.length * c);
+    for (let k = 0; k < c; k++) {
+      const dx = ((k % cols) - (cols - 1) / 2) * sx, dy = (Math.floor(k / cols) - (rows - 1) / 2) * sy;
+      for (let i = 0; i < n; i++) { V2[3 * (k * n + i)] = out[3 * i] + dx; V2[3 * (k * n + i) + 1] = out[3 * i + 1] + dy; V2[3 * (k * n + i) + 2] = out[3 * i + 2]; }
+      for (let t = 0; t < T.length; t++) T2[k * T.length + t] = T[t] + k * n;
+    }
+    return { vertices: V2, triangles: T2, size: [cols * sx - this.gap, rows * sy - this.gap, size[2]] };
   }
 
   update() {
@@ -75,6 +89,7 @@ export class Print3D {
       el('div', { id: 'print-over', textContent: `Surplombs : ${fmt(Math.round(over))} mm² (${fmt(Math.round((100 * over) / total))} % de la surface)` }));
     this.fits = fits; this.overhang = over;
     this.plate.updateMatrixWorld(true); vp.fit([this.plate]);
+    this.lastO = o; this.layers.reset();
   }
 
   // Clic sur la pièce affichée : la face plane touchée va sur le plateau (normale vers −z).
@@ -92,6 +107,7 @@ export class Print3D {
 
   clear(keepPart) {
     const vp = this.ctx.viewport;
+    this.layers.clear();
     for (const o of [this.preview, this.plate]) if (o) { vp.scene.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.dispose?.(); }); }
     this.preview = this.plate = null;
     if (!keepPart) { if (vp.part) vp.part.visible = true; if (vp.edges) vp.edges.visible = vp.style === 0; if (vp.grid) vp.grid.visible = true; }

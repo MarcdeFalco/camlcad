@@ -46,6 +46,21 @@ function polygon(ed, o, q, n) {
   return true;
 }
 
+// Polygone circonscrit : q est le milieu d'un côté ; la cote est l'apothème (distance du
+// centre au côté), côtés et rayons égaux.
+function cpolygon(ed, o, q, n) {
+  const O = ed.pts[o], r = Math.hypot(q.x - O.x, q.y - O.y), a0 = Math.atan2(q.y - O.y, q.x - O.x), R = r / Math.cos(Math.PI / n);
+  if (r < 1e-6) return false;
+  const vs = Array.from({ length: n }, (_, k) => { const a = a0 - Math.PI / n + (2 * Math.PI * k) / n; return add(ed, O.x + R * Math.cos(a), O.y + R * Math.sin(a)); });
+  const l = ed.lines.length;
+  vs.forEach((v, k) => ed.lines.push([v, vs[(k + 1) % n]]));
+  vs.forEach((v) => ed.lines.push([o, v]));
+  ed.loops.push(vs);
+  for (let k = 1; k < n; k++) { cons(ed, 'equal_length', [l, l + k]); cons(ed, 'equal_length', [l + n, l + n + k]); }
+  cons(ed, 'point_line_distance', [o, l], r);
+  return true;
+}
+
 function circle(ed, c, q) {
   const C = ed.pts[c];
   ed.circles.push({ c, r: Math.max(0.5, Math.hypot(q.x - C.x, q.y - C.y)) });
@@ -78,12 +93,79 @@ export function inferPoint(ed, q, n) {
 
 // Outils à deux clics : nom → [création, texte de la mesure pendant le tracé].
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
+// Cercle par deux points (diamètre) : centre au milieu d'une ligne de construction.
+function circle2(ed, a, q) {
+  const A = ed.pts[a];
+  if (Math.hypot(q.x - A.x, q.y - A.y) < 1e-3) return false;
+  const b = ed.pointAt(q), B = ed.pts[b], c = add(ed, (A.x + B.x) / 2, (A.y + B.y) / 2), l = ed.lines.length, ci = ed.circles.length;
+  ed.lines.push([a, b]);
+  ed.circles.push({ c, r: Math.hypot(B.x - A.x, B.y - A.y) / 2 });
+  cons(ed, 'midpoint', [c, l]); cons(ed, 'on_circle', [a, ci]);
+  return true;
+}
+
+// Centre du cercle passant par trois points (null s'ils sont alignés).
+function circumcenter(A, B, Q) {
+  const d = 2 * (A.x * (B.y - Q.y) + B.x * (Q.y - A.y) + Q.x * (A.y - B.y));
+  if (Math.abs(d) < 1e-9) return null;
+  const a2 = A.x * A.x + A.y * A.y, b2 = B.x * B.x + B.y * B.y, q2 = Q.x * Q.x + Q.y * Q.y;
+  return { x: (a2 * (B.y - Q.y) + b2 * (Q.y - A.y) + q2 * (A.y - B.y)) / d, y: (a2 * (Q.x - B.x) + b2 * (A.x - Q.x) + q2 * (B.x - A.x)) / d };
+}
+
+// Outils à trois clics (deux points, puis q) : rectangle par trois points (incliné), cercle
+// par trois points, arc par trois points (début, fin, un point de l'arc).
+export const THREE_CLICK = {
+  rect3(ed, a, b, q) {
+    const A = ed.pts[a], B = ed.pts[b], L = Math.hypot(B.x - A.x, B.y - A.y);
+    if (L < 1e-6) return false;
+    const n = { x: -(B.y - A.y) / L, y: (B.x - A.x) / L }, w = (q.x - A.x) * n.x + (q.y - A.y) * n.y;
+    if (Math.abs(w) < 1e-6) return false;
+    const c = add(ed, B.x + w * n.x, B.y + w * n.y), d = add(ed, A.x + w * n.x, A.y + w * n.y), l = ed.lines.length;
+    ed.lines.push([a, b], [b, c], [c, d], [d, a]);
+    ed.loops.push([a, b, c, d]);
+    cons(ed, 'perpendicular', [l, l + 1]); cons(ed, 'parallel', [l, l + 2]); cons(ed, 'parallel', [l + 1, l + 3]);
+    return true;
+  },
+  circle3(ed, a, b, q) {
+    const O = circumcenter(ed.pts[a], ed.pts[b], q);
+    if (!O) return false;
+    const p = ed.pointAt(q), c = add(ed, O.x, O.y), ci = ed.circles.length;
+    ed.circles.push({ c, r: Math.hypot(q.x - O.x, q.y - O.y) });
+    for (const x of [a, b, p]) cons(ed, 'on_circle', [x, ci]);
+    return true;
+  },
+  arc3(ed, a, b, q) {
+    const A = ed.pts[a], B = ed.pts[b], O = circumcenter(A, B, q);
+    if (!O) return false;
+    const ang = (P) => Math.atan2(P.y - O.y, P.x - O.x), tau = 2 * Math.PI, ccw = (x, y) => (((y - x) % tau) + tau) % tau;
+    const c = add(ed, O.x, O.y), through = ccw(ang(A), ang(q)) < ccw(ang(A), ang(B));
+    ed.arcs.push(through ? { c, a, b } : { c, a: b, b: a });
+    return true;
+  },
+};
+
+// Oblong par le centre (ch. 2, Center Point Slot) : centre, puis centre d'une extrémité ;
+// l'autre centre est symétrique, le centre reste au milieu (ligne de construction).
+function cslot(ed, o, q) {
+  const O = ed.pts[o];
+  if (Math.hypot(q.x - O.x, q.y - O.y) < 1e-6) return false;
+  const c1 = add(ed, 2 * O.x - q.x, 2 * O.y - q.y);
+  if (!slot(ed, c1, q)) return false;
+  const c2 = ed.arcs[ed.arcs.length - 1].c, l = ed.lines.length;
+  ed.lines.push([c1, c2]);
+  cons(ed, 'midpoint', [o, l]);
+  return true;
+}
+
 export const TWO_CLICK = {
+  cslot: [cslot, (A, q) => `entraxe ${fmt(2 * Math.hypot(q.x - A.x, q.y - A.y))} mm`],
+  circle2: [circle2, (A, q) => `Ø ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   rect: [rect2, (A, q) => `${fmt(Math.abs(q.x - A.x))} × ${fmt(Math.abs(q.y - A.y))} mm`],
   crect: [rectCenter, (A, q) => `${fmt(2 * Math.abs(q.x - A.x))} × ${fmt(2 * Math.abs(q.y - A.y))} mm`],
   circle: [circle, (A, q) => `R ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   slot: [slot, (A, q) => `entraxe ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
   polygon: [polygon, (A, q) => `R ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
+  cpolygon: [cpolygon, (A, q) => `apothème ${fmt(Math.hypot(q.x - A.x, q.y - A.y))} mm`],
 };
 
 // Contour élastique (pointillés) de l'outil en cours, en coordonnées du plan.

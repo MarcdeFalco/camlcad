@@ -4,7 +4,8 @@
 // chevauchent donnent, après ajustement des morceaux intérieurs, un seul contour.
 // Prolonger (Extend) : l'extrémité libre la plus proche du clic va jusqu'à la première ligne
 // rencontrée. Couper (Break) : la ligne cliquée et celle qui la croise sont scindées au point
-// d'intersection le plus proche du clic. Lignes seulement (cercles et arcs : pas encore).
+// d'intersection le plus proche du clic. Ajuster coupe aussi contre les cercles, et un cercle
+// cliqué devient un arc (trou de serrure) ; Prolonger et Couper : lignes seulement.
 import { deleteSelection } from './sketch_delete.js';
 import { SketchMarks } from './sketch_marks.js';
 
@@ -38,14 +39,14 @@ function split(ed, j, n) {
 
 // Ligne la plus proche du clic (sous la tolérance) et paramètre du clic sur elle.
 function nearestLine(ed, q) {
-  let li = -1, best = ed.tol(), tc = 0;
+  let li = -1, best = ed.tol(), tc = 0, dd = Infinity;
   ed.lines.forEach(([a, b], i) => {
     const A = ed.pts[a], B = ed.pts[b], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1;
     const t = Math.max(0, Math.min(1, ((q.x - A.x) * dx + (q.y - A.y) * dy) / L2));
     const d = Math.hypot(A.x + t * dx - q.x, A.y + t * dy - q.y);
-    if (d < best) { best = d; li = i; tc = t; }
+    if (d < best) { best = d; li = i; tc = t; dd = d; }
   });
-  return { li, tc };
+  return { li, tc, d: dd };
 }
 const degree = (ed, p) => ed.lines.filter((l) => l.includes(p)).length;
 
@@ -96,20 +97,29 @@ export function breakAt(ed, q) {
 
 // ed : SketchEditor ; q : clic (coordonnées du plan). true si l'esquisse a changé.
 export function trimAt(ed, q) {
-  const { li, tc } = nearestLine(ed, q);
-  if (li < 0) return false;
+  const { li, tc, d } = nearestLine(ed, q);
+  let ci = -1, dc = ed.tol();
+  ed.circles.forEach((c, i) => { const C = ed.pts[c.c], e = Math.abs(Math.hypot(q.x - C.x, q.y - C.y) - c.r); if (e < dc && e < d) { dc = e; ci = i; } });
+  if (li < 0 && ci < 0) return false;
   // Arêtes de profil (dans une boucle de lignes) avant l'opération.
   const profile = new Set();
   for (const l of ed.loops) if (l.every((x) => typeof x === 'number')) l.forEach((p, k) => profile.add(key(p, l[(k + 1) % l.length])));
   // Arêtes de profil d'un contour ouvert par un ajustement précédent (pas encore refermé).
   for (const k of ed.openProfile ?? []) if (ed.lines.some(([a, b]) => key(a, b) === k)) profile.add(k);
+  if (ci >= 0) return trimCircle(ed, ci, q, profile);
   const [p, q2] = ed.lines[li], P = ed.pts[p], Q = ed.pts[q2];
   const hits = [];
   ed.lines.forEach(([a, b], j) => { if (j !== li) { const x = cross(P, Q, ed.pts[a], ed.pts[b]); if (x) hits.push({ ...x, j }); } });
+  // Cercles qui coupent la ligne : sommet nouveau, « sur le cercle ».
+  ed.circles.forEach(({ c, r }, k) => {
+    const C = ed.pts[c], dx = Q.x - P.x, dy = Q.y - P.y, fx = P.x - C.x, fy = P.y - C.y, qa = dx * dx + dy * dy, qb = 2 * (fx * dx + fy * dy), disc = qb * qb - 4 * qa * (fx * fx + fy * fy - r * r);
+    if (disc > 0) for (const t of [(-qb - Math.sqrt(disc)) / (2 * qa), (-qb + Math.sqrt(disc)) / (2 * qa)]) if (t > EPS && t < 1 - EPS) hits.push({ t, circle: k });
+  });
   const lo = hits.filter((h) => h.t < tc).sort((x, y) => y.t - x.t)[0], hi = hits.filter((h) => h.t > tc).sort((x, y) => x.t - y.t)[0];
   const wasProfile = profile.has(key(p, q2));
   // Sommet à l'intersection : extrémité de l'autre ligne si elle y aboutit, sinon nouveau point qui la scinde.
   const vertex = (h) => {
+    if (h.circle != null) { const n = ed.pts.push({ x: P.x + h.t * (Q.x - P.x), y: P.y + h.t * (Q.y - P.y), fixed: false }) - 1; ed.cons.push({ kind: 'on_circle', refs: [n, h.circle] }); return n; }
     const [a, b] = ed.lines[h.j];
     if (h.s < EPS) return a;
     if (h.s > 1 - EPS) return b;
@@ -140,39 +150,110 @@ export function trimAt(ed, q) {
     const used = (x) => ed.lines.some((l) => l.includes(x)) || ed.circles.some((c) => c.c === x) || ed.arcs.some((a) => [a.c, a.a, a.b].includes(x)) || (ed.ellipses ?? []).some((e) => e.c === x || e.a === x);
     ed.sel = [p, q2].filter((x) => !used(x)).map((i) => ({ kind: 'p', i }));
   }
-  // Boucles de lignes recalculées sur les arêtes de profil (les boucles mixtes restent).
+  return relink(ed, profile, li);
+}
+
+// Après une coupe : la sélection (ligne ou cercle ajusté, points orphelins) est supprimée,
+// puis les contours sont recalculés sur les lignes de profil et les arcs de profil encore
+// ouverts (ed.openArcs) ; les boucles qui ont déjà un arc ou une courbe restent telles quelles.
+function relink(ed, profile, li = -1) {
   const isProf = ed.lines.map(([a, b]) => profile.has(key(a, b)));
   ed.loops = ed.loops.filter((l) => !l.every((x) => typeof x === 'number'));
   if (ed.sel.length) {
     if (ed.sel[0].kind === 'l') isProf.splice(li, 1);
-    deleteSelection(ed); // renumérote points, lignes, contraintes (ordre des lignes conservé)
+    deleteSelection(ed); // renumérote points, lignes, contraintes (ordre des lignes et arcs conservé)
   }
-  const prof = ed.lines.filter((_, i) => isProf[i]), found = cycles(prof);
-  ed.loops.push(...found);
-  const closed = new Set(found.flatMap((l) => l.map((p, k) => key(p, l[(k + 1) % l.length]))));
-  ed.openProfile = prof.map(([a, b]) => key(a, b)).filter((k) => !closed.has(k));
+  const prof = ed.lines.filter((_, i) => isProf[i]);
+  const inLoops = new Set(ed.loops.flatMap((l) => l.filter((x) => typeof x !== 'number' && !x.s).map((x) => x.a ?? x.r)));
+  const arcs = [...(ed.openArcs ?? [])].filter((k) => ed.arcs[k] && !inLoops.has(k));
+  const found = cycles(prof, arcs.map((k) => ({ k, a: ed.arcs[k].a, b: ed.arcs[k].b })));
+  ed.loops.push(...found.loops);
+  ed.openProfile = prof.map(([a, b]) => key(a, b)).filter((k) => !found.lines.has(k));
+  ed.openArcs = new Set(arcs.filter((k) => !found.arcs.has(k)));
   ed.sel = [];
   return true;
 }
 
-// Composantes où chaque sommet a exactement deux arêtes : boucles, points dans l'ordre.
-function cycles(lines) {
-  const adj = new Map(), add = (a, b) => { if (!adj.has(a)) adj.set(a, []); adj.get(a).push(b); };
-  for (const [a, b] of lines) { add(a, b); add(b, a); }
-  const seen = new Set(), out = [];
-  for (const start of adj.keys()) {
-    if (seen.has(start)) continue;
-    const loop = [start]; let prev = null, cur = start, ok = true;
-    seen.add(start);
-    for (;;) {
-      const nb = adj.get(cur);
-      if (nb.length !== 2) ok = false;
-      const next = nb.find((x) => x !== prev) ?? nb[0];
-      if (next === start || next === undefined) break;
-      if (seen.has(next)) { ok = false; break; }
-      seen.add(next); loop.push(next); prev = cur; cur = next;
+// Ajuster un cercle (clic sur le cercle) : le morceau compris entre les intersections voisines
+// (avec les lignes) est retiré, le reste devient un arc de même centre, dont les extrémités
+// sont des sommets des lignes coupées (scindées si besoin). Sans deux intersections : cercle retiré.
+function trimCircle(ed, ci, q, profile) {
+  const { c, r } = ed.circles[ci], C = ed.pts[c], ang = (x, y) => Math.atan2(y - C.y, x - C.x);
+  const hits = [];
+  ed.lines.forEach(([a, b], j) => {
+    const A = ed.pts[a], B = ed.pts[b], dx = B.x - A.x, dy = B.y - A.y, fx = A.x - C.x, fy = A.y - C.y;
+    const qa = dx * dx + dy * dy, qb = 2 * (fx * dx + fy * dy), qc = fx * fx + fy * fy - r * r, disc = qb * qb - 4 * qa * qc;
+    if (qa < 1e-12 || disc < 0) return;
+    for (const t of new Set([(-qb - Math.sqrt(disc)) / (2 * qa), (-qb + Math.sqrt(disc)) / (2 * qa)])) {
+      if (t > -1e-6 && t < 1 + 1e-6) hits.push({ j, t, th: ang(A.x + t * dx, A.y + t * dy) });
     }
-    if (ok && loop.length >= 3 && loop.every((x) => adj.get(x).length === 2)) out.push(loop);
+  });
+  if (hits.length < 2) { ed.sel = [{ kind: 'c', i: ci }]; return relink(ed, profile); }
+  const tau = 2 * Math.PI, ccw = (x) => (((x - ang(q.x, q.y)) % tau) + tau) % tau;
+  hits.sort((u, v) => ccw(u.th) - ccw(v.th));
+  const hi = hits[0], lo = hits[hits.length - 1]; // premier après le clic, dernier avant
+  const vertex = (h) => {
+    const [a, b] = ed.lines[h.j];
+    if (h.t < 1e-6) return a;
+    if (h.t > 1 - 1e-6) return b;
+    const n = ed.pts.push({ x: C.x + r * Math.cos(h.th), y: C.y + r * Math.sin(h.th), fixed: false }) - 1;
+    const prof = profile.has(key(a, b));
+    split(ed, h.j, n);
+    if (prof) { profile.add(key(a, n)); profile.add(key(n, b)); }
+    return n;
+  };
+  const pa = vertex(hi), pb = vertex(lo), k = ed.arcs.push({ c, a: pa, b: pb }) - 1;
+  const rad = ed.cons.find((x) => x.kind === 'radius' && x.refs[0] === ci);
+  if (rad) ed.cons.push({ ...rad, kind: 'arc_radius', refs: [k], value: rad.value });
+  ed.openArcs = new Set([...(ed.openArcs ?? []), k]);
+  ed.sel = [{ kind: 'c', i: ci }];
+  return relink(ed, profile);
+}
+
+// Composantes où chaque sommet a exactement deux arêtes (lignes [a, b], arcs { k, a, b }) :
+// boucles au format de l'éditeur (points ; un arc {a: k} ou {r: k} tient lieu de ses deux
+// extrémités). Rend aussi les clés des lignes et les arcs utilisés.
+function cycles(lines, arcs = []) {
+  const edges = [...lines.map(([u, v]) => ({ u, v, k: null })), ...arcs.map(({ k, a, b }) => ({ u: a, v: b, k }))];
+  const adj = new Map(), add = (x, e) => { if (!adj.has(x)) adj.set(x, []); adj.get(x).push(e); };
+  edges.forEach((e, i) => { add(e.u, i); add(e.v, i); });
+  const used = new Set(), out = { loops: [], lines: new Set(), arcs: new Set() };
+  for (let e0 = 0; e0 < edges.length; e0++) {
+    if (used.has(e0)) continue;
+    const seq = []; let cur = edges[e0].u, e = e0, ok = true;
+    for (;;) {
+      if (adj.get(cur).length !== 2) ok = false;
+      used.add(e);
+      const E = edges[e], to = E.u === cur ? E.v : E.u;
+      seq.push({ e: E, from: cur });
+      if (to === edges[e0].u) break;
+      if (adj.get(to).length !== 2) { ok = false; break; }
+      const next = adj.get(to).find((x) => x !== e);
+      if (next == null || used.has(next)) { ok = false; break; }
+      cur = to; e = next;
+    }
+    const nArcs = seq.filter((x) => x.e.k != null).length;
+    if (!ok || seq.length < (nArcs ? 2 : 3)) continue;
+    // Départ juste après un arc : un arc fournit sa propre extrémité d'arrivée.
+    const s0 = Math.max(0, seq.findIndex((x) => x.e.k != null) + 1), rot = [...seq.slice(s0), ...seq.slice(0, s0)];
+    const items = [];
+    rot.forEach((x, i) => {
+      if (x.e.k != null) { items.push(x.from === x.e.u ? { a: x.e.k } : { r: x.e.k }); out.arcs.add(x.e.k); }
+      else { if (rot[(i - 1 + rot.length) % rot.length].e.k == null) items.push(x.from); out.lines.add(key(x.e.u, x.e.v)); }
+    });
+    out.loops.push(items);
   }
   return out;
+}
+
+// Construction (Black Book ch. 2, touche X) : les lignes sélectionnées passent de profil à
+// construction ou l'inverse ; les contours de lignes sont recalculés sur les lignes de profil.
+export function toggleConstruction(ed) {
+  const lines = ed.sel.filter((s) => s.kind === 'l').map((s) => s.i);
+  if (!lines.length) return false;
+  const profile = new Set(ed.openProfile ?? []);
+  for (const l of ed.loops) if (l.every((x) => typeof x === 'number')) l.forEach((p, k) => profile.add(key(p, l[(k + 1) % l.length])));
+  for (const i of lines) { const k = key(...ed.lines[i]); if (profile.has(k)) profile.delete(k); else profile.add(k); }
+  ed.sel = [];
+  return relink(ed, profile);
 }

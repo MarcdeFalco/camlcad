@@ -27,23 +27,24 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 ## Structure
 - `src/geom` (`Geom`) : V2, V3, Frame, Plane, Axis, Bbox.
 - `src/core` (`Cad`) : Loc, Mesh, Kernel (signature), Profile, Shape, Eval, Doc.
-- `src/export` (`Cad_export`) : Stl, Threemf.
+- `src/export` (`Cad_export`) : Stl (export, relecture, `of_file` des STL importés), Threemf.
 - `test/` : contrats exécutables ; `Fake_kernel` sert à tester `Eval` sans noyau réel.
 - `src/kernel_manifold_native` : Manifold v3.2.1 (même version que le JS) par sa C API, stubs maison ; sans `_manifold/` la bibliothèque compile mais `available () = false`.
 - `test/suites` (`Kernel_suites`) : lois, géométrie des exemples, mécanismes, en foncteurs sur le noyau.
 - `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + géométrie des exemples.
 - `src/core/sketch`, `nlsolve` : esquisses contraintes (monade, poignées typées), Gauss-Newton à pas de norme minimale.
 - `src/core/sketch_desc` : esquisse décrite par l'éditeur (indices, contraintes nommées) → résolution et code `let%sketch`.
+- `src/core/loft` : lissage et balayage (contours → maillage fermé), passé au noyau par `of_mesh`.
 - `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
 - `src/core/source_edit` : réécritures du source depuis la frise (cotes, → paramètre, `[@@suppress]`, renommer, supprimer), lexicales.
-- `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante ; `Thread` : filetages ISO).
+- `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante ; `Thread` : filetages ISO ; `Text` : police à traits).
 - `src/mech` (`Cad_mech`) : `Part` (solide + ports), `Joint` (encastrement, pivot, glissière), `Assembly` (arbre + boucles + couplages résolus par `Nlsolve`, balayage, interférences).
 - `ppx/` (`ppx_cad`) : `let%feat`, `let%param`, `let%sketch` ; positions au format `__POS__` (voir `Loc`).
 - `examples/` (`Cad_examples`) : pièces de référence (support, engrenage, charnière, patte esquissée, bielle-manivelle), `all`.
 - `bin/cad` : CLI natif (résumé, export STL/3MF, mécanismes à la pose de repos).
 - `bin/cad_tree` : `dune exec cad-tree -- PIÈCE -D nom=valeur` → JSON.
 - `web/` : éditeur web (toplevel OCaml + ppx dans un worker, three.js, CodeMirror), voir `web/README.md`.
-- `web/site/` : `main.js` (worker, code, commandes), `viewport.js` (vue, cube de vue), `timeline.js` (frise, navigateur, menu), `dialogs.js` (dialogues de commande), `dialogs_features.js` (perçage, réseau, symétrie, combiner, déplacer), `dialogs_paths.js` (nervure, tuyau), `sketch.js` (éditeur d'esquisse), `sketch_marks.js` (cotes, symboles, élastique), `sketch_tools.js` (outils à deux clics), `sketch_arcs.js` (arcs, oblong, congé), `sketch_copy.js` (symétrie, réseau d'esquisse), `sketch_trim.js` (ajuster, prolonger, couper), `sketch_parse.js` (relire une esquisse pour la modifier), `planes.js` (plans d'origine, faces planes), `code_edit.js` (insertions dans le code), `bodies.js` (corps au retour arrière), `inspect.js` (mesurer, coupe, propriétés), `print.js` (impression 3D : orientation, surplombs ; dialogue de mise en plan), `drawing.js` (mise en plan SVG), `face_commands.js` (commandes sur une face cliquée), `toolbar.js` (menus ▾), `marking.js` (menu du clic droit), `gizmo.js` (flèche de distance), `files.js` (ouvrir, enregistrer, reprise), `expr.js` (cotes en expression de paramètres), `mech.js`, `mech_joint.js` (liaisons au dialogue).
+- `web/site/` : `main.js` (worker, code, commandes), `viewport.js` (vue, cube de vue), `timeline.js` (frise, navigateur, menu), `dialogs.js` (dialogues de commande), `dialogs_features.js` (perçage, réseau, symétrie, combiner, déplacer, échelle), `dialogs_paths.js` (nervure, tuyau, coque, lissage, balayage), `dialogs_text.js` (texte), `dialogs_paths.js` (nervure, tuyau), `sketch.js` (éditeur d'esquisse), `sketch_marks.js` (cotes, symboles, élastique), `sketch_tools.js` (outils à deux clics), `sketch_arcs.js` (arcs, oblong, congé), `sketch_copy.js` (symétrie, réseau d'esquisse), `sketch_trim.js` (ajuster, prolonger, couper, construction), `sketch_parse.js` (relire une esquisse pour la modifier), `planes.js` (plans d'origine, faces planes), `code_edit.js` (insertions dans le code), `bodies.js` (corps au retour arrière), `inspect.js` (mesurer, coupe, propriétés), `print.js` (impression 3D : orientation, surplombs ; dialogue de mise en plan), `print_layers.js` (aperçu des couches), `drawing.js` (mise en plan SVG), `face_commands.js` (commandes sur une face cliquée), `imports.js` (STL insérés), `appearance.js` (apparence), `thickness.js` (analyse d'épaisseur), `toolbar.js` (menus ▾), `marking.js` (menu du clic droit), `gizmo.js` (flèche de distance), `files.js` (ouvrir, enregistrer, reprise), `expr.js` (cotes en expression de paramètres), `mech.js`, `mech_joint.js` (liaisons au dialogue), `mech_study.js` (étude de mouvement).
 - `test_ui/` : scénarios Playwright sur la vraie UI (souris, clavier), captures dans `test_ui/shots/`.
 - À venir : plan de face paramétrique. Suivi du sprint : `SPRINT.md`.
 
