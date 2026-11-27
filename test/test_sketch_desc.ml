@@ -4,7 +4,7 @@ let rect_trou : Sketch_desc.t =
   { points = [| (0., 0., true); (38., 1., false); (41., 22., false); (1., 19., false); (20., 12., false) |];
     lines = [| (0, 1); (1, 2); (2, 3); (3, 0) |];
     circles = [| (4, 3.) |];
-    arcs = [||];
+    arcs = [||]; ellipses = [||];
     constraints =
       Sketch_desc.
         [ { kind = "horizontal"; refs = [ 0 ]; value = None; expr = None }; { kind = "vertical"; refs = [ 1 ]; value = None; expr = None };
@@ -76,7 +76,7 @@ let oblong : Sketch_desc.t =
   { points = [| (0., 0., true); (30., 0., true); (0., 5., false); (0., -5., false); (30., -5., false); (30., 5., false) |];
     lines = [| (3, 4); (5, 2) |];
     circles = [||];
-    arcs = [| (0, 2, 3); (1, 4, 5) |];
+    arcs = [| (0, 2, 3); (1, 4, 5) |]; ellipses = [||];
     constraints =
       Sketch_desc.
         [ { kind = "arc_radius"; refs = [ 0 ]; value = Some 5.; expr = None }; { kind = "tangent_arc"; refs = [ 0; 0 ]; value = None; expr = None };
@@ -115,7 +115,7 @@ let%expect_test "oblong : arcs dans un contour" =
 let%expect_test "symétrie : point reflété par rapport à une droite" =
   let d : Sketch_desc.t =
     { points = [| (0., 0., true); (0., 10., true); (3., 4., true); (-1., 5., false) |];
-      lines = [| (0, 1) |]; circles = [||]; arcs = [||];
+      lines = [| (0, 1) |]; circles = [||]; arcs = [||]; ellipses = [||];
       constraints = [ { kind = "symmetric"; refs = [ 2; 3; 0 ]; value = None; expr = None } ];
       loops = [] }
   in
@@ -132,7 +132,7 @@ let%expect_test "boucles imbriquées et décalage" =
         [| (0., 0., true); (20., 0., true); (20., 20., true); (0., 20., true);
            (3.5, 3.5, false); (16., 3., false); (16.5, 17., false); (3., 16., false) |];
       lines = [| (0, 1); (1, 2); (2, 3); (3, 0); (4, 5); (5, 6); (6, 7); (7, 4) |];
-      circles = [||]; arcs = [||];
+      circles = [||]; arcs = [||]; ellipses = [||];
       constraints =
         List.concat
           (List.init 4 (fun i ->
@@ -178,7 +178,7 @@ let%expect_test "cote liée à un paramètre : expression écrite telle quelle" 
 let%expect_test "courbe lisse fermée (spline)" =
   let d : Sketch_desc.t =
     { points = [| (0., 0., true); (20., 0., true); (20., 20., true); (0., 20., true) |];
-      lines = [||]; circles = [||]; arcs = [||]; constraints = [];
+      lines = [||]; circles = [||]; arcs = [||]; ellipses = [||]; constraints = [];
       loops = Sketch_desc.[ [ S [ 0; 1; 2; 3; 0 ] ] ] }
   in
   (match Sketch_desc.solve d with
@@ -194,4 +194,27 @@ let%expect_test "courbe lisse fermée (spline)" =
   [%expect {|
     32 sommets, aire 544
     Sketch.(path [ spline [ p0; p1; p2; p3; p0 ] ])
+    |}]
+
+let%expect_test "ellipse : région et code" =
+  let d : Sketch_desc.t =
+    { points = [| (0., 0., true); (10., 0., true) |]; lines = [||]; circles = [||]; arcs = [||];
+      ellipses = [| (0, 1, 5.) |]; constraints = []; loops = [] }
+  in
+  (match Sketch_desc.solve d with
+  | Error e -> print_endline e
+  | Ok s -> (
+      match Profile.view s.profile with
+      | Polygon ps ->
+          let n = List.length ps and area = ref 0. in
+          List.iteri (fun i (a : Geom.V2.t) -> area := !area +. Geom.V2.cross a (List.nth ps ((i + 1) mod n))) ps;
+          Printf.printf "aire %.1f (π·10·5 = %.1f)\n" (Float.abs !area /. 2.) (Float.pi *. 50.)
+      | _ -> print_endline "?"));
+  String.split_on_char '\n' (Sketch_desc.to_code ~indent:0 d)
+  |> List.filter (fun l -> String.length l > 6 && (String.sub l 0 6 = "let* e" || String.sub l 0 6 = "Sketch"))
+  |> List.iter print_endline;
+  [%expect {|
+    aire 156.8 (π·10·5 = 157.1)
+    let* e0 = Sketch.ellipse p0 p1 5.
+    Sketch.(oval e0)
     |}]

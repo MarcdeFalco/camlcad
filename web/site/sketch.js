@@ -3,7 +3,7 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
-import { TWO_CLICK, inferPoint, splineClick } from './sketch_tools.js';
+import { TWO_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
 import { parseDim } from './expr.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
@@ -25,7 +25,7 @@ export class SketchEditor extends SketchMarks {
   // data : esquisse relue du code (sketch_parse.js) ; editing : { name } pour la réécrire.
   start(plane, planeCode, data = null, editing = null, faceLoops = null) {
     this.plane = plane; this.planeCode = planeCode; this.editing = editing; this.faceLoops = faceLoops;
-    this.pts = []; this.lines = []; this.circles = []; this.arcs = []; this.cons = []; this.loops = [];
+    this.pts = []; this.lines = []; this.circles = []; this.arcs = []; this.ellipses = []; this.cons = []; this.loops = [];
     if (data) Object.assign(this, structuredClone(data));
     this.tool = 'rect'; this.chain = null; this.pending = null; this.hover = null; this.sel = []; this.dof = null; this.error = null; this.asking = null;
     this.show();
@@ -144,6 +144,8 @@ export class SketchEditor extends SketchMarks {
       const n = this.nearest(q), ch = this.tool === 'chamfer';
       if (n && n.kind === 'p') { this.asking = { kind: this.tool, label: ch ? 'Longueur du chanfrein' : 'Rayon du congé', refs: [n.i], value: ch ? 2 : 3 }; this.sel = [{ kind: 'p', i: n.i }]; }
       this.redraw();
+    } else if (this.tool === 'ellipse') {
+      if (ellipseClick(this, q)) this.changed(); else this.redraw();
     } else if (this.tool === 'spline') {
       if (splineClick(this, q)) this.changed(); else this.redraw();
     } else if (this.tool === 'point') {
@@ -295,13 +297,13 @@ export class SketchEditor extends SketchMarks {
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
   finish(kind = 'extrude') {
     const rib = ((kind === 'rib' || kind === 'pipe') && this.openLines().length && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
-    if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length))) return false;
+    if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
       kind, editing: this.editing, loops: this.loops.map((l) => loopOutline(this, l)),
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
-      circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })),
+      circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })), ellipses: this.ellipses.map((e) => ellipseOutline(this, e)),
       ribs: this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]), points: this.freePoints().map((i) => ({ ...this.pts[i] })),
     };
     this.suspend();
@@ -328,6 +330,7 @@ export class SketchEditor extends SketchMarks {
     const inLoop = (a, b) => (chain.includes(a) && chain.includes(b)) || seqs.some((l) => l.some((p, k) => { const r = l[(k + 1) % l.length]; return (p === a && r === b) || (p === b && r === a); }));
     this.lines.forEach(([a, b], i) => seg([this.pts[a], this.pts[b]], col('l', i), !inLoop(a, b)));
     for (const l of this.loops) for (const it of l) if (it.s) seg(splinePoints(this, it.s), 0x1f6feb, false);
+    for (const e of this.ellipses) seg([...ellipseOutline(this, e), ellipseOutline(this, e)[0]], 0x1f6feb, false);
     if (this.spl?.length > 1) seg(splinePoints(this, this.spl), 0x1f6feb, true);
     this.arcs.forEach((_, i) => seg(arcPoints(this, i), col('a', i), !seqs.some((l) => l.includes(this.arcs[i].a) && l.includes(this.arcs[i].b))));
     this.circles.forEach((c, i) => {
@@ -377,7 +380,7 @@ export class SketchEditor extends SketchMarks {
     $('sketch-project').disabled = !this.faceLoops;
     $('sketch-holes').disabled = !this.freePoints().length || !!this.error;
     $('sketch-rib').disabled = $('sketch-pipe').disabled = !(this.openLines().length && !this.error);
-    $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length));
+    $('sketch-finish').disabled = $('sketch-revolve').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
 }
@@ -386,7 +389,7 @@ export class SketchEditor extends SketchMarks {
 export function descOf(ed) {
   return {
     points: ed.pts.map((p) => [p.x, p.y, p.fixed]),
-    lines: ed.lines, circles: ed.circles.map((c) => [c.c, c.r]), arcs: ed.arcs.map((a) => [a.c, a.a, a.b]),
+    lines: ed.lines, circles: ed.circles.map((c) => [c.c, c.r]), arcs: ed.arcs.map((a) => [a.c, a.a, a.b]), ellipses: (ed.ellipses ?? []).map((e) => [e.c, e.a, e.ry]),
     constraints: ed.cons.map((c) => (c.value == null ? { kind: c.kind, refs: c.refs } : c)),
     loops: ed.loops,
   };

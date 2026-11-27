@@ -21,10 +21,11 @@ export function findSketch(code, name) {
 
 // Texte → structures de l'éditeur (pts, lines, circles, arcs, cons, loops) ; null si illisible.
 export function parseSketch(text, params = []) {
-  const pts = [], lines = [], circles = [], arcs = [], cons = [], loops = [];
+  const pts = [], lines = [], circles = [], arcs = [], ellipses = [], cons = [], loops = [];
   for (const m of text.matchAll(/\b(p\d+) = Sketch\.point( ~fixed:true)? (\(?-?[\d.]+\)?) (\(?-?[\d.]+\)?)/g)) pts[idx(m[1])] = { x: num(m[3]), y: num(m[4]), fixed: !!m[2] };
   for (const m of text.matchAll(/\b(l\d+) = Sketch\.line (p\d+) (p\d+)/g)) lines[idx(m[1])] = [idx(m[2]), idx(m[3])];
   for (const m of text.matchAll(/\b(c\d+) = Sketch\.circle (p\d+) (\(?-?[\d.]+\)?)/g)) circles[idx(m[1])] = { c: idx(m[2]), r: num(m[3]) };
+  for (const m of text.matchAll(/\b(e\d+) = Sketch\.ellipse (p\d+) (p\d+) (\(?-?[\d.]+\)?)/g)) ellipses[idx(m[1])] = { c: idx(m[2]), a: idx(m[3]), ry: num(m[4]) };
   for (const m of text.matchAll(/\b(a\d+) = Sketch\.arc (p\d+) (p\d+) (p\d+)/g)) arcs[idx(m[1])] = { c: idx(m[2]), a: idx(m[3]), b: idx(m[4]) };
   const cl = /Sketch\.\[([\s\S]*?)\]/.exec(text);
   if (cl) for (const item of cl[1].split(';').map((s) => s.trim()).filter(Boolean)) {
@@ -55,8 +56,8 @@ export function parseSketch(text, params = []) {
     re.lastIndex = i;
   }
   const dense = (a) => a.length === [...a].filter(Boolean).length;
-  if (![pts, lines, circles, arcs].every(dense)) return null;
-  return { pts, lines, circles, arcs, cons, loops };
+  if (![pts, lines, circles, arcs, ellipses].every(dense)) return null;
+  return { pts, lines, circles, arcs, ellipses, cons, loops };
 }
 
 // Plan d'une esquisse : le repère placé par la feature qui l'utilise (« place X »), avec X

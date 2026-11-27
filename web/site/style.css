@@ -198,3 +198,6 @@ button { font:inherit; color:inherit; }
 #appbar .hist { border:1px solid var(--line); background:var(--panel2, #fff); border-radius:4px; padding:1px 7px; cursor:pointer; font-size:14px; }
 #sketch-dims .dim.fx { border-color:#8e44ad; color:#8e44ad; }
 #sketch-ask input.bad, .dim-edit.bad { outline:2px solid var(--err); }
+#palette .dhead { cursor:pointer; display:flex; justify-content:space-between; }
+#palette.folded .dbody { display:none; }
+#palette .opt { display:flex; gap:6px; align-items:center; font-size:12px; color:var(--muted); margin:2px 0 4px; }

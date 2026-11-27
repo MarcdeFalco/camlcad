@@ -34,6 +34,9 @@ type t = {
   circles : (int * float) array;  (** centre (indice de point), rayon initial *)
   arcs : (int * int * int) array;
   (** centre, début, fin (indices de points) ; sens trigonométrique du début à la fin *)
+  ellipses : (int * int * float) array;
+  (** centre, extrémité du grand axe (indices de points), demi-petit axe ; régions comme
+      les cercles (retirées des boucles, sinon réunies) *)
   constraints : constr list;
   loops : item list list;  (** boucles fermées, éléments dans l'ordre (voir [Sketch.path]) *)
 }

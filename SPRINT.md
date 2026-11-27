@@ -145,18 +145,30 @@ du cache Playwright).
   le dernier point sont le même ; contrat, test d'expectation), élément `S` des boucles de
   `Sketch_desc` ; outil Courbe (cliquer le premier point ferme), relue à la réouverture.
   Scénario `courbe.spec.js`.
+- Lot 41, chapitre 2 (Sketch Palette) : accroche à la grille d'un millimètre (option), palette
+  repliable d'un clic sur son titre (elle cachait la zone de dessin). Scénario `palette.spec.js`.
+- Lot 42, chapitre 2 (Ellipse) : `Sketch.ellipse c a ry` et `oval` (contrat, test d'expectation :
+  aire), champ `ellipses` de `Sketch_desc` ; outil Ellipse (centre, grand axe, petit axe),
+  aperçu, relecture. Scénario `ellipse.spec.js` (volume).
 
 ## En cours
-- Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
-  remettre la branche sur origin/main, cherry-pick du lot, fusion neutre de l'ancienne branche
-  distante, push). Script : `$TMPDIR/pr_lot.sh <commit>` (voir fil). Branches locales lot4…lot9.
-- Suivant : ajuster/prolonger d'esquisse, liaisons glissière/encastrement à la souris sur
-  les ports affichés dans la vue, chapitre 8 (interférences comme commande).
+- Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
+  branche `claude/project-thread-tywefr` est remise sur `origin/main`, le lot y est appliqué
+  (cherry-pick), l'ancienne branche distante fusionnée sans changement (le mode auto refuse
+  le force-push), puis PR, CI, fusion.
 
-## Suivant
+## Suivant (ordre proposé)
+- Chapitre 2 : ajuster / prolonger / couper (Trim, Extend, Break), texte d'esquisse, cote de
+  l'ellipse et de la courbe ; régions de profil choisies à la souris dans l'extrusion.
+- Chapitre 3 : balayage (Sweep) et lissage (Loft) — demandent `Shape.sweep` / `loft` au noyau.
+- Chapitre 6 : échelle d'un corps (`Shape.scale` au noyau), coque d'un corps quelconque.
+- Chapitre 7 : liaisons choisies dans la vue (ports affichés), étude de mouvement.
+- Frise : réordonner les étapes par glisser (Source_edit « move »).
 
 ## Écarts connus avec Fusion (pas encore traités)
 - Supprimer l'outil d'une étape combinée laisse `resultatN` (devenu une simple copie) dans la frise.
 - Pas d'échelle de corps (`Shape.scale` absent du noyau) ; coque seulement pour une extrusion simple.
 - Copier un arc (symétrie, réseau) ajoute une équation redondante (cohérente) : la palette l'affiche.
 - Pas de choix de régions de profil (toutes les boucles de l'esquisse sont extrudées).
+- Plans de face, nervures, tuyaux et perçages aux points : géométrie écrite en littéral
+  (pas liée à la pièce si elle change).

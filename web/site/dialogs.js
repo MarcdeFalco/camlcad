@@ -139,6 +139,7 @@ export class Dialogs {
         s.holes.push(...holes); out.push(s);
       }
       if (!sk.loops.length) for (const c of sk.circles) { const s = new THREE.Shape(); s.absarc(c.x, c.y, c.r, 0, 2 * Math.PI, false); out.push(s); }
+      for (const e of sk.ellipses ?? []) { const v = e.map((p) => new THREE.Vector2(p.x, p.y)); if (sk.loops.length) out.forEach((sh) => sh.holes.push(new THREE.Path(v))); else out.push(new THREE.Shape(v)); }
       return out;
     };
     const preview = () => {

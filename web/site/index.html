@@ -95,6 +95,7 @@
         <button data-tool="circle" title="Cercle : centre puis rayon (C)"><i>◯</i>Cercle</button>
  <button data-tool="arc" title="Arc par le centre : centre, début, fin (A)"><i>◠</i>Arc</button>
         <button data-tool="slot" title="Oblong centre à centre : premier centre, second centre"><i>⊂⊃</i>Oblong</button>
+        <button data-tool="ellipse" title="Ellipse : centre, extrémité du grand axe, puis le petit axe"><i>⬭</i>Ellipse</button>
         <button data-tool="spline" title="Courbe lisse par points ; cliquez le premier pour la fermer"><i>∿</i>Courbe</button>
         <button data-tool="polygon" title="Polygone régulier inscrit : centre puis sommet (P)"><i>⬡</i>Polygone</button>
         <label class="sides" title="Nombre de côtés du polygone">côtés <input id="poly-sides" type="number" value="6" min="3" max="24"></label>
@@ -150,9 +151,10 @@
     <div id="hint" hidden></div>
     <div id="dialog" hidden></div>
     <div id="palette" hidden>
-      <div class="dhead"><span>PALETTE D'ESQUISSE</span></div>
+      <div class="dhead" id="palette-head" title="Replier / déplier la palette"><span>PALETTE D'ESQUISSE</span><span class="fold">▾</span></div>
       <div class="dbody">
         <div id="sketch-status" class="status"></div>
+        <label class="opt"><input type="checkbox" id="snap-grid"> Accrocher à la grille (1 mm)</label>
         <div id="sketch-ask" class="ask" hidden></div>
         <div class="hint">Contraintes</div>
         <ol id="sketch-list"></ol>
