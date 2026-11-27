@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
-import { parseDim } from './expr.js';
+import { parseDim } from './expr.js'; import { typedDims } from './sketch_input.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { trimAt, extendAt, breakAt, toggleConstruction } from './sketch_trim.js';
@@ -183,7 +183,7 @@ export class SketchEditor extends SketchMarks {
   }
 
   key(e) {
-    if (e.target.closest('input,select,.cm-editor')) return;
+    if (e.target.closest('input,select,.cm-editor') || typedDims(this, e)) return;
     if (e.key === 'Escape') {
       if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else this.stop();
     }

@@ -164,6 +164,17 @@
   <aside id="browser" aria-label="Navigateur">
     <div class="paneltitle">NAVIGATEUR</div>
     <ul id="tree" class="tree"></ul>
+    <div id="palette" hidden>
+      <div class="dhead" id="palette-head" title="Replier / déplier la palette"><span>PALETTE D'ESQUISSE</span><span class="fold">▾</span></div>
+      <div class="dbody">
+        <div id="sketch-status" class="status"></div>
+        <label class="opt"><input type="checkbox" id="snap-grid"> Accrocher à la grille (1 mm)</label>
+        <div id="sketch-ask" class="ask" hidden></div>
+        <div class="hint">Contraintes</div>
+        <ol id="sketch-list"></ol>
+        <div class="hint">Rectangle : deux coins. Contour : les sommets, puis le premier pour fermer. Cercle : centre puis rayon. Sélection : Maj pour plusieurs. Double-clic sur une cote : la modifier.</div>
+      </div>
+    </div>
   </aside>
   <section id="view">
     <div id="viewcube" title="Cliquez une face pour orienter la vue"></div>
@@ -176,17 +187,6 @@
       Ou partez d'une <b>Boîte</b>, ou d'une pièce du menu <b>Exemples…</b></p>
     </div>
     <div id="dialog" hidden></div>
-    <div id="palette" hidden>
-      <div class="dhead" id="palette-head" title="Replier / déplier la palette"><span>PALETTE D'ESQUISSE</span><span class="fold">▾</span></div>
-      <div class="dbody">
-        <div id="sketch-status" class="status"></div>
-        <label class="opt"><input type="checkbox" id="snap-grid"> Accrocher à la grille (1 mm)</label>
-        <div id="sketch-ask" class="ask" hidden></div>
-        <div class="hint">Contraintes</div>
-        <ol id="sketch-list"></ol>
-        <div class="hint">Rectangle : deux coins. Contour : les sommets, puis le premier pour fermer. Cercle : centre puis rayon. Sélection : Maj pour plusieurs. Double-clic sur une cote : la modifier.</div>
-      </div>
-    </div>
     <div id="navbar">
       <button data-nav="orbit" class="on" title="Orbite (clic gauche)">⟳</button>
       <button data-nav="pan" title="Panoramique (clic gauche)">✥</button>

@@ -2,6 +2,7 @@
 // pour modifier), symboles de contraintes, élastique du tracé en cours, noms affichés.
 // Classe de base de SketchEditor (sketch.js), qui fournit plane, pts, lines, circles, cons…
 import * as THREE from 'three';
+import { TYPED } from './sketch_input.js';
 import { TWO_CLICK, rubberShape } from './sketch_tools.js';
 import { arcPoints, loopPoints } from './sketch_arcs.js';
 import { parseDim } from './expr.js';
@@ -114,6 +115,7 @@ export class SketchMarks {
     let txt = '';
     if (this.tool === 'poly' && this.chain) { const A = this.pts[this.chain[this.chain.length - 1]]; txt = fmt(Math.hypot(at.x - A.x, at.y - A.y)) + ' mm'; }
     if (TWO_CLICK[this.tool] && this.pending != null) txt = TWO_CLICK[this.tool][1](this.pts[this.pending], at);
+    if (txt && TYPED[this.tool] && this.pending != null) txt += ' · tapez la cote';
     live.hidden = !txt; live.textContent = txt;
     if (txt) {
       const { camera, renderer } = this.ctx, r = renderer.domElement.getBoundingClientRect(), f = this.plane;
