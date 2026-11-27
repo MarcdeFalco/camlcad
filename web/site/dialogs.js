@@ -131,20 +131,22 @@ export class Dialogs {
     const P = { h: 10, dir: 'one', op: 'join', taper: 0 };
     // Profils (contours) choisis : décochés, ils restent dans l'esquisse en construction.
     const sel = sk.loops.map(() => true), all = sk.loops;
+    // Régions comme Cad.Sketch_desc : contours et cercles, profondeur d'imbrication paire
+    // ajoutée, impaire retirée (cercle dans un contour : perçage ; cercles concentriques : bague).
     const shapes = () => {
       sk = { ...sk, loops: all.filter((_, i) => sel[i]) };
-      const out = [], holes = sk.circles.map((c) => { const p = new THREE.Path(); p.absarc(c.x, c.y, c.r, 0, 2 * Math.PI, true); return p; });
-      // Boucle dans une boucle : trou (profondeur impaire), comme Cad.Sketch_desc.
       const inside = (p, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; };
-      const depth = (l) => sk.loops.filter((m) => m !== l && inside(l[0], m)).length;
-      for (const l of sk.loops) {
-        if (depth(l) % 2) continue;
-        const s = new THREE.Shape(l.map((p) => new THREE.Vector2(p.x, p.y)));
-        for (const h of sk.loops) if (h !== l && depth(h) % 2 && inside(h[0], l)) s.holes.push(new THREE.Path(h.map((p) => new THREE.Vector2(p.x, p.y))));
-        s.holes.push(...holes); out.push(s);
+      const regs = [...sk.loops.map((l) => ({ l, probe: l[0], has: (p) => inside(p, l) })),
+        ...sk.circles.map((c) => ({ c, probe: { x: c.x + c.r, y: c.y }, has: (p) => Math.hypot(p.x - c.x, p.y - c.y) < c.r - 1e-6 }))];
+      for (const g of regs) g.depth = regs.filter((m) => m !== g && m.has(g.probe)).length;
+      const path = (g, P) => { const s = new P(); if (g.c) s.absarc(g.c.x, g.c.y, g.c.r, 0, 2 * Math.PI, P === THREE.Path); else { s.moveTo(g.l[0].x, g.l[0].y); for (const p of g.l.slice(1)) s.lineTo(p.x, p.y); } return s; };
+      const out = [];
+      for (const g of regs.filter((x) => x.depth % 2 === 0)) {
+        const s = path(g, THREE.Shape);
+        for (const h of regs) if (h.depth === g.depth + 1 && g.has(h.probe)) s.holes.push(path(h, THREE.Path));
+        out.push(s);
       }
-      if (!sk.loops.length) for (const c of sk.circles) { const s = new THREE.Shape(); s.absarc(c.x, c.y, c.r, 0, 2 * Math.PI, false); out.push(s); }
-      for (const e of sk.ellipses ?? []) { const v = e.map((p) => new THREE.Vector2(p.x, p.y)); if (sk.loops.length) out.forEach((sh) => sh.holes.push(new THREE.Path(v))); else out.push(new THREE.Shape(v)); }
+      for (const e of sk.ellipses ?? []) { const v = e.map((p) => new THREE.Vector2(p.x, p.y)); if (out.length) out.forEach((sh) => sh.holes.push(new THREE.Path(v))); else out.push(new THREE.Shape(v)); }
       return out;
     };
     const preview = () => {

@@ -314,6 +314,8 @@ export class SketchEditor extends SketchMarks {
 
   redraw() {
     if (!this.group) return;
+    // Ajuster, prolonger, couper : une cote posée sur la courbe ne capte pas le clic (il va à la courbe).
+    document.getElementById('sketch-dims')?.classList.toggle('through', ['trim', 'extend', 'break'].includes(this.tool));
     const g = this.group;
     for (const o of [...g.children]) { g.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.dispose(); }); }
     const isSel = (k, i) => this.sel.some((s) => s.kind === k && s.i === i);

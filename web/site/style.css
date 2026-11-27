@@ -219,3 +219,4 @@ button { font:inherit; color:inherit; }
 .punused { color:#9a6b00; }
 #appbar button { white-space:nowrap; flex-shrink:0; }
 #status { min-width:0; flex:0 1 auto; }
+#sketch-dims.through .dim { pointer-events:none; }

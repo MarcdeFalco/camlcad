@@ -218,3 +218,22 @@ let%expect_test "ellipse : région et code" =
     let* e0 = Sketch.ellipse p0 p1 5.
     Sketch.(oval e0)
     |}]
+
+let%expect_test "régions : cercles concentriques (bague), contour dans un cercle" =
+  let c = Sketch_desc.{ kind = "radius"; refs = [ 0 ]; value = Some 25.; expr = None } in
+  let bague : Sketch_desc.t =
+    { points = [| (0., 0., true) |]; lines = [||]; circles = [| (0, 25.); (0, 10.) |]; arcs = [||]; ellipses = [||];
+      constraints = [ c; { c with refs = [ 1 ]; value = Some 10. } ]; loops = [] }
+  in
+  let carre_dans_cercle : Sketch_desc.t =
+    { points = [| (0., 0., true); (-5., -5., true); (5., -5., true); (5., 5., true); (-5., 5., true) |];
+      lines = [| (1, 2); (2, 3); (3, 4); (4, 1) |]; circles = [| (0, 25.) |]; arcs = [||]; ellipses = [||];
+      constraints = [ c ]; loops = Sketch_desc.[ [ P 1; P 2; P 3; P 4 ] ] }
+  in
+  let code d = List.filter (fun l -> String.length l > 0 && l.[0] = 'S') (String.split_on_char '\n' (Sketch_desc.to_code ~indent:0 d)) in
+  List.iter print_endline (code bague @ code carre_dans_cercle @ code rect_trou);
+  [%expect {|
+    Sketch.(disk c0 - disk c1)
+    Sketch.(disk c0 - loop [ p1; p2; p3; p4 ])
+    Sketch.(loop [ p0; p1; p2; p3 ] - disk c0)
+    |}]
