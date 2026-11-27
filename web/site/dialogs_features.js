@@ -63,12 +63,13 @@ export function hole(d, p, frame, through) {
 
 // Réseau (rectangulaire ou circulaire) de la feature `f` ; `geo` : son maillage (aperçu).
 export function pattern(d, f, geo) {
-  const P = { type: 'rect', dir1: 'X', n1: 3, s1: 10, dir2: 'Y', n2: 1, s2: 10, axis: 'Z', n: 6, angle: 360, op: /^(poche|percage)/.test(f.name) ? 'cut' : 'join' };
+  const P = { type: 'rect', dir1: 'X', n1: 3, s1: 10, dir2: 'Y', n2: 1, s2: 10, axis: 'Z', n: 6, angle: 360, sym: false, op: /^(poche|percage)/.test(f.name) ? 'cut' : 'join' };
   const copies = () => {
     const out = [];
     if (P.type === 'rect') {
       for (let i = 0; i < P.n1; i++) for (let j = 0; j < P.n2; j++) {
-        const t = new THREE.Vector3(...AXES[P.dir1]).multiplyScalar(i * P.s1).addScaledVector(new THREE.Vector3(...AXES[P.dir2]), j * P.s2);
+        const c1 = P.sym ? (P.n1 - 1) / 2 : 0, c2 = P.sym ? (P.n2 - 1) / 2 : 0;
+        const t = new THREE.Vector3(...AXES[P.dir1]).multiplyScalar((i - c1) * P.s1).addScaledVector(new THREE.Vector3(...AXES[P.dir2]), (j - c2) * P.s2);
         out.push(new THREE.Matrix4().makeTranslation(t.x, t.y, t.z));
       }
     } else for (let i = 0; i < P.n; i++) out.push(new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(...AXES[P.axis]), ((i * stepDeg()) * Math.PI) / 180));
@@ -88,6 +89,8 @@ export function pattern(d, f, geo) {
     row('Direction 2', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.dir2, (v) => { P.dir2 = v; preview(); })),
     row('Nombre 2', num(P.n2, (v) => { P.n2 = Math.max(1, Math.round(v)); preview(); }, { step: 1, min: 1 })),
     row('Pas 2', num(P.s2, (v) => { P.s2 = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
+    // Symétrique (ch. 4, Pattern : Direction Type « Symmetric ») : copies centrées sur l'original.
+    row('Symétrique', Object.assign(el('input', { type: 'checkbox', id: 'pattern-sym', checked: P.sym }), { onchange: (e) => { P.sym = e.target.checked; preview(); } })),
   ] : [
     row('Axe (origine)', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.axis, (v) => { P.axis = v; preview(); })),
     row('Nombre', num(P.n, (v) => { P.n = Math.max(1, Math.round(v)); preview(); }, { step: 1, min: 1 })),
@@ -104,7 +107,8 @@ export function pattern(d, f, geo) {
       let expr;
       if (P.type === 'rect') {
         const [a, b] = [V(P.dir1).map((c) => c * P.s1), V(P.dir2).map((c) => c * P.s2)];
-        const comp = (k) => [a[k] ? `float i *. ${litp(a[k])}` : '', b[k] ? `float j *. ${litp(b[k])}` : ''].filter(Boolean).join(' +. ') || '0.';
+        const ix = (v, n) => (P.sym && n > 1 ? `(float ${v} -. ${lit((n - 1) / 2)})` : `float ${v}`);
+        const comp = (k) => [a[k] ? `${ix('i', P.n1)} *. ${litp(a[k])}` : '', b[k] ? `${ix('j', P.n2)} *. ${litp(b[k])}` : ''].filter(Boolean).join(' +. ') || '0.';
         expr = `union (List.concat (List.init ${P.n1} (fun i -> List.init ${P.n2} (fun j ->\n      ${f.name} |> translate (Geom.V3.v (${comp(0)}) (${comp(1)}) (${comp(2)}))))))`;
       } else expr = `union (List.init ${P.n} (fun i -> ${f.name} |> rotate ~axis:${AXIS_CODE[P.axis]} ~deg:(float i *. ${lit(stepDeg())})))`;
       d.ctx.insert(`  let%feat ${name} =\n    Shape.(${expr})\n  in\n`, name, P.op, n);

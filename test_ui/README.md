@@ -80,6 +80,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `apparence.spec.js` | Black Book ch. 6 et 10 : équerre en PLA rouge puis en aluminium, apparence revenue après rechargement |
 | `jusqua.spec.js` | Black Book ch. 3 : cylindre extrudé « jusqu'à » la face du dessus d'une boîte (h = 10, volume) |
 | `revolution_sym.spec.js` | Black Book ch. 3 : demi-tour symétrique autour de l'axe de l'esquisse (boîte englobante) |
+| `reseau_sym.spec.js` | Black Book ch. 4 : trois boîtes au pas de 30 centrées sur l'original (−30 à 50 en x, volume × 3) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |

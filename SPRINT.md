@@ -225,6 +225,8 @@ du cache Playwright).
   littéral). Scénario `jusqua.spec.js`.
 - Lot 63, chapitre 3 (Revolve, Symmetric) : case Symétrique de la révolution (angle réparti
   de part et d'autre du plan d'esquisse). Scénario `revolution_sym.spec.js` (boîte englobante).
+- Lot 64, chapitre 4 (Rectangular Pattern, Symmetric) : case Symétrique du réseau
+  rectangulaire (copies centrées sur l'original). Scénario `reseau_sym.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
