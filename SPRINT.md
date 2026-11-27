@@ -178,6 +178,10 @@ du cache Playwright).
   `Shape.sweep profil chemin`, loi « balayage » dans les suites. Palette : bouton Garder
   (esquisse seule, sans feature, comme « Terminer l'esquisse » de Fusion) et Balayage (les
   lignes ouvertes forment le chemin, une esquisse gardée le profil). Scénario `balayage.spec.js`.
+- Lot 50, chapitre 3 (Extrude, Taper Angle) : `Shape.extrude ?taper` (degrés, contour du haut
+  décalé en onglet par `Loft.offset_outline`, solide réglé par `of_mesh` ; tests d'expectation
+  et loi « dépouille » : tronc de pyramide exact), champ Dépouille du dialogue d'extrusion
+  (aperçu approché). Scénario `depouille.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la

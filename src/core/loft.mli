@@ -6,6 +6,11 @@ val outline : segments:int -> Profile.t -> Geom.V2.t list option
     déplacé ou tourné), dans le sens direct. [None] pour un profil booléen (union, trou,
     décalage) : le lissage ne porte que sur des contours simples. *)
 
+val offset_outline : float -> Geom.V2.t list -> Geom.V2.t list
+(** [offset_outline d c] : contour [c] (sens direct) décalé de [d] vers l'extérieur ([d < 0] :
+    vers l'intérieur), coins en onglet (sommets sur les bissectrices). Valable tant que le
+    décalage ne fait pas disparaître de côté. *)
+
 val mesh : (Geom.Frame.t * Geom.V2.t list) list -> Mesh.t
 (** Maillage fermé, orienté (normales sortantes) du solide réglé passant par les contours,
     chacun dans le plan xy de son repère, dans l'ordre de la liste. Les contours sont

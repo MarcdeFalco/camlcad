@@ -127,7 +127,7 @@ export class Dialogs {
   extrude(sk0, back) {
     let sk = sk0;
     const empty = this.ctx.isEmpty();
-    const P = { h: 10, dir: 'one', op: empty ? 'join' : 'join' };
+    const P = { h: 10, dir: 'one', op: 'join', taper: 0 };
     // Profils (contours) choisis : décochés, ils restent dans l'esquisse en construction.
     const sel = sk.loops.map(() => true), all = sk.loops;
     const shapes = () => {
@@ -148,6 +148,11 @@ export class Dialogs {
     };
     const preview = () => {
       const h = Math.max(0.01, P.h), g = new THREE.ExtrudeGeometry(shapes(), { depth: h, bevelEnabled: false, curveSegments: 32 });
+      // Dépouille (aperçu) : sommets du haut rapprochés du centre de h·tan(α) (le code fait l'onglet exact).
+      if (P.taper) {
+        g.computeBoundingBox(); const c = g.boundingBox.getCenter(new THREE.Vector3()), p = g.attributes.position, t = Math.tan((P.taper * Math.PI) / 180);
+        for (let i = 0; i < p.count; i++) { const z = p.getZ(i), dx = p.getX(i) - c.x, dy = p.getY(i) - c.y, r = Math.hypot(dx, dy) || 1, k = Math.max(0, 1 - (z * t) / r); p.setXY(i, c.x + dx * k, c.y + dy * k); }
+      }
       g.translate(0, 0, P.dir === 'one' ? 0 : P.dir === 'flip' ? -h : -h / 2);
       const m = new THREE.Mesh(g), f = sk.frame;
       m.matrixAutoUpdate = false; m.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin);
@@ -168,12 +173,14 @@ export class Dialogs {
       ...(all.length > 1 ? [row('Contours', el('span', { className: 'profiles' }, ...all.map((_, i) => el('label', {}, Object.assign(el('input', { type: 'checkbox', checked: true }), { onchange: (e) => { sel[i] = e.target.checked; preview(); } }), ` ${i + 1} `))))] : []),
       row('Direction', dirSel),
       row('Distance', hIn, el('span', { className: 'unit', textContent: 'mm' })),
+      row('Dépouille', num(P.taper, (v) => { P.taper = v; preview(); }), el('span', { className: 'unit', textContent: '°' })),
       row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : opSel),
     ], {
       key: 'extrude',
       cancel: back,
       ok: () => {
         if (!(P.h > 0) || (all.length && !sel.some(Boolean))) return false;
+        if (P.taper && sk.loops.length + sk.circles.length + (sk.ellipses?.length ?? 0) > 1) { this.ctx.notify('Dépouille : un seul contour simple (sans trou).', true); return false; }
         // Contours retirés : l'esquisse est réécrite par le solveur sans eux, puis insérée.
         if (!sel.every(Boolean) && sk.desc && !sk.recoded) {
           this.ctx.resolveSketch({ ...sk.desc, loops: sk.desc.loops.filter((_, i) => sel[i]) }).then((m) => { if (m.ok) { sk.code = m.code; sk.recoded = true; this.ok(); } });
@@ -183,10 +190,11 @@ export class Dialogs {
         const name = (P.op === 'cut' ? 'poche' : 'extrusion') + n;
         const eps = P.op === 'cut' && P.dir !== 'sym';
         let shape;
-        if (P.dir === 'one' && !eps) shape = `Shape.(extrude ~h:${lit(P.h)} ${esq} |> place ${named(sk.planeCode) ? sk.planeCode : plan})`;
+        const tp = P.taper ? `~taper:${litp(P.taper)} ` : '';
+        if (P.dir === 'one' && !eps) shape = `Shape.(extrude ${tp}~h:${lit(P.h)} ${esq} |> place ${named(sk.planeCode) ? sk.planeCode : plan})`;
         else {
           const off = P.dir === 'sym' ? '(-. h /. 2.)' : P.dir === 'flip' ? '(-. h)' : '(-0.01)';
-          shape = `let h = ${lit(P.h)} in\n    Shape.(extrude ~h:${eps ? '(h +. 0.01)' : 'h'} ${esq} |> translate (Geom.V3.v 0. 0. ${off}) |> place ${named(sk.planeCode) ? sk.planeCode : plan})`;
+          shape = `let h = ${lit(P.h)} in\n    Shape.(extrude ${tp}~h:${eps ? '(h +. 0.01)' : 'h'} ${esq} |> translate (Geom.V3.v 0. 0. ${off}) |> place ${named(sk.planeCode) ? sk.planeCode : plan})`;
         }
         const code = `${planDecl(plan, sk.planeCode)}  let%sketch ${esq} =\n${sk.code}  in\n  let%feat ${name} =\n    ${shape}\n  in\n`;
         this.ctx.insert(code, name, P.op, n);

@@ -88,6 +88,19 @@ let ears (ps : V2.t array) =
   (match !idx with [ a; b; c ] -> out := (a, b, c) :: !out | _ -> ());
   List.rev !out
 
+let offset_outline d c =
+  let ps = ccw (Array.of_list c) in
+  let n = Array.length ps in
+  if n < 3 then c
+  else
+    let normal a b = let e = V2.normalize (V2.sub b a) in V2.v e.y (-.e.x) in
+    Array.to_list
+      (Array.init n (fun i ->
+           let p = ps.(i) in
+           let n1 = normal ps.((i + n - 1) mod n) p and n2 = normal p ps.((i + 1) mod n) in
+           let k = 1. +. V2.dot n1 n2 in
+           if k < 1e-9 then p else V2.add p (V2.scale (d /. k) (V2.add n1 n2))))
+
 let mesh sections =
   let secs = List.map (fun (f, ps) -> (f, ccw (Array.of_list ps))) sections in
   if List.length secs < 2 || List.exists (fun (_, ps) -> Array.length ps < 3) secs then Mesh.empty
