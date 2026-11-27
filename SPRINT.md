@@ -185,6 +185,10 @@ du cache Playwright).
 - Lot 51, chapitre 7 (Motion Study) : commande Étude de l'onglet MÉCANISME : une articulation
   menante, des étapes (temps, valeur ; « + Étape » prend la pose actuelle), lecture interpolée
   qui pilote le mécanisme et s'arrête sur la dernière étape. Scénario `etude.spec.js`.
+- Lot 52, chapitres 2 et 3 (Text, Emboss) : `Cad_parts.Text` (police à traits A-Z, 0-9,
+  ponctuation ; minuscules et accents ramenés ; contrat, test d'expectation, loi « texte »),
+  commande Texte sur une face cliquée : relief (Joindre) ou gravure (Couper), hauteur,
+  épaisseur, rotation ; axe du texte = X du monde projeté sur la face. Scénario `texte.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -193,8 +197,9 @@ du cache Playwright).
   le force-push), puis PR, CI, fusion.
 
 ## Suivant (ordre proposé)
-- Chapitre 2 : ajuster, prolonger, couper contre cercles et arcs, texte d'esquisse, cote de
-  l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue.
+- Chapitre 2 : ajuster, prolonger, couper contre cercles et arcs d'esquisse, cote de
+  l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue ;
+  texte dans l'esquisse elle-même (police à contours).
 - Chapitre 3 : lissage et balayage de profils à trous, chemin courbe (arcs, courbes).
 - Chapitre 6 : coque d'un corps quelconque.
 - Chapitre 7 : liaisons choisies dans la vue (ports affichés) ; étude de mouvement enregistrée dans le code.

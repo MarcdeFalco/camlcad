@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import * as feats from './dialogs_features.js';
 import { faceLoops, frameCode } from './planes.js';
+import { textDialog } from './dialogs_text.js';
 
 export class FaceCommands {
   // ctx : mesh() (maillage évalué), hint(texte|null), notify(texte, erreur?), dialogs
@@ -18,6 +19,7 @@ export class FaceCommands {
       presspull: () => this.start('Cliquez la face plane à pousser ou tirer', (hit, f) => feats.pressPull(dialogs, f, faceLoops(mesh(), f))),
       fillet: () => edge('fillet'), chamfer: () => edge('chamfer'),
       thread: () => feats.threadRod(dialogs),
+      text: () => this.start('Cliquez la face plane où écrire (centre du texte)', (hit, f) => textDialog(dialogs, hit.point.clone(), f.frame)),
       // Plan milieu (ch. 3, Midplane) : entre deux faces planes parallèles.
       midplane: () => this.start('Cliquez la première face', (h1, f1) => setTimeout(() => this.start('Cliquez la seconde face (parallèle)', (h2, f2) => {
         const n = f1.frame.z;
