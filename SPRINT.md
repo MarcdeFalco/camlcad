@@ -217,6 +217,9 @@ du cache Playwright).
 - Lot 60, chapitre 7 (Joint Limits, Rest Position) : limites et position initiale dans le
   dialogue Liaison (`~limits`, `~init` de `Joint.revolute` / `prismatic`), vérifiées ; le
   curseur du mouvement les respecte. Scénario `liaison_limites.spec.js`.
+- Lot 61, chapitres 6 et 10 (Appearance) : commande Apparence (PLA de couleurs, PETG
+  translucide, aluminium, laiton), appliquée dans tous les styles de vue et gardée dans le
+  navigateur. Scénario `apparence.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la

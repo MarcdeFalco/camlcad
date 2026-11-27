@@ -152,6 +152,7 @@ export class Viewport {
   }
   // Styles : 0 ombré + arêtes, 1 ombré, 2 filaire, 3 rendu (Black Book ch. 10, In-canvas Render :
   // éclairage d'ambiance, matière satinée, ombre portée sur le plan de travail).
+  setAppearance(a) { this.appearance = a; this.applyStyle(); }
   cycleStyle() { this.style = (this.style + 1) % 4; this.applyStyle(); return this.style; }
   applyStyle() {
     const render = this.style === 3, r = this.renderer;
@@ -161,7 +162,8 @@ export class Viewport {
     this.scene.environment = render ? this.env : null;
     r.toneMapping = render ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; r.toneMappingExposure = 0.8;
     this.material.envMapIntensity = 0.6; if (render) { this.gridWas = this.grid.visible; this.grid.visible = this.axes.visible = false; } else if (this.gridWas != null) { this.grid.visible = this.axes.visible = this.gridWas; this.gridWas = null; }
-    Object.assign(this.material, render ? { roughness: 0.45, metalness: 0.3, color: new THREE.Color(0x7d8fa3) } : { roughness: 0.5, metalness: 0.1, color: new THREE.Color(0x8c9aa8) }); this.material.needsUpdate = true;
+    const a = this.appearance; // apparence choisie (appearance.js), sinon le gris du style
+    Object.assign(this.material, a ? { roughness: a.roughness, metalness: a.metalness, color: new THREE.Color(a.color), opacity: a.opacity } : render ? { roughness: 0.45, metalness: 0.3, color: new THREE.Color(0x7d8fa3), opacity: 1 } : { roughness: 0.5, metalness: 0.1, color: new THREE.Color(0x8c9aa8), opacity: 1 }); this.material.needsUpdate = true;
     r.shadowMap.enabled = render; this.sun.castShadow = render;
     if (this.part) this.part.castShadow = render;
     if (render && !this.ground) {
@@ -245,7 +247,7 @@ export class Viewport {
   }
   setHighlight(m) {
     if (this.highlight) { this.scene.remove(this.highlight); this.highlight.geometry.dispose(); this.highlight = null; }
-    this.material.opacity = m ? 0.35 : 1;
+    this.material.opacity = m ? 0.35 : (this.appearance?.opacity ?? 1);
     if (!m) return;
     this.highlight = new THREE.Mesh(Viewport.geometry(m), this.hiMaterial);
     this.highlight.renderOrder = 1;

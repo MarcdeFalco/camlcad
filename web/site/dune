@@ -5,5 +5,5 @@
 
 (rule
  (alias site)
- (deps index.html style.css main.js sketch.js sketch_marks.js sketch_tools.js sketch_arcs.js sketch_copy.js sketch_parse.js sketch_delete.js sketch_trim.js planes.js code_edit.js bodies.js inspect.js print.js print_layers.js drawing.js timeline.js viewport.js dialogs.js dialogs_features.js dialogs_paths.js dialogs_text.js face_commands.js toolbar.js marking.js gizmo.js files.js imports.js expr.js mech.js mech_joint.js mech_study.js worker.js toplevel.js (glob_files examples/*.ml))
+ (deps index.html style.css main.js sketch.js sketch_marks.js sketch_tools.js sketch_arcs.js sketch_copy.js sketch_parse.js sketch_delete.js sketch_trim.js planes.js code_edit.js bodies.js inspect.js print.js print_layers.js drawing.js timeline.js viewport.js dialogs.js dialogs_features.js dialogs_paths.js dialogs_text.js face_commands.js toolbar.js marking.js gizmo.js files.js imports.js appearance.js expr.js mech.js mech_joint.js mech_study.js worker.js toplevel.js (glob_files examples/*.ml))
  (action (progn)))
