@@ -25,6 +25,7 @@ let intersection a b = tick ("I(" ^ a ^ "," ^ b ^ ")")
 let transform _ s = tick ("T(" ^ s ^ ")")
 let mirror ~normal:_ s = tick ("M(" ^ s ^ ")")
 let scale _ s = tick ("S(" ^ s ^ ")")
+let of_mesh _ = tick "mesh"
 let is_empty s = s = "empty"
 let volume _ = 0.
 let bbox _ = Geom.Bbox.empty

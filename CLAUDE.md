@@ -34,6 +34,7 @@ Note de conception : https://claude.ai/artifact/AQf6M5uPjzioQJFNUBBSK5
 - `src/kernel_manifold_js` : noyau manifold-3d (WASM) via js_of_ocaml ; `test_js/` : lois du noyau + géométrie des exemples.
 - `src/core/sketch`, `nlsolve` : esquisses contraintes (monade, poignées typées), Gauss-Newton à pas de norme minimale.
 - `src/core/sketch_desc` : esquisse décrite par l'éditeur (indices, contraintes nommées) → résolution et code `let%sketch`.
+- `src/core/loft` : lissage (contours → maillage fermé), passé au noyau par `of_mesh`.
 - `src/core/journal_json` : arbre de features en JSON (format dans le `.mli`).
 - `src/core/source_edit` : réécritures du source depuis la frise (cotes, → paramètre, `[@@suppress]`, renommer, supprimer), lexicales.
 - `src/parts` (`Cad_parts`) : pièces paramétriques réutilisables (`Gear` : développante ; `Thread` : filetages ISO).

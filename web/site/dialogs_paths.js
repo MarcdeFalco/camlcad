@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { el } from './timeline.js';
 import { num, choice, row, OPS } from './dialogs.js';
+import { sketchPlane } from './sketch_parse.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(10)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
@@ -133,4 +134,35 @@ export function holes(d, sk, back) {
     },
   });
   preview();
+}
+
+// Lissage (ch. 3, Loft) : solide réglé entre le contour de l'esquisse qu'on termine et celui
+// d'une esquisse déjà dans le code (Shape.loft), ou esquisse gardée seule pour un lissage à
+// venir (dans les deux cas, « let planN = … » la place).
+export function loft(d, sk, back) {
+  const code = d.ctx.codeText(), planes = d.ctx.allPlanes();
+  const others = [...code.matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => m[1]).map((name) => {
+    const k = /(\d+)$/.exec(name)?.[1], own = k && new RegExp(`let plan${k} = `).test(code) ? `plan${k}` : null;
+    const pl = sketchPlane(code, name, planes)?.code ?? own;
+    return pl ? { name, plane: /^[a-z_][\w']*$/.test(pl) ? pl : `(${pl})` } : null;
+  }).filter(Boolean);
+  const P = { to: others.length ? others[others.length - 1].name : '', op: 'join' };
+  const decl = (n) => `  let plan${n} = ${sk.planeCode} in\n  let%sketch esquisse${n} =\n${sk.code}  in\n`;
+  d.open('LISSAGE', [
+    others.length
+      ? row('Vers l’esquisse', choice(Object.fromEntries(others.map((o) => [o.name, o.name])), P.to, (v) => { P.to = v; }))
+      : el('div', { className: 'hint', textContent: 'Aucune autre esquisse : gardez celle-ci, puis dessinez la seconde sur un autre plan.' }),
+    row('Opération', d.ctx.isEmpty() ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; })),
+    row('Esquisse seule', Object.assign(el('button', { textContent: 'Garder l’esquisse', id: 'loft-keep' }), {
+      onclick: () => { const n = d.ctx.nextIndex(); d.ctx.insertLets(decl(n)); d.close(); },
+    })),
+  ], {
+    key: 'loft', cancel: back,
+    ok: () => {
+      const o = others.find((x) => x.name === P.to);
+      if (!o) return false;
+      const n = d.ctx.nextIndex(), name = `lissage${n}`;
+      d.ctx.insert(`${decl(n)}  let%feat ${name} = Shape.loft [ (${o.plane}, ${o.name}); (plan${n}, esquisse${n}) ] in\n`, name, P.op, n);
+    },
+  });
 }

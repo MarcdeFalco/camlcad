@@ -34,6 +34,11 @@ val scale : ?about:Geom.V3.t -> Geom.V3.t -> t -> t
     [f.x], [f.y], [f.z] ; [V3.v k k k] est l'homothétie de rapport [k]. Un facteur
     négatif retourne aussi la pièce ; un facteur nul donne un solide vide. *)
 
+val loft : (Geom.Plane.t * Profile.t) list -> t
+(** Lissage (Black Book ch. 3, Loft) : solide réglé passant par les profils, chacun dans
+    son plan, dans l'ordre (voir {!Loft.mesh}). Profils simples seulement (polygone,
+    cercle) ; un profil booléen, ou moins de deux profils, donne un solide vide. *)
+
 val id : t -> int
 val equal : t -> t -> bool
 
@@ -54,5 +59,6 @@ type view =
   | Place of Geom.Frame.t * t
   | Mirror of Geom.V3.t * t
   | Scale of Geom.V3.t * t
+  | Loft of (Geom.Frame.t * Profile.t) list
 
 val view : t -> view

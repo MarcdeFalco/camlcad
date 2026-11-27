@@ -101,6 +101,10 @@ module Make (K : Kernel.S) = struct
           | Place (f, a) -> K.transform f (solid c a)
           | Mirror (n, a) -> K.mirror ~normal:n (solid c a)
           | Scale (f, a) -> K.scale f (solid c a)
+          | Loft l ->
+              let outline p = Loft.outline ~segments:(segments q ~r:(radius p) ~deg:360.) p in
+              let ls = List.filter_map (fun (f, p) -> Option.map (fun o -> (f, o)) (outline p)) l in
+              if List.length ls <> List.length l then K.empty else K.of_mesh (Loft.mesh ls)
         in
         c.calls <- c.calls + 1;
         Hashtbl.replace c.solids (Shape.id s) k;

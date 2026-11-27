@@ -28,6 +28,14 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
     view.dispatch({ changes: { from: last.index, to: last.index + last[0].length, insert: ins + `${last[1]}Doc.return ${res}` } , annotations: step });
     changed();
   }
+  // Liaisons insérées telles quelles avant le dernier Doc.return (esquisse gardée seule).
+  function insertLets(code) {
+    const last = lastReturn();
+    if (!last) { notify('Pas de « Doc.return … » où insérer.', true); return; }
+    beforeInsert();
+    view.dispatch({ changes: { from: last.index, to: last.index, insert: code }, annotations: step });
+    changed();
+  }
   // Remplace le résultat X du dernier Doc.return par une feature « name = expr(X) » (déplacer…).
   function insertResult(name, expr) {
     const last = lastReturn();
@@ -75,7 +83,7 @@ export function codeEdits({ view, notify, changed, beforeInsert }) {
   const nextIndex = () => 1 + Math.max(0, ...[...view.state.doc.toString().matchAll(/\blet(?:%\w+)?\s+[a-z_]+?(\d+)\s*=/g)].map((m) => Number(m[1])));
   const sketchesInCode = () => [...view.state.doc.toString().matchAll(/let%sketch\s+([a-z_][\w']*)/g)].map((m) => ({ name: m[1], line: view.state.doc.lineAt(m.index).number }));
   const allPlanes = () => ({ ...basePlanes, ...constructionPlanes() });
-  return { insertFeature, insertResult, insertParam, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };
+  return { insertFeature, insertLets, insertResult, insertParam, insertPlane, constructionPlanes, allPlanes, nextIndex, sketchesInCode };
 }
 
 // Positions au format __POS__ : colonnes en octets depuis le début de la ligne.

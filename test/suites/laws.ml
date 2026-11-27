@@ -43,6 +43,9 @@ module Make (K : Cad.Kernel.S) = struct
       (let s = Shape.scale ~about:(v 5. 5. 5.) (v 2. 1. 0.5) cube in
        let bb = K.bbox (solid s) in
        close ~rel:1e-6 (vol s) 1000. && close bb.min.x (-5.) && close bb.max.x 15. && close bb.max.z 7.5);
+    check "lissage : tronc de pyramide 20 → 10, h 10"
+      (let sq c = Profile.rect ~center:true ~w:c ~h:c () in
+       close ~rel:1e-6 (vol (Shape.loft [ (Geom.Plane.xy, sq 20.); (Geom.Plane.offset 10. Geom.Plane.xy, sq 10.) ])) (7000. /. 3.));
     let mesh = E.mesh c Shape.(a - b) in
     check "maillage : fermé, Euler = 2" (Mesh.is_closed mesh && Mesh.euler_characteristic mesh = 2);
     check "maillage : volume = volume noyau" (close ~rel:1e-5 (Mesh.volume mesh) (vol Shape.(a - b)));
