@@ -208,6 +208,8 @@ du cache Playwright).
   après rechargement).
 - Lot 57, impression 3D (Arrange) : exemplaires (1 à 64) en grille centrée avec un écart,
   dans l'aperçu, l'encombrement, les couches et le STL exporté. Scénario `exemplaires.spec.js`.
+- Lot 58, chapitre 6 (Move/Copy, Create Copy) : case Copie du dialogue Déplacer : l'original
+  reste et la copie déplacée y est jointe (`copieN`). Scénario `copier.spec.js` (volume × 4).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la

@@ -188,11 +188,12 @@ export function combine(d, journal) {
   });
 }
 
-// Déplacer : rotation autour d'un axe d'origine puis translation du résultat courant.
+// Déplacer / copier (ch. 6, Move/Copy) : rotation autour d'un axe d'origine puis translation
+// du résultat courant ; « Copie » garde l'original et y joint la copie déplacée.
 export function move(d) {
   const part = d.ctx.part();
   if (!part) { d.ctx.notify('Pas de pièce à déplacer.', true); return; }
-  const P = { dx: 0, dy: 0, dz: 0, axis: 'Z', deg: 0 };
+  const P = { dx: 0, dy: 0, dz: 0, axis: 'Z', deg: 0, copy: false };
   const preview = () => {
     const o = new THREE.Mesh(part.geometry.clone());
     o.applyMatrix4(new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(...AXES[P.axis]), (P.deg * Math.PI) / 180));
@@ -206,14 +207,15 @@ export function move(d) {
     row('Translation z', n3('dz'), el('span', { className: 'unit', textContent: 'mm' })),
     row('Axe de rotation', choice({ X: 'X', Y: 'Y', Z: 'Z' }, P.axis, (v) => { P.axis = v; preview(); })),
     row('Angle', n3('deg'), el('span', { className: 'unit', textContent: '°' })),
+    row('Copie', Object.assign(el('input', { type: 'checkbox', id: 'move-copy' }), { onchange: (e) => { P.copy = e.target.checked; } })),
   ], {
     key: 'move',
     ok: () => {
-      const n = d.ctx.nextIndex(), name = `deplacement${n}`;
+      const n = d.ctx.nextIndex(), name = `${P.copy ? 'copie' : 'deplacement'}${n}`;
       const rot = P.deg ? ` |> rotate ~axis:${AXIS_CODE[P.axis]} ~deg:${litp(P.deg)}` : '';
       const tr = P.dx || P.dy || P.dz ? ` |> translate ${v3({ x: P.dx, y: P.dy, z: P.dz })}` : '';
       if (!rot && !tr) return false;
-      d.ctx.insertResult(name, (x) => `Shape.(${x}${rot}${tr})`);
+      d.ctx.insertResult(name, (x) => (P.copy ? `Shape.(${x} + (${x}${rot}${tr}))` : `Shape.(${x}${rot}${tr})`));
     },
   });
   preview();
