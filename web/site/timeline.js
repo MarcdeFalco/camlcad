@@ -165,7 +165,7 @@ export class Timeline {
         this.leaf('▱', k, { title: 'Nouvelle esquisse sur ce plan', onclick: () => this.ctx.sketchOn(k) }))));
     if (this.sketches.length)
       kids.push(this.folder('sketches', `Esquisses (${this.sketches.length})`, this.sketches.map((s) =>
-        this.leaf('✎', s.name, { title: 'Clic : aller au code · double-clic : modifier l’esquisse', onclick: () => this.ctx.gotoLine(s.line), ondblclick: () => this.ctx.editSketch(s.name) }))));
+        this.leaf('✎', s.name, { title: 'Clic : aller au code (pendant Extrusion : extruder ses régions) · double-clic : modifier l’esquisse', onclick: () => this.ctx.sketchClick(s), ondblclick: () => this.ctx.editSketch(s.name) }))));
     // Corps : les solides que rien n'utilise plus (le résultat). L'historique, lui, est la frise.
     if (j) {
       const used = new Set(j.features.flatMap((f) => f.deps)), bodies = j.features.filter((f) => !used.has(f.id));

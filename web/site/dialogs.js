@@ -129,23 +129,25 @@ export class Dialogs {
     let sk = sk0;
     const empty = this.ctx.isEmpty();
     const P = { h: 10, dir: 'one', op: 'join', taper: 0 };
-    // Profils (contours) choisis : décochés, ils restent dans l'esquisse en construction.
-    const sel = sk.loops.map(() => true), all = sk.loops;
-    // Régions comme Cad.Sketch_desc : contours et cercles, profondeur d'imbrication paire
-    // ajoutée, impaire retirée (cercle dans un contour : perçage ; cercles concentriques : bague).
+    // Régions comme Cad.Profile.regions : chaque contour ou cercle moins ceux qu'il contient
+    // directement, par profondeur d'imbrication puis ordre (contours, puis cercles). Cochées par
+    // défaut : profondeur paire (le profil de l'esquisse) ; on en choisit d'autres comme on
+    // clique des régions dans un modeleur (l'anneau entre deux cercles, par exemple).
+    const inside = (p, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; };
+    const regs = [...sk.loops.map((l) => ({ l, probe: l[0], has: (p) => inside(p, l) })),
+      ...sk.circles.map((c) => ({ c, probe: { x: c.x + c.r, y: c.y }, has: (p) => Math.hypot(p.x - c.x, p.y - c.y) < c.r - 1e-6 }))];
+    for (const g of regs) g.depth = regs.filter((m) => m !== g && m.has(g.probe)).length;
+    regs.sort((u, v) => u.depth - v.depth); // tri stable, comme Profile.regions
+    const sel = regs.map((g) => g.depth % 2 === 0), dflt = sel.slice(), choosable = regs.length > 1 && !(sk.ellipses?.length);
     const shapes = () => {
-      sk = { ...sk, loops: all.filter((_, i) => sel[i]) };
-      const inside = (p, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; };
-      const regs = [...sk.loops.map((l) => ({ l, probe: l[0], has: (p) => inside(p, l) })),
-        ...sk.circles.map((c) => ({ c, probe: { x: c.x + c.r, y: c.y }, has: (p) => Math.hypot(p.x - c.x, p.y - c.y) < c.r - 1e-6 }))];
-      for (const g of regs) g.depth = regs.filter((m) => m !== g && m.has(g.probe)).length;
       const path = (g, P) => { const s = new P(); if (g.c) s.absarc(g.c.x, g.c.y, g.c.r, 0, 2 * Math.PI, P === THREE.Path); else { s.moveTo(g.l[0].x, g.l[0].y); for (const p of g.l.slice(1)) s.lineTo(p.x, p.y); } return s; };
       const out = [];
-      for (const g of regs.filter((x) => x.depth % 2 === 0)) {
+      regs.forEach((g, i) => {
+        if (!sel[i]) return;
         const s = path(g, THREE.Shape);
         for (const h of regs) if (h.depth === g.depth + 1 && g.has(h.probe)) s.holes.push(path(h, THREE.Path));
         out.push(s);
-      }
+      });
       for (const e of sk.ellipses ?? []) { const v = e.map((p) => new THREE.Vector2(p.x, p.y)); if (out.length) out.forEach((sh) => sh.holes.push(new THREE.Path(v))); else out.push(new THREE.Shape(v)); }
       return out;
     };
@@ -173,7 +175,7 @@ export class Dialogs {
     const hIn = num(P.h, (v) => { P.h = v; preview(); this.gizmo?.set(P.dir === 'flip' ? -v : v); }, { min: 0 });
     this.open('EXTRUSION', [
       row('Profil', el('span', { className: 'hint', textContent: `esquisse (${sk.loops.length} contour${sk.loops.length > 1 ? 's' : ''}, ${sk.circles.length} cercle${sk.circles.length > 1 ? 's' : ''})` })),
-      ...(all.length > 1 ? [row('Contours', el('span', { className: 'profiles' }, ...all.map((_, i) => el('label', {}, Object.assign(el('input', { type: 'checkbox', checked: true }), { onchange: (e) => { sel[i] = e.target.checked; preview(); } }), ` ${i + 1} `))))] : []),
+      ...(choosable ? [row('Régions', el('span', { className: 'profiles', title: 'Régions de l’esquisse à extruder (1 : la plus extérieure)' }, ...regs.map((g, i) => el('label', {}, Object.assign(el('input', { type: 'checkbox', checked: sel[i] }), { onchange: (e) => { sel[i] = e.target.checked; preview(); } }), ` ${i + 1} `))))] : []),
       row('Direction', dirSel),
       row('Distance', hIn, el('span', { className: 'unit', textContent: 'mm' }),
         // Jusqu'à une face (ch. 3, Extent « To ») : la distance au plan d'une face plane parallèle.
@@ -191,14 +193,12 @@ export class Dialogs {
       key: 'extrude',
       cancel: back,
       ok: () => {
-        if (!(P.h > 0) || (all.length && !sel.some(Boolean))) return false;
+        if (!(P.h > 0) || !sel.some(Boolean)) return false;
         if (P.taper && sk.loops.length + sk.circles.length + (sk.ellipses?.length ?? 0) > 1) { this.ctx.notify('Dépouille : un seul contour simple (sans trou).', true); return false; }
-        // Contours retirés : l'esquisse est réécrite par le solveur sans eux, puis insérée.
-        if (!sel.every(Boolean) && sk.desc && !sk.recoded) {
-          this.ctx.resolveSketch({ ...sk.desc, loops: sk.desc.loops.filter((_, i) => sel[i]) }).then((m) => { if (m.ok) { sk.code = m.code; sk.recoded = true; this.ok(); } });
-          return false;
-        }
-        const n = this.ctx.nextIndex(), plan = `plan${n}`, esq = `esquisse${n}`;
+        // Esquisse déjà dans le code (sk.existing) : réutilisée, pas réécrite.
+        const n = this.ctx.nextIndex(), plan = `plan${n}`, sname = sk.existing ?? `esquisse${n}`;
+        const esq = sel.every((x, i) => x === dflt[i]) ? sname
+          : sel.map((x, i) => (x ? `(Profile.region ${i} ${sname})` : null)).filter(Boolean).reduce((u, v) => `(Profile.union ${u} ${v})`);
         const name = (P.op === 'cut' ? 'poche' : 'extrusion') + n;
         const eps = P.op === 'cut' && P.dir !== 'sym';
         let shape;
@@ -208,7 +208,7 @@ export class Dialogs {
           const off = P.dir === 'sym' ? '(-. h /. 2.)' : P.dir === 'flip' ? '(-. h)' : '(-0.01)';
           shape = `let h = ${lit(P.h)} in\n    Shape.(extrude ${tp}~h:${eps ? '(h +. 0.01)' : 'h'} ${esq} |> translate (Geom.V3.v 0. 0. ${off}) |> place ${named(sk.planeCode) ? sk.planeCode : plan})`;
         }
-        const code = `${planDecl(plan, sk.planeCode)}  let%sketch ${esq} =\n${sk.code}  in\n  let%feat ${name} =\n    ${shape}\n  in\n`;
+        const code = `${planDecl(plan, sk.planeCode)}${sk.existing ? '' : `  let%sketch ${sname} =\n${sk.code}  in\n`}  let%feat ${name} =\n    ${shape}\n  in\n`;
         this.ctx.insert(code, name, P.op, n);
       },
     });
