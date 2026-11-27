@@ -187,6 +187,7 @@ const sketch = new SketchEditor({
   mode: (on) => showTab(on ? 'sketch' : null),
   finish: (data) => {
     vp.threeQuarter(data.frame);
+    if (data.editing?.reuse) { dialogs.extrude({ ...data, existing: data.editing.name }, () => sketch.stop()); return; } // esquisse existante : extrusion seule
     if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (['rib', 'pipe', 'holes', 'loft', 'sweep', 'keep'].includes(data.kind) ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
   done: () => showFace(null),
 });
@@ -194,15 +195,17 @@ window.camlcadSketch = sketch; // inspection (tests)
 function startSketch(frame, code, data, editing, loops) { dialogs.close(true); showFace(null); if (selected != null) selectFeature(null, false); sketch.start(frame, code, data, editing, loops); }
 // « Modifier l'esquisse » : relue du code, vérifiée (le solveur doit réécrire exactement le même texte).
 let verify = null, waiter = null; // réouverture vérifiée ; réécriture d'une esquisse (profils choisis)
-function editSketch(name) {
+function editSketch(name, reuse = false) {
   if (sketch.active) return;
   const r = prepareEdit(view.state.doc.toString(), name, allPlanes(), journal?.params ?? []);
   if (typeof r === 'string') { notify(r, true); return; }
-  verify = r; worker.postMessage({ kind: 'sketch', id: 0, sketch: descOf(r.data), overrides: [] });
+  verify = { ...r, reuse }; worker.postMessage({ kind: 'sketch', id: 0, sketch: descOf(r.data), overrides: [] });
 }
 function openVerified(v, m) {
   if (!m.ok || !sameCode(m.code, v.text)) { notify(`Esquisse « ${v.name} » modifiée à la main : modifiez-la dans le code.`, true); return; }
-  stopPicking(); startSketch(v.frame, v.planeCode, v.data, { name: v.name });
+  stopPicking(); startSketch(v.frame, v.planeCode, v.data, { name: v.name, reuse: v.reuse });
+  // Extruder une esquisse existante : dès qu'elle est résolue, le dialogue d'extrusion (régions).
+  if (v.reuse) { let n = 0; const go = () => (sketch.code ? sketch.finish() : ++n < 100 && setTimeout(go, 50)); go(); }
 }
 function startPicking(extrude = false) {
   if (sketch.active) return;
@@ -210,7 +213,7 @@ function startPicking(extrude = false) {
   const empty = !lastMesh || !lastMesh.triangles.length;
   picking = true; extrudePick = extrude && !empty; vp.showPlanes(allPlanes());
   if (!lastMesh || !lastMesh.triangles.length) { vp.planes.updateMatrixWorld(true); vp.fit([vp.planes]); } // document vide : les trois plans entiers à l'écran
-  hint(extrudePick ? 'Cliquez la face plane à extruder, ou un plan pour y esquisser le profil (Échap pour annuler).' : `Choisissez un plan d’origine${empty ? '' : ' ou une face plane de la pièce'}${extrude ? ' pour esquisser le profil à extruder' : ''} (Échap pour annuler).`);
+  hint(extrudePick ? 'Cliquez la face plane à extruder, une esquisse du navigateur, ou un plan pour y esquisser le profil (Échap pour annuler).' : `Choisissez un plan d’origine${empty ? '' : ' ou une face plane de la pièce'}${extrude ? ' pour esquisser le profil à extruder' : ''} (Échap pour annuler).`);
 }
 // Perçage : un clic sur une face plane donne la position et la direction (Black Book ch. 4).
 const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs, insertPlane, clearFace: () => showFace(null) });
@@ -283,7 +286,7 @@ const timeline = new Timeline({
   apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
   openEdit: (fid, rename) => dialogs.feature(fid, rename), openParams,
   sketchOn: (k) => { const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
-  gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible, togglePart: () => vp.togglePart(), partVisible: () => !vp.partHidden,
+  gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), sketchClick: (s) => (extrudePick ? (stopPicking(), editSketch(s.name, true)) : gotoLine(s.line)), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible, togglePart: () => vp.togglePart(), partVisible: () => !vp.partHidden,
   rollback: (k) => {
     rollbackAt = k; bodies.cancel();
     vp.setHighlight(null);

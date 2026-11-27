@@ -60,3 +60,56 @@ let rotate ~deg a = mk (Rotate (deg, a))
 let id p = p.id
 let equal a b = a.id = b.id
 let view p = p.v
+
+(* ---------- Régions ---------- *)
+
+exception Not_simple
+
+let regions p =
+  let rec leaves q =
+    match q.v with
+    | Union (a, b) | Difference (a, b) -> leaves a @ leaves b
+    | Polygon (_ :: _) -> [ q ]
+    | Circle _ -> [ q ]
+    | Translate (_, { v = Circle _; _ }) -> [ q ]
+    | _ -> raise Not_simple
+  in
+  match leaves p with
+  | exception Not_simple -> [ p ]
+  | ls ->
+      let ls = List.fold_left (fun acc q -> if List.exists (equal q) acc then acc else acc @ [ q ]) [] ls in
+      let disk q = match q.v with Circle r -> Some (0., 0., r) | Translate (c, { v = Circle r; _ }) -> Some (c.Geom.V2.x, c.Geom.V2.y, r) | _ -> None in
+      let probe q =
+        match (q.v, disk q) with
+        | Polygon (a :: _), _ -> (a.Geom.V2.x, a.Geom.V2.y)
+        | _, Some (x, y, r) -> (x +. r, y)
+        | _ -> (0., 0.)
+      in
+      let contains q (x, y) =
+        match (q.v, disk q) with
+        | Polygon ps, _ ->
+            let a = Array.of_list ps and c = ref false in
+            let n = Array.length a in
+            for i = 0 to n - 1 do
+              let pi = a.(i) and pj = a.((i + n - 1) mod n) in
+              if pi.Geom.V2.y > y <> (pj.Geom.V2.y > y)
+                 && x < ((pj.x -. pi.x) *. (y -. pi.y) /. (pj.y -. pi.y)) +. pi.x
+              then c := not !c
+            done;
+            !c
+        | _, Some (cx, cy, r) -> Float.hypot (x -. cx) (y -. cy) < r -. 1e-6
+        | _ -> false
+      in
+      let depth q = List.length (List.filter (fun m -> not (equal m q) && contains m (probe q)) ls) in
+      let ds = List.map (fun q -> (depth q, q)) ls |> List.stable_sort (fun (a, _) (b, _) -> compare a b) in
+      List.map
+        (fun (d, q) ->
+          List.fold_left
+            (fun acc (d', h) -> if d' = d + 1 && contains q (probe h) then difference acc h else acc)
+            q ds)
+        ds
+
+let region k p =
+  match if k < 0 then None else List.nth_opt (regions p) k with
+  | Some r -> r
+  | None -> invalid_arg (Printf.sprintf "Profile.region %d : le profil a %d région(s)" k (List.length (regions p)))

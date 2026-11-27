@@ -128,7 +128,14 @@ val union / difference / intersection : t -> t -> t
 val offset : float -> t -> t          (* décalage à coins ARRONDIS ; négatif = vers l'intérieur *)
 val translate : Geom.V2.t -> t -> t
 val rotate : deg:float -> t -> t
+val regions : t -> t list             (* régions d'un profil d'esquisse : chaque contour moins ceux qu'il contient *)
+val region : int -> t -> t            (* la k-ième (0 = extérieur) ; Invalid_argument hors bornes *)
 ```
+
+Une esquisse, plusieurs extrusions (comme cliquer des régions dans un modeleur) :
+avec `esquisse1 = Sketch.(loop [...] - disk c20 + disk c8)` (contour, Ø20, Ø8 concentriques), les régions sont
+0 : contour − Ø20, 1 : Ø20 − Ø8 (l'anneau), 2 : Ø8 ; `Shape.extrude ~h:15. (Profile.region 1 esquisse1)`
+extrude l'anneau seul.
 
 Rectangle à coins arrondis de rayon r :
 `Profile.(offset r (rect ~center:true ~w:(w -. 2. *. r) ~h:(h -. 2. *. r) ()))`.
