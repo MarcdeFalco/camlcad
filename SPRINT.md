@@ -206,6 +206,8 @@ du cache Playwright).
   commande Insérer STL : le fichier choisi est gardé dans le navigateur et redonné au worker à
   chaque démarrage ; le code le lit par son nom. Scénario `importer.spec.js` (volume, reprise
   après rechargement).
+- Lot 57, impression 3D (Arrange) : exemplaires (1 à 64) en grille centrée avec un écart,
+  dans l'aperçu, l'encombrement, les couches et le STL exporté. Scénario `exemplaires.spec.js`.
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
