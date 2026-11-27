@@ -210,6 +210,10 @@ du cache Playwright).
   dans l'aperçu, l'encombrement, les couches et le STL exporté. Scénario `exemplaires.spec.js`.
 - Lot 58, chapitre 6 (Move/Copy, Create Copy) : case Copie du dialogue Déplacer : l'original
   reste et la copie déplacée y est jointe (`copieN`). Scénario `copier.spec.js` (volume × 4).
+- Lot 59, chapitre 2 (Trim contre un cercle) : Ajuster coupe une ligne aux cercles (sommet
+  « sur le cercle ») et un cercle cliqué devient l'arc restant entre ses intersections
+  voisines, les lignes scindées à ses extrémités ; les contours se recalculent avec les arcs
+  (lignes et arcs, format `{a}`/`{r}`). Scénario `trou_serrure.spec.js` (aire de l'union).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
@@ -218,7 +222,7 @@ du cache Playwright).
   le force-push), puis PR, CI, fusion.
 
 ## Suivant (ordre proposé)
-- Chapitre 2 : ajuster, prolonger, couper contre cercles et arcs d'esquisse, cote de
+- Chapitre 2 : ajuster un arc, prolonger et couper contre cercles et arcs d'esquisse, cote de
   l'ellipse et de la courbe ; profils choisis en cliquant la région dans la vue ;
   texte dans l'esquisse elle-même (police à contours).
 - Chapitre 3 : lissage et balayage de profils à trous, chemin courbe (arcs, courbes).

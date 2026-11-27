@@ -75,6 +75,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `importer.spec.js` | Black Book ch. 1 : STL binaire choisi au sélecteur de fichiers, corps importé (volume), revenu après rechargement |
 | `exemplaires.spec.js` | Impression 3D : 4 puis 16 équerres en grille, encombrement, écart, STL à 4 × les triangles |
 | `copier.spec.js` | Black Book ch. 6 : pavé copié à 30 mm, puis la paire copiée tournée de 90° (volume × 4) |
+| `trou_serrure.spec.js` | Black Book ch. 2 : cercle et rectangle ajustés en trou de serrure (un contour lignes + arc, aire) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |
