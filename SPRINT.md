@@ -233,6 +233,10 @@ du cache Playwright).
   parois de 1 mm).
 - Lot 67, chapitre 2 (Center Point Slot) : oblong par le centre (centre, centre d'une
   extrémité ; centre tenu au milieu par une ligne de construction). Scénario `oblong_centre.spec.js`.
+- Lot 68, chapitre 4 (Circular Pattern, Symmetric) : case Symétrique du réseau circulaire
+  (angle réparti de part et d'autre de l'original). Scénario `reseau_circ_sym.spec.js`.
+- Correctif (vu en CI, PR 46) : une esquisse terminée avant sa première résolution reprenait le
+  code de l'esquisse précédente ; Lissage et Garder attendent la résolution comme Terminer.
 
 ## En cours
 - Fin du sprint (27/11, 6 h) : les lots 44 à 65 partent en PR groupées de 2 à 6 lots (la CI

@@ -83,6 +83,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `reseau_sym.spec.js` | Black Book ch. 4 : trois boîtes au pas de 30 centrées sur l'original (−30 à 50 en x, volume × 3) |
 | `epaisseur.spec.js` | Black Book ch. 8 : bac à parois de 1 mm (coque), épaisseur minimale 1 mm, parois sous le seuil colorées |
 | `oblong_centre.spec.js` | Black Book ch. 2 : oblong par le centre, extrudé (centré, volume) |
+| `reseau_circ_sym.spec.js` | Black Book ch. 4 : deux boîtes à ±45° autour de z (réseau circulaire symétrique) |
 | `frise.spec.js` | Double-clic sur une feature, cote modifiée ; marqueur glissé (corps présents à l'étape), menu contextuel « Revenir avant cette étape », lecteur |
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |
