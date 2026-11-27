@@ -46,12 +46,15 @@ export class SketchEditor extends SketchMarks {
     scene.add(this.group);
     // Vue de face sur le plan, cadrée sur la face d'appui, sinon sur la pièce projetée.
     let dist = Math.max(60, camera.position.distanceTo(controls.target)), target = f.origin.clone();
-    const P = this.faceLoops?.length ? this.faceLoops.flat() : this.modelPts ?? [];
-    if (P.length) {
-      const xs = P.map((p) => p.x), ys = P.map((p) => p.y);
-      const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys), t = Math.tan((camera.fov * Math.PI) / 360);
+    const t = Math.tan((camera.fov * Math.PI) / 360);
+    if (this.faceLoops?.length) { // sur une face : cadrée sur elle
+      const P = this.faceLoops.flat(), xs = P.map((p) => p.x), ys = P.map((p) => p.y);
+      const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys);
       dist = Math.max(30, (1.25 * Math.max(h, w / camera.aspect)) / (2 * t));
       target.addScaledVector(f.x, (Math.max(...xs) + Math.min(...xs)) / 2).addScaledVector(f.y, (Math.max(...ys) + Math.min(...ys)) / 2);
+    } else if (this.modelPts?.length) { // sur un plan : centrée sur l'origine, assez loin pour voir la pièce projetée
+      const ex = Math.max(...this.modelPts.map((p) => Math.abs(p.x))), ey = Math.max(...this.modelPts.map((p) => Math.abs(p.y)));
+      dist = Math.max(dist, (1.15 * Math.max(ey, ex / camera.aspect)) / t);
     }
     controls.target.copy(target);
     camera.up.copy(f.y);
