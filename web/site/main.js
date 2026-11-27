@@ -258,7 +258,7 @@ $('animate').onclick = () => mech.toggle();
 for (const b of document.querySelectorAll('[data-nav]')) b.onclick = () => {
   const n = b.dataset.nav;
   if (n === 'orbit' || n === 'pan') { vp.setMode(n); for (const x of document.querySelectorAll('[data-nav=orbit],[data-nav=pan]')) x.classList.toggle('on', x === b); }
-  else if (n === 'style') vp.cycleStyle();
+  else if (n === 'style') notify(['Ombré avec arêtes', 'Ombré', 'Filaire', 'Rendu (éclairage d’ambiance, ombre portée)'][vp.cycleStyle()]);
   else if (n === 'grid') b.classList.toggle('on', vp.toggleGrid());
   else COMMANDS[n]();
 };

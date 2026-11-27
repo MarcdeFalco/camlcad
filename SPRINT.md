@@ -138,6 +138,9 @@ du cache Playwright).
   de départ, qui changent avec les paramètres). Scénario `cotes_parametres.spec.js`.
 - Lot 38, chapitre 1 (raccourcis) : Q pousser/tirer, H perçage, M mesurer, J liaison, « ? » (et
   bouton ?) pour la liste des raccourcis. Scénario `raccourcis.spec.js`.
+- Lot 39, chapitre 10 (In-canvas Render) : quatrième style de la barre de navigation,
+  « Rendu » : éclairage d'ambiance (RoomEnvironment), tons ACES, matière satinée, ombre portée
+  sur le plan de travail. Scénario `rendu.spec.js`.
 
 ## En cours
 - Fusion des PR des lots 4 à 7 (une par lot ; branches locales lot4…lot7, script de passage :
