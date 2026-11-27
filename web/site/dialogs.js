@@ -231,7 +231,7 @@ export class Dialogs {
     const empty = this.ctx.isEmpty();
     const axes = { Y: { name: 'Axe y de l’esquisse', a: { x: 0, y: 0 }, b: { x: 0, y: 1 } }, X: { name: 'Axe x de l’esquisse', a: { x: 0, y: 0 }, b: { x: 1, y: 0 } } };
     for (const l of sk.lines) axes[l.name] = { name: `Ligne ${l.name}`, a: l.a, b: l.b };
-    const P = { axis: 'Y', deg: 360, op: 'join' };
+    const P = { axis: 'Y', deg: 360, op: 'join', sym: false };
     const geom = () => {
       const { a, b } = axes[P.axis], t = Math.atan2(b.y - a.y, b.x - a.x);
       // Rotation qui amène l'axe sur +y, le profil du côté x > 0 (le noyau coupe x < 0).
@@ -248,7 +248,8 @@ export class Dialogs {
       const outlines = [...sk.loops, ...sk.circles.map((k) => Array.from({ length: 33 }, (_, i) => ({ x: k.x + k.r * Math.cos((i / 32) * 2 * Math.PI), y: k.y + k.r * Math.sin((i / 32) * 2 * Math.PI) })))];
       for (const l of outlines) {
         const pts = [...l, l[0]].map(to);
-        g.add(new THREE.Mesh(new THREE.LatheGeometry(pts, 48, 0, (Math.max(1, P.deg) * Math.PI) / 180)));
+        const phi = (Math.max(1, P.deg) * Math.PI) / 180;
+        g.add(new THREE.Mesh(new THREE.LatheGeometry(pts, 48, P.sym ? -phi / 2 : 0, phi)));
       }
       // Lathe : axe y, rayon x ; ramené dans le plan d'esquisse (inverse de la mise sur l'axe).
       const m = new THREE.Matrix4().makeRotationZ(-r).premultiply(new THREE.Matrix4().makeTranslation(a.x, a.y, 0));
@@ -260,6 +261,7 @@ export class Dialogs {
       row('Profil', el('span', { className: 'hint', textContent: `esquisse (${sk.loops.length} contour${sk.loops.length > 1 ? 's' : ''}, ${sk.circles.length} cercle${sk.circles.length > 1 ? 's' : ''})` })),
       row('Axe', choice(Object.fromEntries(Object.entries(axes).map(([k, v]) => [k, v.name])), P.axis, (v) => { P.axis = v; preview(); })),
       row('Angle', num(P.deg, (v) => { P.deg = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: '°' })),
+      row('Symétrique', Object.assign(el('input', { type: 'checkbox', id: 'revolve-sym' }), { onchange: (e) => { P.sym = e.target.checked; preview(); } })),
       row('Opération', empty ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; preview(); })),
     ], {
       key: 'revolve', cancel: back,
@@ -269,8 +271,8 @@ export class Dialogs {
         const r = Math.round(rot * 1e4) / 1e4;
         const prof = `${esq}${a.x || a.y ? ` |> Profile.translate (Geom.V2.v ${litp(-a.x)} ${litp(-a.y)})` : ''}${r ? ` |> Profile.rotate ~deg:${litp(r)}` : ''}`;
         const back3 = `${r ? ` |> rotate ~axis:Geom.V3.ez ~deg:${litp(-r)}` : ''}${a.x || a.y ? ` |> translate ${v3(a.x, a.y, 0)}` : ''}`;
-        const deg = P.deg === 360 ? '' : ` ~deg:${lit(P.deg)}`;
-        const code = `${planDecl(plan, sk.planeCode)}  let%sketch ${esq} =\n${sk.code}  in\n  let%feat ${name} =\n    Shape.(revolve${deg} (${prof}) |> rotate ~axis:Geom.V3.ex ~deg:(-90.)${back3} |> place ${named(sk.planeCode) ? sk.planeCode : plan})\n  in\n`;
+        const deg = P.deg === 360 ? '' : ` ~deg:${lit(P.deg)}`, half = P.sym && P.deg < 360 ? ` |> rotate ~axis:Geom.V3.ez ~deg:${litp(-P.deg / 2)}` : '';
+        const code = `${planDecl(plan, sk.planeCode)}  let%sketch ${esq} =\n${sk.code}  in\n  let%feat ${name} =\n    Shape.(revolve${deg} (${prof})${half} |> rotate ~axis:Geom.V3.ex ~deg:(-90.)${back3} |> place ${named(sk.planeCode) ? sk.planeCode : plan})\n  in\n`;
         this.ctx.insert(code, name, P.op, n);
       },
     });

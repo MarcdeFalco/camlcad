@@ -223,6 +223,8 @@ du cache Playwright).
 - Lot 62, chapitre 3 (Extrude, Extent « To ») : bouton « Jusqu'à… » du dialogue d'extrusion :
   on clique une face plane parallèle, la distance et le sens en sont tirés (valeur écrite en
   littéral). Scénario `jusqua.spec.js`.
+- Lot 63, chapitre 3 (Revolve, Symmetric) : case Symétrique de la révolution (angle réparti
+  de part et d'autre du plan d'esquisse). Scénario `revolution_sym.spec.js` (boîte englobante).
 
 ## En cours
 - Fusion des lots en file (une PR par lot, CI verte exigée) : chaque lot est un commit ; la
