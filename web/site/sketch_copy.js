@@ -99,3 +99,25 @@ export function offsetLoop(ed, line, d) {
   ed.loops.push(q);
   return null;
 }
+
+// Réseau circulaire autour du point `center` : n exemplaires (original compris) sur l'angle
+// total `total` (360 : tour complet). Chaque point copié est à la même distance du centre que
+// son original (rayons de construction de même longueur) et tourné de k × pas (angle orienté).
+export function patternCirc(ed, items, center, n, total = 360) {
+  if (!(n >= 2)) return 'Réseau : au moins deux exemplaires.';
+  const step = total >= 360 ? 360 / n : total / (n - 1), C = ed.pts[center];
+  const pts = usedPoints(ed, items).filter((p) => p !== center);
+  const rad = new Map(pts.map((p) => { ed.lines.push([center, p]); return [p, ed.lines.length - 1]; }));
+  for (let k = 1; k < n; k++) {
+    const m = new Map([[center, center]]), a = (k * step * Math.PI) / 180;
+    for (const p of pts) {
+      const P = ed.pts[p], dx = P.x - C.x, dy = P.y - C.y;
+      ed.pts.push({ x: C.x + dx * Math.cos(a) - dy * Math.sin(a), y: C.y + dx * Math.sin(a) + dy * Math.cos(a), fixed: false });
+      const q = ed.pts.length - 1; m.set(p, q);
+      ed.lines.push([center, q]); const lq = ed.lines.length - 1;
+      cons(ed, 'equal_length', [rad.get(p), lq]); cons(ed, 'angle', [rad.get(p), lq], ((k * step + 180) % 360) - 180);
+    }
+    copy(ed, items, (p) => m.get(p), false);
+  }
+  return null;
+}

@@ -3,6 +3,7 @@
 // à gauche, vue au centre (cube de vue, barre de navigation), dialogues à
 // droite, frise en bas, code repliable. Le code reste la seule source de vérité.
 import { EditorView, basicSetup } from 'codemirror';
+import { undo } from '@codemirror/commands';
 import { StreamLanguage } from '@codemirror/language';
 import { oCaml } from '@codemirror/legacy-modes/mode/mllike';
 import { setDiagnostics } from '@codemirror/lint';
@@ -12,6 +13,7 @@ import { SketchEditor, planarFace, basePlanes, frameCode, descOf } from './sketc
 import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus } from './toolbar.js';
+import { markingMenu } from './marking.js';
 import { jointDialog } from './mech_joint.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -248,6 +250,8 @@ const COMMANDS = {
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
 groupMenus();
+markingMenu(canvas, [['Esquisse', '✎', COMMANDS.sketch], ['Extrusion', '⬆', COMMANDS.extrude], ['Pousser/tirer', '⇕', COMMANDS.presspull], ['Congé', '◟', COMMANDS.fillet],
+  ['Perçage', '⊙', COMMANDS.hole], ['Mesurer', '📏', COMMANDS.measure], ['Ajuster', '⤢', COMMANDS.fit], ['Annuler', '↶', () => undo(view)]], () => !sketch.active);
 $('animate').onclick = () => mech.toggle();
 for (const b of document.querySelectorAll('[data-nav]')) b.onclick = () => {
   const n = b.dataset.nav;

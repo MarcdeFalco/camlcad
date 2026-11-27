@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK } from './sketch_tools.js';
-import { mirror, patternX, offsetLoop } from './sketch_copy.js';
+import { mirror, patternX, patternCirc, offsetLoop } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
 
@@ -251,6 +251,8 @@ export class SketchEditor extends SketchMarks {
     if (kinds === 'pl' || kinds === 'lp') out.push(['on_line', 'Sur la droite', [L('p')[0], L('l')[0]]], ['midpoint', 'Milieu', [L('p')[0], L('l')[0]]]);
     // Copies : réseau des éléments choisis, symétrie (la dernière ligne choisie est l'axe).
     if (s.length >= 1) out.push(['patternx', 'Réseau x', s.slice(), 3]);
+    // Réseau circulaire : le dernier élément choisi est le centre (un point).
+    if (s.length >= 2 && s[s.length - 1].kind === 'p') out.push(['patternc', 'Réseau circulaire', s.slice(), 6]);
     if (s.length >= 2 && s[s.length - 1].kind === 'l') out.push(['mirror', `Symétrie / L${s[s.length - 1].i + 1}`, s.slice()]);
     if (kinds === 'pc' || kinds === 'cp') out.push(['on_circle', 'Sur le cercle', [L('p')[0], L('c')[0]]]);
     return out;
@@ -258,6 +260,12 @@ export class SketchEditor extends SketchMarks {
 
   addConstraint([kind, label, refs, dflt]) {
     if (kind === 'mirror') { this.sel = []; const err = mirror(this, refs.slice(0, -1), refs[refs.length - 1].i); if (err) { this.error = err; this.redraw(); } else this.changed(); return; }
+    if (kind === 'patternc' && this.asking) {
+      const n = Math.round(this.asking.value); this.asking = null; this.sel = [];
+      const err = patternCirc(this, refs.slice(0, -1), refs[refs.length - 1].i, n);
+      if (err) { this.error = err; this.redraw(); } else this.changed();
+      return;
+    }
     if (kind === 'patternx' && this.asking) { const n = Math.round(this.asking.value); this.asking = { kind: 'patternx_d', label: `Pas (${n} exemplaires)`, refs, value: 10, n }; this.redraw(); return; }
     if (kind === 'patternx_d' && this.asking) {
       const { n, value } = this.asking; this.asking = null; this.sel = [];
