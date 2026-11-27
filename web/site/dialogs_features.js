@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { el, fmt } from './timeline.js';
 import { num, choice, row, OPS } from './dialogs.js';
+import { distanceHandle } from './gizmo.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(10)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
@@ -255,35 +256,56 @@ export function threadRod(d) {
   preview();
 }
 
-// Pousser / tirer (Press Pull, ch. 6) : la face cliquée est extrudée le long de sa normale ;
-// distance > 0 : matière ajoutée (Joindre), < 0 : matière retirée (Couper).
-export function pressPull(d, face, loops) {
+// Pousser / tirer (Press Pull, ch. 6) et Extrusion d'une face (ch. 3) : la face cliquée est
+// extrudée le long de sa normale ; distance > 0 : vers l'extérieur, < 0 : dans la matière.
+// Pousser/tirer en déduit l'opération (Joindre ou Couper) ; l'Extrusion la laisse choisir,
+// et passe d'elle-même à Couper quand on tire la flèche dans la matière.
+export function pressPull(d, face, loops, extrude = false) {
   if (!loops.length) { d.ctx.notify('Face sans contour lisible.', true); return; }
-  const P = { dist: 5 };
+  const P = { dist: 10, op: 'join' };
+  if (!extrude) P.dist = 5;
+  const op = () => (extrude ? P.op : P.dist > 0 ? 'join' : 'cut');
   const shape = () => { const s = new THREE.Shape(loops[0].map((p) => new THREE.Vector2(p.x, p.y))); for (const h of loops.slice(1)) s.holes.push(new THREE.Path(h.map((p) => new THREE.Vector2(p.x, p.y)))); return s; };
   const preview = () => {
     const h = Math.abs(P.dist) || 0.01, g = new THREE.ExtrudeGeometry(shape(), { depth: h, bevelEnabled: false });
     if (P.dist < 0) g.translate(0, 0, -h);
     const m = new THREE.Mesh(g), f = face.frame; m.matrixAutoUpdate = false; m.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin);
-    d.setPreview(m, P.dist < 0 ? 0xe74c3c : 0x2ecc71);
+    d.setPreview(m, { join: 0x2ecc71, cut: 0xe74c3c, intersect: 0x3d8bff }[op()]);
   };
-  d.open('POUSSER / TIRER', [
-    row('Face', el('span', { className: 'hint', textContent: `${fmt(Math.round(face.area * 100) / 100)} mm², ${loops.length - 1} trou(s)` })),
-    row('Distance', num(P.dist, (v) => { P.dist = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
-    el('div', { className: 'hint', textContent: 'Positive : tirer (ajouter de la matière) ; négative : pousser (en retirer).' }),
+  const distIn = num(P.dist, (v) => { P.dist = v; preview(); d.gizmo?.set(v); });
+  const opSel = choice(OPS, P.op, (v) => {
+    P.op = v;
+    if (v === 'cut' && P.dist > 0) { P.dist = -P.dist; distIn.value = String(P.dist); d.gizmo?.set(P.dist); }
+    preview();
+  });
+  d.open(extrude ? 'EXTRUSION' : 'POUSSER / TIRER', [
+    row(extrude ? 'Profil' : 'Face', el('span', { className: 'hint', textContent: `face de ${fmt(Math.round(face.area * 100) / 100)} mm², ${loops.length - 1} trou(s)` })),
+    row('Distance', distIn, el('span', { className: 'unit', textContent: 'mm' })),
+    ...(extrude ? [row('Opération', opSel)] : []),
+    el('div', { className: 'hint', textContent: extrude ? 'Positive : vers l’extérieur de la face ; négative : dans la matière. Tirez aussi la flèche dans la vue.' : 'Positive : tirer (ajouter de la matière) ; négative : pousser (en retirer).' }),
   ], {
-    key: 'presspull',
+    key: extrude ? 'extrude' : 'presspull',
     ok: () => {
       if (!P.dist) return false;
-      const n = d.ctx.nextIndex(), name = `poussee${n}`, h = Math.abs(P.dist), e = 0.01, f = face.frame;
+      const n = d.ctx.nextIndex(), name = extrude ? `${op() === 'cut' ? 'poche' : 'extrusion'}${n}` : `poussee${n}`, h = Math.abs(P.dist), e = 0.01, f = face.frame;
       const poly = (l) => `Profile.polygon [ ${l.map((p) => `Geom.V2.v ${litp(Math.round(p.x * 1e4) / 1e4 + 0)} ${litp(Math.round(p.y * 1e4) / 1e4 + 0)}`).join('; ')} ]`;
       const prof = loops.slice(1).reduce((acc, l) => `Profile.difference (${acc}) (${poly(l)})`, poly(loops[0]));
       const z = P.dist > 0 ? -e : -h; // recouvre la face de 0,01 mm (pas de faces confondues)
       const code = `  let%feat ${name} =\n    let repere = Geom.Frame.make ~origin:${v3(f.origin)} ~x:${v3n(f.x)} ~z:${v3n(f.z)} in\n    Shape.(extrude ~h:${lit(h + e)} (${prof}) |> translate (Geom.V3.v 0. 0. ${litp(z)}) |> place repere)\n  in\n`;
-      d.ctx.insert(code, name, P.dist > 0 ? 'join' : 'cut', n);
+      d.ctx.insert(code, name, op(), n);
     },
   });
   preview();
+  // Flèche de distance au centre de la face, à tirer dans la vue.
+  if (extrude && d.ctx.viewport) {
+    const l = loops[0], c = l.reduce((a, p) => ({ x: a.x + p.x / l.length, y: a.y + p.y / l.length }), { x: 0, y: 0 }), f = face.frame;
+    d.gizmo = distanceHandle(d.ctx.viewport, { origin: f.origin.clone().addScaledVector(f.x, c.x).addScaledVector(f.y, c.y), dir: f.z, value: P.dist, onChange: (v) => {
+      P.dist = Math.round(v * 100) / 100; distIn.value = String(P.dist);
+      if (P.dist < 0 && P.op === 'join') { P.op = 'cut'; opSel.value = 'cut'; } else if (P.dist > 0 && P.op === 'cut') { P.op = 'join'; opSel.value = 'join'; }
+      preview();
+    } });
+    window.camlcadGizmo = d.gizmo; // inspection (tests)
+  }
 }
 
 // ---------- Congé et chanfrein d'arête (ch. 6, Fillet / Chamfer) ----------

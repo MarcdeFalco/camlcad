@@ -88,3 +88,7 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `vue.spec.js` | Cube de vue : face Dessus, flèches vers les faces voisines, orbite à la souris, vue de départ, face Avant |
 | `export.spec.js` | Bouton STL : fichier téléchargé, STL binaire cohérent avec la pièce |
 | `mecanisme.spec.js` | Bielle-manivelle : onglet MÉCANISME, animation (l'image change), curseur de mouvement, interférences |
+| `tuto_demarrage.spec.js` | Audit UX : ouverture sur un document vide (carte de départ, Esquisse qui pulse), plaque extrudée, nom du document, exemple puis ↶, Nouveau |
+| `tuto_extrusion_face.spec.js` | Audit UX (ch. 3, Extrude d'une face) : face cliquée puis E (Joindre), Extrusion puis face, Couper dans la matière (volume) |
+| `tuto_parametres.spec.js` | Audit UX (ch. 6) : noms « Largeur », « Épaisseur totale » ramenés à des identifiants, « type » et doublon refusés dans le dialogue, paramètres non liés signalés, cote d'esquisse et hauteur liées (ƒx), aperçu direct |
+| `tuto_navigateur.spec.js` | Audit UX (ch. 1, Browser / Timeline) : esquisse, face extrudée, perçage ; navigateur Esquisses + Corps (œil), trois étapes dans la frise seulement |

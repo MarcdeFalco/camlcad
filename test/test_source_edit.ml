@@ -87,6 +87,16 @@ let%expect_test "littéral → paramètre" =
     refus : « largeur » est déjà utilisé dans le code
     refus : « Mauvais » n'est pas un nom de variable OCaml valable |}]
 
+let%expect_test "littéral lié à un paramètre existant" =
+  let src, loc = feat patte "lamage" in
+  show src (Source_edit.use_param src loc 0 ~name:"epaisseur");
+  show src (Source_edit.use_param src loc 0 ~name:"inconnu");
+  [%expect {|
+    -     Shape.(cylinder ~r:diametre ~h:2. () |> translate (V3.v (largeur /. 2.) (hauteur /. 2.) (epaisseur -. 2.)))
+    +     Shape.(cylinder ~r:diametre ~h:epaisseur () |> translate (V3.v (largeur /. 2.) (hauteur /. 2.) (epaisseur -. 2.)))
+    refus : « inconnu » n'est pas un paramètre déclaré avant cette étape
+    |}]
+
 let%expect_test "suppression temporaire" =
   let src, loc = feat support "trou_aile" in
   let on = Source_edit.set_suppressed src loc true in

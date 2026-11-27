@@ -11,7 +11,7 @@ test('enregistrer, rouvrir, reprise automatique', async ({ page }, info) => {
   await expect.poll(() => triangles(page)).toBe(12);
   // Enregistrer : le fichier .ml est le code.
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Enregistrer' }).click()]);
-  expect(dl.suggestedFilename()).toBe('nouveau.ml');
+  expect(dl.suggestedFilename()).toBe('sans titre.ml');
   const saved = await readFile(await dl.path(), 'utf8');
   expect(saved).toContain('let%feat boite1');
   // Rechargement : le document est repris.
@@ -24,7 +24,7 @@ test('enregistrer, rouvrir, reprise automatique', async ({ page }, info) => {
   await writeFile(file, saved.replace('20. 20. 10.', '40. 10. 5.'));
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Ouvrir…' }).click()]);
   await chooser.setFiles(file);
-  await expect(page.locator('#example')).toHaveValue('cale');
+  await expect(page.locator('#docname')).toHaveValue('cale');
   await expect.poll(() => code(page)).toContain('40. 10. 5.');
   await expect.poll(() => page.evaluate(() => { const g = window.camlcadView.part?.geometry; if (!g) return null; g.computeBoundingBox(); return g.boundingBox.max.toArray(); })).toEqual([40, 10, 5]);
 });

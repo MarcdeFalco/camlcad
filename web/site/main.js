@@ -14,7 +14,7 @@ import { faceLoops } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
-import { initFiles, saveBlob } from './files.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
+import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { openParams as paramsDialog } from './params.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
 import { jointDialog, linkDialog } from './mech_joint.js'; import { motionStudy } from './mech_study.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -29,7 +29,6 @@ import * as feats from './dialogs_features.js';
 import * as paths from './dialogs_paths.js';
 
 const $ = (id) => document.getElementById(id);
-const EXAMPLES = ['nouveau', 'support', 'engrenage', 'charniere', 'patte', 'bielle', 'engrenages'];
 
 // ---------- Worker ----------
 const worker = new Worker('worker.js', { type: 'module' });
@@ -58,6 +57,7 @@ function evalParams() { send({ kind: 'params' }); }
 const featureMesh = (fid, id) => worker.postMessage({ kind: 'feature', id, fid, overrides: [] });
 
 const t0 = performance.now();
+const docName = () => docs.name();
 worker.onmessage = ({ data: m }) => {
   if (m.kind === 'ready') {
     ready = true; sendImports(worker);
@@ -79,6 +79,7 @@ worker.onmessage = ({ data: m }) => {
   const fromEval = sentCode != null;
   if (fromEval) evaluatedCode = sentCode;
   onResult(m);
+  if (fromEval && afterEval && !pending) { const f = afterEval; afterEval = null; if (m.ok && $('dialog').hidden && !sketch.active) f(); }
   if (pending) { const p = pending; pending = null; send(p); }
 };
 
@@ -145,11 +146,11 @@ const dialogs = new Dialogs({
   onClose: () => { if (picking) stopPicking(); },
 });
 const inspect = new Inspect({ viewport: vp, dialogs, notify, mesh: () => (rollbackAt == null ? lastMesh : null) });
-const print = new Print3D({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download: (b, ext, name) => download(b, ext, name) });
+const print = new Print3D({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => docName(), download: (b, ext, name) => download(b, ext, name) });
 const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] }) });
 
 // Clic (sans glisser) : plan d'esquisse, face plane, ou feature sous la souris.
-let down = null, face = null, faceMesh = null, picking = false;
+let down = null, face = null, faceMesh = null, picking = false, extrudePick = false;
 const canvas = vp.renderer.domElement;
 canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
 canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); if (sketch.active) sketch.move(e); });
@@ -157,14 +158,15 @@ canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
   if (sketch.active) { sketch.click(e); return; }
   if (print.active) { const h = vp.ray(e).intersectObject(print.preview)[0]; if (h) print.pickFace(planarFace(lastMesh, h.faceIndex)); return; }
-  const plane = picking && vp.pickPlane(e);
+  const onPart = extrudePick && vp.part && vp.ray(e).intersectObject(vp.part).length; // Extrusion : la face avant le plan d'origine qui la porte
+  const plane = picking && !onPart && vp.pickPlane(e);
   if (plane) { const P = allPlanes()[plane]; stopPicking(); startSketch(P.frame, P.code); return; }
   const hit = vp.part && !mech.active ? vp.ray(e).intersectObject(vp.part)[0] : null;
   if (hit && rollbackAt == null) {
     if (inspect.measuring) { inspect.pick(hit); return; }
     const f = planarFace(lastMesh, hit.faceIndex);
     if (faces.active) { if (f) faces.onFace(hit, f); return; }
-    if (picking) { if (f) { stopPicking(); startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); } return; }
+    if (picking) { if (f) { const ex = extrudePick; stopPicking(); if (ex) faces.extrude(f); else startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); } return; }
     worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
     showFace(f);
   } else if (!picking) { selectFeature(null, false); showFace(null); }
@@ -202,18 +204,19 @@ function openVerified(v, m) {
   if (!m.ok || !sameCode(m.code, v.text)) { notify(`Esquisse « ${v.name} » modifiée à la main : modifiez-la dans le code.`, true); return; }
   stopPicking(); startSketch(v.frame, v.planeCode, v.data, { name: v.name });
 }
-function startPicking() {
+function startPicking(extrude = false) {
   if (sketch.active) return;
   if (face) { const f = face; startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); return; }
-  picking = true; vp.showPlanes(allPlanes());
+  const empty = !lastMesh || !lastMesh.triangles.length;
+  picking = true; extrudePick = extrude && !empty; vp.showPlanes(allPlanes());
   if (!lastMesh || !lastMesh.triangles.length) { vp.planes.updateMatrixWorld(true); vp.fit([vp.planes]); } // document vide : les trois plans entiers à l'écran
-  hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
+  hint(extrudePick ? 'Cliquez la face plane à extruder, ou un plan pour y esquisser le profil (Échap pour annuler).' : `Choisissez un plan d’origine${empty ? '' : ' ou une face plane de la pièce'}${extrude ? ' pour esquisser le profil à extruder' : ''} (Échap pour annuler).`);
 }
 // Perçage : un clic sur une face plane donne la position et la direction (Black Book ch. 4).
-const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs, insertPlane });
+const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs, insertPlane, clearFace: () => showFace(null) });
 const featureDef = (n) => new RegExp(`let%feat ${n} =([\\s\\S]*?)\\n  in\\n|let%feat ${n} =([^\\n]*) in`).exec(view.state.doc.toString())?.slice(1).find(Boolean);
 const selGeo = () => vp.highlight?.geometry;
-function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
+function stopPicking() { picking = extrudePick = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
@@ -231,7 +234,8 @@ for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => { if 
 const needSel = () => { if (selected == null) notify('Sélectionnez d’abord une feature (frise, navigateur ou pièce).', true); return selected != null; };
 const COMMANDS = {
   sketch: startPicking,
-  extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : (notify('Choisissez le plan de l’esquisse à extruder.'), startPicking())),
+  // Extrusion : l'esquisse en cours, la face déjà cliquée, ou une face (ou un plan) à cliquer.
+  extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : face ? faces.extrude(face) : startPicking(true)),
   revolve: () => (sketch.active ? sketch.finish('revolve') || notify('Fermez un contour ou tracez un cercle avant la révolution.', true) : (notify('Esquissez d’abord le profil, puis « Révolution ».'), startPicking())),
   ...faces.commands,
   torus: () => dialogs.primitive('torus'), coil: () => dialogs.primitive('coil'), thread: () => feats.threadRod(dialogs),
@@ -279,7 +283,7 @@ const timeline = new Timeline({
   apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
   openEdit: (fid, rename) => dialogs.feature(fid, rename), openParams,
   sketchOn: (k) => { const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
-  gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible,
+  gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible, togglePart: () => vp.togglePart(), partVisible: () => !vp.partHidden,
   rollback: (k) => {
     rollbackAt = k; bodies.cancel();
     vp.setHighlight(null);
@@ -309,29 +313,12 @@ function selectFeature(fid, moveCursor) {
   featureMesh(fid, 0);
 }
 function renderTimeline() {
-  timeline.update(journal, selected, { doc: $('example').value, sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
+  docs.showEmpty(!journal?.features?.length && !sketch.active && $('dialog').hidden && $('hint').hidden);
+  timeline.update(journal, selected, { doc: docName(), sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }
 // ---------- Paramètres ----------
-function openParams() {
-  const saved = new Map(overrides);
-  dialogs.params({
-    overrides,
-    preview: (name, v) => { overrides.set(name, v); evalParams(); },
-    // Écrit chaque valeur essayée à la place de son littéral par défaut.
-    commit: () => {
-      const changes = [];
-      for (const p of journal.params) {
-        const v = overrides.get(p.name);
-        if (v == null || !p.loc) continue;
-        let lit = fmt(v); if (!/[.e]/.test(lit)) lit += '.';
-        changes.push({ ...locRange(p.loc), insert: lit });
-      }
-      overrides.clear();
-      if (changes.length) view.dispatch({ changes }); else evalParams();
-    },
-    revert: () => { overrides = saved; evalParams(); },
-  });
-}
+let afterEval = null; // une fois le code réévalué (dialogue des paramètres rouvert après un ajout)
+function openParams() { paramsDialog({ dialogs, journal: () => journal, overrides: () => overrides, setOverrides: (m) => { overrides = m; }, evalParams, code: () => view.state.doc.toString(), write: (changes) => view.dispatch({ changes }), locRange, addParam: insertParam, afterEval: (f) => { afterEval = f; } }); }
 // ---------- Résultats ----------
 function onResult(m) {
   const t = m.timings || {};
@@ -375,25 +362,21 @@ function onResult(m) {
 // ---------- Export ----------
 $('export-stl').onclick = () => download(stlBlob(lastMesh), 'stl');
 $('print3d').onclick = () => print.open(); $('undo').onclick = () => undo(view); $('redo').onclick = () => redo(view);
-$('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => $('example').value || 'piece', download });
-const download = (blob, ext, name) => saveBlob(blob, `${name ?? ($('example').value || 'piece')}.${ext}`);
+$('drawing').onclick = () => drawingDialog({ viewport: vp, dialogs, notify, mesh: () => lastMesh, name: () => docName(), download });
+const download = (blob, ext, name) => saveBlob(blob, `${name ?? (docName())}.${ext}`);
 $('export-3mf').onclick = () => worker.postMessage({ kind: 'export3mf', id: 0, overrides: [] });
-// ---------- Exemples ----------
-for (const e of EXAMPLES) $('example').append(new Option(e, e));
-const BLANK = 'open Cad\n\n(* Commencez par « Esquisse » ou « Boîte » dans la barre d\'outils. *)\nlet model : Shape.t Doc.t =\n  Doc.return Shape.empty\n';
-async function loadExample(name, text) {
+// ---------- Documents ----------
+async function loadDoc(name, code) {
   if (sketch.active) sketch.stop();
   dialogs.close(true); stopPicking();
   $("status").textContent = lastStatus = `ouverture de « ${name} »…`; $('status').classList.remove('err');
   $('export-stl').disabled = $('export-3mf').disabled = $('print3d').disabled = $('drawing').disabled = true; // rien à exporter avant le premier résultat
-  const code = text ?? (name === 'nouveau' ? BLANK : await (await fetch(`examples/${name}.ml`)).text());
-  if (![...$('example').options].some((o) => o.value === name)) $('example').append(new Option(name, name));
   if (journal) selectFeature(null, false);
   timeline.setMarker(null); // avant de vider : remettrait l'ancienne pièce
   overrides = new Map(); vp.fitted = false; journal = null; lastMesh = null; vp.clearPart();
-  $('example').value = name;
+  docs.setName(name);
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
 }
-$('example').onchange = () => loadExample($('example').value);
+const docs = initDocuments({ load: loadDoc, notify });
 if (innerWidth < 1100) toggleCode();
-if (!initFiles({ view, load: loadExample, name: () => $('example').value || 'piece', download, notify })()) loadExample('engrenage');
+if (!initFiles({ view, load: loadDoc, name: docName, download, notify })()) docs.fresh();
