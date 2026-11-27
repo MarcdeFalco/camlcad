@@ -134,3 +134,12 @@ export function projectFace(ed) {
   ed.faceLoops = null;
   return true;
 }
+
+// Échelle d'esquisse (ch. 2, Sketch Scale) : tout est multiplié par k depuis l'origine du plan,
+// cotes comprises (les angles restent).
+export function scaleSketch(ed, k) {
+  for (const p of ed.pts) { p.x *= k; p.y *= k; }
+  for (const c of ed.circles) c.r *= k;
+  const LEN = ['length', 'distance', 'hdistance', 'vdistance', 'radius', 'arc_radius', 'point_line_distance'];
+  for (const c of ed.cons) if (c.value != null && LEN.includes(c.kind)) c.value *= k;
+}

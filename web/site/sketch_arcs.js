@@ -59,7 +59,8 @@ export function centerArc(ed, c, a, q) {
 // Congé d'esquisse au sommet p d'une boucle, entre deux lignes : le sommet devient un arc
 // tangent aux deux lignes, de rayon r ; p reste comme point de construction à l'intersection
 // des deux lignes (les cotes qui s'y appuient restent valables).
-export function fillet(ed, p, r) {
+// chamfer : chanfrein de longueur r le long de chaque ligne (segment au lieu de l'arc).
+export function fillet(ed, p, r, chamfer = false) {
   for (const l of ed.loops) {
     const n = l.length, j = l.indexOf(p);
     if (j < 0) continue;
@@ -72,8 +73,20 @@ export function fillet(ed, p, r) {
     const u = norm(U.x - P.x, U.y - P.y), v = norm(V.x - P.x, V.y - P.y);
     const half = Math.acos(Math.max(-1, Math.min(1, u.x * v.x + u.y * v.y))) / 2;
     if (half < 1e-3 || half > Math.PI / 2 - 1e-3) return 'Congé : sommet plat.';
-    const t = r / Math.tan(half), bis = norm(u.x + v.x, u.y + v.y), d = r / Math.sin(half);
+    const t = chamfer ? r : r / Math.tan(half), bis = norm(u.x + v.x, u.y + v.y), d = r / Math.sin(half);
     const p1 = add(ed, P.x + u.x * t, P.y + u.y * t), p2 = add(ed, P.x + v.x * t, P.y + v.y * t);
+    if (chamfer) {
+      ed.lines[li] = ed.lines[li].map((x) => (x === p ? p1 : x));
+      ed.lines[lj] = ed.lines[lj].map((x) => (x === p ? p2 : x));
+      ed.lines.push([p1, p2]);
+      l.splice(j, 1, ...(l[(j + 1) % n] === next ? [p1, p2] : [p2, p1]));
+      const keep = ed.lines.length;
+      ed.lines.push([prev, p], [p, next]);
+      for (const c of ed.cons) if (['length', 'equal_length'].includes(c.kind)) c.refs = c.refs.map((x) => (x === li ? keep : x === lj ? keep + 1 : x));
+      cons(ed, 'parallel', [keep, li]); cons(ed, 'parallel', [keep + 1, lj]);
+      cons(ed, 'distance', [p, p1], r); cons(ed, 'distance', [p, p2], r);
+      return null;
+    }
     const c = add(ed, P.x + bis.x * d, P.y + bis.y * d);
     // Les lignes s'arrêtent aux points de tangence.
     ed.lines[li] = ed.lines[li].map((x) => (x === p ? p1 : x));

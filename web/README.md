@@ -20,9 +20,9 @@ vue cliquable, flèches vers la face voisine, ⌂ vue de départ, barre de navig
 ajuster, regarder une face, style, grille), dialogues de commande à droite,
 menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (↶ ↷, Ctrl+Z : historique du code), code repliable à droite (`</> Code`, Ctrl+E).
 
-- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé, Plan milieu, Plan à un angle (construction, listés dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, taraudé M2–M12, traversant), Filetage (tige filetée ISO), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Pousser/tirer (une face plane cliquée), Congé et Chanfrein d'arête (ses deux faces cliquées), Diviser (par un plan, moitiés séparées pour l'impression), Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
+- **SOLIDE** : Esquisse (S), Extrusion (E), Révolution (axe de l'esquisse ou une de ses lignes), Plan décalé, Plan milieu, Plan à un angle, Plan par 3 points (construction, listés dans le navigateur), Perçage (clic sur une face : simple, lamage, fraisure, taraudé M2–M12, traversant), Filetage (tige filetée ISO), Réseau (rectangulaire, circulaire) et Symétrie de la feature sélectionnée, Pousser/tirer (une face plane cliquée), Congé et Chanfrein d'arête (ses deux faces cliquées), Diviser (par un plan, moitiés séparées pour l'impression), Combiner (le résultat et un autre corps), Déplacer (le résultat), Boîte, Cylindre, Sphère ; Feature
   (modifier la sélection), Paramètres (tableau, OK écrit les valeurs dans le
-  code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F), Mesurer (points, faces), Coupe (plan de découpe, matière coupée en rouge), Propriétés (volume, centre de gravité, masse imprimée). Boîte,
+  code), Suppr. temp., Supprimer (Suppr) ; Regarder, Ajuster (F), Mesurer (points, faces), Coupe (plan de découpe, matière coupée en rouge), Zébrures, Propriétés (volume, centre de gravité, masse imprimée). Boîte,
   cylindre et sphère ouvrent un dialogue avec aperçu (opération Joindre,
   Couper ou Intersection) ; OK insère la feature avant le `Doc.return` et la
   combine au résultat.
@@ -52,7 +52,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
   YZ vu de droite. L'onglet ESQUISSE apparaît : rectangle (R, deux coins, lignes
   horizontales et verticales contraintes), contour (L, cliquer le premier point
   pour fermer ; lignes presque horizontales ou verticales contraintes), cercle
-  (C, centre puis rayon), arc par le centre (A), oblong, congé d'esquisse (sommet entre deux lignes), rectangle par le centre, polygone régulier (P, nombre
+  (C, centre puis rayon), arc par le centre (A), oblong, congé et chanfrein d'esquisse (sommet entre deux lignes), échelle de l'esquisse, rectangle par le centre, polygone régulier (P, nombre
   de côtés dans la barre), point, Cote (D : ligne, cercle, deux points, deux lignes),
   lignes de construction (hors boucle) en pointillés orange, symétrie (dernière ligne choisie = axe), réseau en x et réseau circulaire (dernier point choisi = centre) de la sélection, décalage d'un contour (une boucle dans une boucle est un trou), suppression (Suppr), projection du contour de la face d'appui, sélection (S, Maj pour plusieurs), avec élastique et
   mesure pendant le tracé ; cotes et symboles de contraintes posés sur le dessin,
@@ -68,7 +68,7 @@ menu circulaire au clic droit dans la vue, frise en bas, annuler / rétablir (�
 - **MÉCANISME** (onglet) : une pièce par couleur ; Interférences (pièces rougies) ; Lien de mouvement (rapport entre deux liaisons, `~couplings`) ; Éclater (vue éclatée) ; Liaison (pivot, glissière, encastrement entre
   deux pièces du code et leurs ports, ajoutée à `Assembly.make`) ; Mouvement : un curseur par coordonnée (celui
   qu'on bouge devient le pilote, les autres sont résolus, boucles fermées
-  comprises) ; ▶ anime la première ; interférences listées à chaque pose.
+  comprises) ; ▶ anime la première ; Vidéo enregistre un cycle en WebM ; interférences listées à chaque pose.
 - **Impression 3D** (barre du haut) : cliquer la face à poser sur le plateau, volume de
   l'imprimante, appui, surplombs > 45° en rouge, STL exporté dans cette orientation.
 - **Plan** (barre du haut) : mise en plan A4 (vues de face, dessus, gauche en projection

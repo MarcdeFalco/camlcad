@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { TWO_CLICK } from './sketch_tools.js';
-import { mirror, patternX, patternCirc, offsetLoop, projectFace } from './sketch_copy.js';
+import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { arcPoints, arcRadius, loopPoints, loopOutline, centerArc, fillet } from './sketch_arcs.js';
 
@@ -140,9 +140,9 @@ export class SketchEditor extends SketchMarks {
       const n = this.nearest(q);
       if (n && n.kind === 'l') { this.asking = { kind: 'offset', label: 'Décalage (> 0 : intérieur)', refs: [n.i], value: 2 }; this.sel = [{ kind: 'l', i: n.i }]; }
       this.redraw();
-    } else if (this.tool === 'fillet') {
-      const n = this.nearest(q);
-      if (n && n.kind === 'p') { this.asking = { kind: 'fillet', label: 'Rayon du congé', refs: [n.i], value: 3 }; this.sel = [{ kind: 'p', i: n.i }]; }
+    } else if (this.tool === 'fillet' || this.tool === 'chamfer') {
+      const n = this.nearest(q), ch = this.tool === 'chamfer';
+      if (n && n.kind === 'p') { this.asking = { kind: this.tool, label: ch ? 'Longueur du chanfrein' : 'Rayon du congé', refs: [n.i], value: ch ? 2 : 3 }; this.sel = [{ kind: 'p', i: n.i }]; }
       this.redraw();
     } else if (this.tool === 'point') {
       this.pointAt(q); this.changed();
@@ -175,18 +175,6 @@ export class SketchEditor extends SketchMarks {
       }
       this.redraw();
     }
-  }
-
-  // Outil Cote (D) : ligne → longueur, cercle → rayon, deux points → distance, deux lignes → angle.
-  dimClick(q) {
-    const n = this.nearest(q);
-    if (!n) { this.sel = []; this.redraw(); return; }
-    this.sel = [...this.sel.filter((x) => !(x.kind === n.kind && x.i === n.i)), { kind: n.kind, i: n.i }].slice(-2);
-    const kinds = this.sel.map((x) => x.kind).join('');
-    const want = { l: 'length', c: 'radius', a: 'arc_radius', pp: 'distance', ll: 'angle' }[kinds];
-    // Une ligne seule attend un éventuel second élément (angle) : cote proposée tout de suite.
-    const c = want && this.candidates().find((x) => x[0] === want);
-    if (c) { this.asking = null; this.addConstraint(c); } else this.redraw();
   }
 
   key(e) {
@@ -277,9 +265,10 @@ export class SketchEditor extends SketchMarks {
       if (err) { this.error = err; this.redraw(); } else this.changed();
       return;
     }
-    if (kind === 'fillet' && this.asking) {
+    if (kind === 'scale' && this.asking) { const k = this.asking.value; this.asking = null; if (k > 0) { scaleSketch(this, k); this.changed(); } else this.redraw(); return; }
+    if ((kind === 'fillet' || kind === 'chamfer') && this.asking) {
       const r = this.asking.value; this.asking = null; this.sel = [];
-      const err = Number.isFinite(r) && r > 0 ? fillet(this, refs[0], r) : 'Congé : rayon invalide.';
+      const err = Number.isFinite(r) && r > 0 ? fillet(this, refs[0], r, kind === 'chamfer') : 'Congé : rayon invalide.';
       if (err) { this.error = err; this.redraw(); } else this.changed();
       return;
     }

@@ -66,6 +66,7 @@
       <div class="group"><div class="tools">
         <button data-cmd="offsetplane" title="Plan décalé d'un plan d'origine (construction)"><i>▱</i>Plan décalé</button>
         <button data-more data-cmd="midplane" title="Plan milieu entre deux faces planes parallèles"><i>▤</i>Plan milieu</button>
+        <button data-more data-cmd="plane3" title="Plan passant par trois points de la pièce (sommets accrochés)"><i>△</i>Plan par 3 points</button>
         <button data-more data-cmd="angleplane" title="Plan d'origine tourné d'un angle autour d'un de ses axes"><i>◿</i>Plan à un angle</button>
       </div><span>CONSTRUIRE</span></div>
       <div class="group"><div class="tools">
@@ -79,6 +80,7 @@
         <button data-cmd="fit" title="Ajuster la vue (F)"><i>⤢</i>Ajuster</button>
         <button data-cmd="measure" title="Mesurer : distance entre deux points, aire d'une face plane"><i>📏</i>Mesurer</button>
         <button data-cmd="section" title="Coupe : voir l'intérieur de la pièce"><i>◩</i>Coupe</button>
+        <button data-more data-cmd="zebra" title="Analyse zébrée : continuité des surfaces"><i>▦</i>Zébrures</button>
         <button data-more data-cmd="props" title="Propriétés : volume, centre de gravité, masse imprimée"><i>⚖</i>Propriétés</button>
       </div><span>INSPECTER</span></div>
     </div>
@@ -99,6 +101,8 @@
         <button data-tool="offset" title="Décalage : cliquez une ligne d'un contour fermé, puis la distance (paroi)"><i>⧈</i>Décalage</button>
         <button id="sketch-project" title="Projeter le contour de la face d'appui (points fixes, construction)"><i>⤓</i>Projeter</button>
         <button id="sketch-delete" title="Supprimer les éléments sélectionnés (Suppr)"><i>✕</i>Supprimer</button>
+        <button data-tool="chamfer" title="Chanfrein d'esquisse : cliquez un sommet entre deux lignes, puis la longueur"><i>◺</i>Chanfrein</button>
+        <button id="sketch-scale" title="Mettre toute l'esquisse à l'échelle (cotes comprises)"><i>⤡</i>Échelle</button>
         <button data-tool="fillet" title="Congé : cliquez un sommet entre deux lignes, puis le rayon"><i>◜</i>Congé</button>
       </div><span>MODIFIER</span></div>
       <div class="group"><div class="tools">
@@ -117,6 +121,7 @@
       <div class="group"><div class="tools">
         <button id="animate" title="Animer la première articulation"><i>▶</i>Animer</button>
         <button data-cmd="motion" title="Piloter les articulations"><i>⟲</i>Mouvement</button>
+        <button data-cmd="video" title="Enregistrer un cycle de l'animation en vidéo (WebM)"><i>⏺</i>Vidéo</button>
       </div><span>MOUVEMENT</span></div>
       <div class="group"><div class="tools">
         <button data-cmd="interference" title="Interférences entre pièces à la pose courante"><i>⚠</i>Interférences</button>

@@ -121,4 +121,16 @@ export class SketchMarks {
     }
   }
 
+
+  // Outil Cote (D) : ligne → longueur, cercle → rayon, deux points → distance, deux lignes → angle.
+  dimClick(q) {
+    const n = this.nearest(q);
+    if (!n) { this.sel = []; this.redraw(); return; }
+    this.sel = [...this.sel.filter((x) => !(x.kind === n.kind && x.i === n.i)), { kind: n.kind, i: n.i }].slice(-2);
+    const kinds = this.sel.map((x) => x.kind).join('');
+    const want = { l: 'length', c: 'radius', a: 'arc_radius', pp: 'distance', ll: 'angle' }[kinds];
+    // Une ligne seule attend un éventuel second élément (angle) : cote proposée tout de suite.
+    const c = want && this.candidates().find((x) => x[0] === want);
+    if (c) { this.asking = null; this.addConstraint(c); } else this.redraw();
+  }
 }

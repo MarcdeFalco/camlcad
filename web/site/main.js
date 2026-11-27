@@ -216,7 +216,7 @@ function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project();
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {
@@ -236,7 +236,7 @@ const COMMANDS = {
   torus: () => dialogs.primitive('torus'), coil: () => dialogs.primitive('coil'), thread: () => feats.threadRod(dialogs),
   pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
   mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
-  measure: () => inspect.startMeasure(), section: () => inspect.section(), props: () => inspect.properties(),
+  measure: () => inspect.startMeasure(), zebra: () => notify(vp.toggleZebra() ? 'Analyse zébrée : bandes réfléchies.' : 'Analyse zébrée retirée.'), section: () => inspect.section(), props: () => inspect.properties(),
   split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }), angleplane: () => dialogs.anglePlane((f) => insertPlane(`(* construction *) ${frameCode(f)}`)),
   box: () => dialogs.primitive('box'), cylinder: () => dialogs.primitive('cylinder'), sphere: () => dialogs.primitive('sphere'),
@@ -246,7 +246,7 @@ const COMMANDS = {
   delete: () => needSel() && timeline.remove(selected),
   look: () => (face ? vp.lookAt(face.frame) : notify('Cliquez d’abord une face plane de la pièce.', true)),
   fit: () => vp.fit(mech.active ? mech.state.meshes : undefined),
-  motion: () => mech.panel(), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
+  motion: () => mech.panel(), video: () => mech.record((b) => download(b, 'webm')) && notify('Enregistrement d’un cycle (4 s)…'), explode: () => mech.explodePanel(), interference: () => mech.interPanel(),
   joint: () => jointDialog(dialogs, view, () => { clearTimeout(debounce); evalCode(); }), link: () => linkDialog(dialogs, view, mech.state?.coords ?? [], () => { clearTimeout(debounce); evalCode(); }),
 };
 for (const b of document.querySelectorAll('[data-cmd]')) b.onclick = () => COMMANDS[b.dataset.cmd]();
