@@ -48,6 +48,8 @@ export class FaceCommands {
       },
     };
   }
+  // Extrusion d'une face plane (sans esquisse), même dialogue que Pousser/tirer.
+  extrude(f) { this.ctx.clearFace?.(); feats.pressPull(this.ctx.dialogs, f, faceLoops(this.ctx.mesh(), f), true); }
   get active() { return this.act != null; }
   start(text, act) {
     const m = this.ctx.mesh();

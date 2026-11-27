@@ -149,7 +149,7 @@ const print = new Print3D({ viewport: vp, dialogs, notify, mesh: () => lastMesh,
 const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({ kind: 'pose', id: 0, overrides: [...d] }) });
 
 // Clic (sans glisser) : plan d'esquisse, face plane, ou feature sous la souris.
-let down = null, face = null, faceMesh = null, picking = false;
+let down = null, face = null, faceMesh = null, picking = false, extrudePick = false;
 const canvas = vp.renderer.domElement;
 canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
 canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); if (sketch.active) sketch.move(e); });
@@ -157,14 +157,15 @@ canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
   if (sketch.active) { sketch.click(e); return; }
   if (print.active) { const h = vp.ray(e).intersectObject(print.preview)[0]; if (h) print.pickFace(planarFace(lastMesh, h.faceIndex)); return; }
-  const plane = picking && vp.pickPlane(e);
+  const onPart = extrudePick && vp.part && vp.ray(e).intersectObject(vp.part).length; // Extrusion : la face avant le plan d'origine qui la porte
+  const plane = picking && !onPart && vp.pickPlane(e);
   if (plane) { const P = allPlanes()[plane]; stopPicking(); startSketch(P.frame, P.code); return; }
   const hit = vp.part && !mech.active ? vp.ray(e).intersectObject(vp.part)[0] : null;
   if (hit && rollbackAt == null) {
     if (inspect.measuring) { inspect.pick(hit); return; }
     const f = planarFace(lastMesh, hit.faceIndex);
     if (faces.active) { if (f) faces.onFace(hit, f); return; }
-    if (picking) { if (f) { stopPicking(); startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); } return; }
+    if (picking) { if (f) { const ex = extrudePick; stopPicking(); if (ex) faces.extrude(f); else startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); } return; }
     worker.postMessage({ kind: 'pick', id: 0, point: hit.point.toArray(), overrides: [] });
     showFace(f);
   } else if (!picking) { selectFeature(null, false); showFace(null); }
@@ -202,18 +203,19 @@ function openVerified(v, m) {
   if (!m.ok || !sameCode(m.code, v.text)) { notify(`Esquisse « ${v.name} » modifiée à la main : modifiez-la dans le code.`, true); return; }
   stopPicking(); startSketch(v.frame, v.planeCode, v.data, { name: v.name });
 }
-function startPicking() {
+function startPicking(extrude = false) {
   if (sketch.active) return;
   if (face) { const f = face; startSketch(f.frame, frameCode(f.frame), null, null, faceLoops(lastMesh, f)); return; }
-  picking = true; vp.showPlanes(allPlanes());
+  const empty = !lastMesh || !lastMesh.triangles.length;
+  picking = true; extrudePick = extrude && !empty; vp.showPlanes(allPlanes());
   if (!lastMesh || !lastMesh.triangles.length) { vp.planes.updateMatrixWorld(true); vp.fit([vp.planes]); } // document vide : les trois plans entiers à l'écran
-  hint('Choisissez un plan d’origine ou une face plane de la pièce (Échap pour annuler).');
+  hint(extrudePick ? 'Cliquez la face plane à extruder, ou un plan pour y esquisser le profil (Échap pour annuler).' : `Choisissez un plan d’origine${empty ? '' : ' ou une face plane de la pièce'}${extrude ? ' pour esquisser le profil à extruder' : ''} (Échap pour annuler).`);
 }
 // Perçage : un clic sur une face plane donne la position et la direction (Black Book ch. 4).
-const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs, insertPlane });
+const faces = new FaceCommands({ mesh: () => lastMesh, hint, notify, dialogs, insertPlane, clearFace: () => showFace(null) });
 const featureDef = (n) => new RegExp(`let%feat ${n} =([\\s\\S]*?)\\n  in\\n|let%feat ${n} =([^\\n]*) in`).exec(view.state.doc.toString())?.slice(1).find(Boolean);
 const selGeo = () => vp.highlight?.geometry;
-function stopPicking() { picking = false; vp.hidePlanes(); hint(null); }
+function stopPicking() { picking = extrudePick = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
 $('sketch-finish').onclick = () => sketch.finish();
@@ -231,7 +233,8 @@ for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => { if 
 const needSel = () => { if (selected == null) notify('Sélectionnez d’abord une feature (frise, navigateur ou pièce).', true); return selected != null; };
 const COMMANDS = {
   sketch: startPicking,
-  extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : (notify('Choisissez le plan de l’esquisse à extruder.'), startPicking())),
+  // Extrusion : l'esquisse en cours, la face déjà cliquée, ou une face (ou un plan) à cliquer.
+  extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : face ? faces.extrude(face) : startPicking(true)),
   revolve: () => (sketch.active ? sketch.finish('revolve') || notify('Fermez un contour ou tracez un cercle avant la révolution.', true) : (notify('Esquissez d’abord le profil, puis « Révolution ».'), startPicking())),
   ...faces.commands,
   torus: () => dialogs.primitive('torus'), coil: () => dialogs.primitive('coil'), thread: () => feats.threadRod(dialogs),
