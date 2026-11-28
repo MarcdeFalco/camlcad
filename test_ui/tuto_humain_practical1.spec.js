@@ -50,9 +50,12 @@ test('Practical 1 au clic humain', async ({ page }) => {
   await step('6 extrusion', async () => {
     await page.keyboard.press('e');
     await expect(page.locator('#dialog')).toContainText('EXTRUSION');
-    await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('25');
+    // Comme dans Fusion : la distance se tape dans le champ près de la flèche, Entrée valide.
+    await expect(page.locator('#gizmo-field')).toBeFocused();
+    await page.keyboard.type('25');
+    await expect(page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input')).toHaveValue('25');
     await shot(page, 'cmp1-08-extrusion');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.keyboard.press('Enter');
     await expect.poll(() => triangles(page)).toBeGreaterThan(0);
     await page.locator('#home').click();
     await shot(page, 'cmp1-09-piece');

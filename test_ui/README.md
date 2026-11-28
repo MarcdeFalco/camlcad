@@ -108,3 +108,4 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `tuto_terminer.spec.js` | Retour de Marc : « Terminer l'esquisse » enregistre sans extruder (retour au solide) ; E extrude ensuite la dernière esquisse libre ; « Extruder » de l'onglet Esquisse fait les deux |
 | `tuto_accroches.spec.js` | Retour de Marc : accroches de Fusion en esquisse : origine du plan (point fixe), croisement de deux lignes (sur les deux), intersection ligne-cercle (sur le cercle), anneau d'accroche au survol |
 | `tuto_humain_practical1.spec.js` | Practical 1 au clic humain (décalé de quelques pixels, `humanClick`) : plan XY visé, centres accrochés à l'origine, saisies tapées, Terminer (esquisse visible), E, 25 ; comparaison avec le livre : page « Practical 1 côte à côte » |
+| `tuto_regions_clic.spec.js` | Comme dans Fusion : pendant l'extrusion, régions choisies d'un clic dans la vue (anneau seul, puis la couronne ajoutée) |

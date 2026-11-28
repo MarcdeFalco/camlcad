@@ -240,7 +240,7 @@ export class Dialogs {
       this.gizmo = distanceHandle(this.ctx.viewport, { origin, dir: f.z, value: P.h, onChange: (v) => {
         if (v < 0 && P.dir === 'one') { P.dir = 'flip'; dirSel.value = 'flip'; } else if (v > 0 && P.dir === 'flip') { P.dir = 'one'; dirSel.value = 'one'; }
         P.h = Math.abs(v); hIn.value = String(P.h); preview();
-      } });
+      }, onType: (x) => { P.h = Math.abs(x); hIn.value = String(P.h); this.gizmo?.set(P.dir === 'flip' ? -P.h : P.h); preview(); } });
       window.camlcadGizmo = this.gizmo; // inspection (tests)
     }
   }
