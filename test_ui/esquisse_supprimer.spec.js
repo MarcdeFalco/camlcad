@@ -19,12 +19,12 @@ test('supprimer et projeter', async ({ page }) => {
   // Un côté supprimé : le contour s'ouvre, plus rien à extruder.
   await clickSketch(page, -15, -10);
   await page.keyboard.press('Delete');
-  await expect(page.locator('#sketch-finish')).toBeDisabled();
+  await expect(page.locator('#sketch-extrude')).toBeDisabled(); // contour ouvert : rien à extruder (Terminer reste possible)
   await shot(page, '109-supprimer');
   // On redessine un rectangle et on extrude.
   await page.locator('[data-tool=rect]').click();
   await clickSketch(page, -30, -25); await clickSketch(page, 0, -12);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('6');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBe(12);
@@ -39,7 +39,7 @@ test('supprimer et projeter', async ({ page }) => {
   await page.locator('[data-tool=circle]').click();
   await clickSketch(page, 0, -12); await clickSketch(page, 3, -12); // coin (0, -12) projeté
   await shot(page, '110-projeter');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Opération' }).locator('select').selectOption({ label: 'Couper' });
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('6');
   await page.getByRole('button', { name: 'OK' }).click();

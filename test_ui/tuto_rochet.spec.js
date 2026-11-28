@@ -44,7 +44,7 @@ test('roue à rochet', async ({ page }) => {
   for (let k = 0; k < 10; k++) { const t = ((-107 + 36 * k) * Math.PI) / 180; await clickSketch(page, 50 * Math.cos(t), 50 * Math.sin(t)); }
   await expect.poll(() => page.evaluate(() => window.camlcadSketch.loops.length)).toBe(1);
   await shot(page, '301-rochet-ajuste');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await expect(page.locator('#dialog')).toContainText('1 contour, 2 cercles');
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('13');
   await page.getByRole('button', { name: 'OK' }).click();

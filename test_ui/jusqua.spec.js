@@ -12,7 +12,7 @@ test('extrusion jusqu’à une face', async ({ page }) => {
   await clickAt(page, await worldPoint(page, [30, 30, 0]));
   await page.locator('[data-tool=circle]').click();
   await clickSketch(page, -10, -10); await clickSketch(page, -7, -10);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#extrude-to').click();
   await clickAt(page, await worldPoint(page, [10, 10, 10]));
   await expect(page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input')).toHaveValue('10');

@@ -1,4 +1,4 @@
-// Black Book, chapitre 3 (Sweep) : un cercle de rayon 3 gardé seul (bouton Garder), puis
+// Black Book, chapitre 3 (Sweep) : un cercle de rayon 3 gardé seul (Terminer l'esquisse), puis
 // un chemin en L dans une seconde esquisse ; Balayage : le cercle suit le chemin (coude en
 // onglet), Shape.sweep, volume π r² × longueur.
 import { test, expect } from './fixtures.js';
@@ -10,7 +10,7 @@ test('balayage d’un cercle le long d’un chemin', async ({ page }) => {
   await clickAt(page, await worldPoint(page, [30, 30, 0]));
   await page.locator('[data-tool=circle]').click();
   await clickSketch(page, -15, 0); await clickSketch(page, -12, 0);
-  await page.getByRole('button', { name: 'Garder' }).click();
+  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click(); // esquisse enregistrée seule
   await expect.poll(() => code(page)).toContain('let%sketch esquisse1 =');
 
   await page.getByRole('button', { name: 'Esquisse' }).click();

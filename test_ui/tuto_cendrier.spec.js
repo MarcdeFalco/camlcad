@@ -18,7 +18,7 @@ test('Practice 1 : cendrier', async ({ page }) => {
     await page.locator('#tree .row', { hasText: 'Plan XY' }).click();
     await page.getByRole('button', { name: 'Cercle' }).click(); await clickSketch(page, 0, 0);
     await page.mouse.move(...await sketchPoint(page, 8, 0), { steps: 2 }); await page.keyboard.type(String(d)); await page.keyboard.press('Enter');
-    await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+    await page.locator('#sketch-extrude').click();
   };
   await step('disque Ø60 × 3', async () => { await circleSketch(60); await row(page, 'Distance').locator('input').fill('3'); await page.getByRole('button', { name: 'OK' }).click(); await expect(page.locator('#timeline .feat')).toHaveCount(1); });
   await step('cylindre Ø50 × 15 dessous', async () => {

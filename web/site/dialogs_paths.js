@@ -57,6 +57,23 @@ function chain(segs) {
   return out.length === segs.length + 1 ? out : null;
 }
 
+// Segments d'un seul contour fermé (chaque nœud relié à deux autres) : ses points dans l'ordre, ou null.
+function loopChain(segs) {
+  const k = (p) => `${Math.round(p.x * 1e4)},${Math.round(p.y * 1e4)}`, adj = new Map();
+  for (const [a, b] of segs) for (const [p, q] of [[a, b], [b, a]]) { if (!adj.has(k(p))) adj.set(k(p), []); adj.get(k(p)).push(q); }
+  if ([...adj.values()].some((l) => l.length !== 2)) return null;
+  let prev = null, cur = segs[0][0]; const out = [];
+  for (let i = 0; i < segs.length; i++) { out.push(cur); const nx = adj.get(k(cur)).find((q) => !prev || k(q) !== k(prev)); prev = cur; cur = nx; }
+  return k(cur) === k(out[0]) && out.length === segs.length ? out : null;
+}
+// Contour fermé coupé en deux chemins ouverts, aux milieux de deux côtés opposés.
+function halves(cyc) {
+  const n = cyc.length, mid = (i) => ({ x: (cyc[i].x + cyc[(i + 1) % n].x) / 2, y: (cyc[i].y + cyc[(i + 1) % n].y) / 2 });
+  let i = 0; for (let j = 1; j < n; j++) if (Math.hypot(cyc[(j + 1) % n].x - cyc[j].x, cyc[(j + 1) % n].y - cyc[j].y) > Math.hypot(cyc[(i + 1) % n].x - cyc[i].x, cyc[(i + 1) % n].y - cyc[i].y)) i = j;
+  const j = (i + Math.floor(n / 2)) % n, run = (a, b) => { const out = [mid(a)]; for (let t = (a + 1) % n; ; t = (t + 1) % n) { out.push(cyc[t]); if (t === b) break; } out.push(mid(b)); return out; };
+  return [run(i, j), run(j, i)];
+}
+
 export function pipe(d, sk, back) {
   const P = { r: 3, wall: 0, op: 'join' };
   const f = sk.frame, key = (p) => `${p.x},${p.y}`, deg = new Map();
@@ -93,12 +110,15 @@ export function pipe(d, sk, back) {
       const pl = /^[a-z_][\w']*$/.test(sk.planeCode) ? sk.planeCode : `(${sk.planeCode})`;
       // Chemin d'un seul tenant (lignes et coudes en arc) : balayage du cercle, surface lisse ;
       // sinon réseau de cylindres et de sphères aux nœuds.
-      const path = chain(sk.ribs), v3 = (p) => `Geom.V3.v ${r(p.x)} ${r(p.y)} 0.`;
-      const sweep = (rad, ext) => {
-        const q = path.map((p) => ({ ...p })), n0 = q.length - 1, d0 = unit(q[0], q[1]), d1 = unit(q[n0 - 1], q[n0]);
+      // Contour fermé (maillon) : deux moitiés balayées, qui se recouvrent un peu aux coupures.
+      const open1 = chain(sk.ribs), cyc = open1 ? null : loopChain(sk.ribs), paths = open1 ? [open1] : cyc ? halves(cyc) : null, v3 = (p) => `Geom.V3.v ${r(p.x)} ${r(p.y)} 0.`;
+      const path = paths && paths[0];
+      const sweepOne = (pth, rad, ext) => {
+        const q = pth.map((p) => ({ ...p })), n0 = q.length - 1, d0 = unit(q[0], q[1]), d1 = unit(q[n0 - 1], q[n0]);
         q[0] = { x: q[0].x - d0.x * ext, y: q[0].y - d0.y * ext }; q[n0] = { x: q[n0].x + d1.x * ext, y: q[n0].y + d1.y * ext };
         return `sweep (Profile.circle ~r:${r(rad)}) [ ${q.map(v3).join('; ')} ]`;
       };
+      const sweep = (rad, ext) => (paths.length === 1 ? sweepOne(paths[0], rad, ext) : `union [ ${paths.map((p) => sweepOne(p, rad, ext + 0.01)).join('; ')} ]`);
       const body = path ? (P.wall > 0 ? `${sweep(P.r, 0)} - ${sweep(P.r - P.wall, 0.01)}` : sweep(P.r, 0))
         : P.wall > 0 ? `union [ ${tube(P.r, 0)} ] - union [ ${tube(P.r - P.wall, 0.01)} ]` : `union [ ${tube(P.r, 0)} ]`;
       d.ctx.insert(`  let%feat ${name} =\n    Shape.((${body}) |> place ${pl})\n  in\n`, name, P.op, n);

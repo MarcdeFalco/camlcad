@@ -34,7 +34,7 @@ test('Practical 1 : bague à alésage rainuré', async ({ page }) => {
   await page.getByRole('button', { name: 'Ajuster' }).click();
   for (const [x, y] of [[0, 10], [0, -10], [2.5, 0], [-2.5, 0]]) await clickSketch(page, x, y);
   await shot(page, '241-practical1-ajuste');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await expect(page.locator('#dialog')).toContainText('1 contour, 1 cercle');
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('25');
   await shot(page, '242-practical1-apercu');

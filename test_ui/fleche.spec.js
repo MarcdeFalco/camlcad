@@ -9,7 +9,7 @@ test('flèche de distance de l’extrusion', async ({ page }) => {
   await clickAt(page, await worldPoint(page, [30, 30, 0]));
   await page.locator('[data-tool=rect]').click();
   await clickSketch(page, -20, -10); await clickSketch(page, 10, 10);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await expect(page.locator('#dialog')).toContainText('EXTRUSION');
   await page.waitForTimeout(400); // vue de trois quarts
   const tip = await page.evaluate(() => window.camlcadGizmo.tip().toArray());

@@ -37,7 +37,7 @@ test('Practical 4 : bride, moyeu, oreilles', async ({ page }) => {
   });
   await shot(page, '310-practical4-esquisse');
   await step('terminer', async () => {
-    await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+    await page.locator('#sketch-extrude').click();
     await expect(page.locator('#dialog')).toContainText('EXTRUSION');
     await expect(page.locator('#dialog')).toContainText('2 contours, 4 cercles'); // bride et disque Ø70 ; Ø40 et trois Ø20
   });
@@ -82,7 +82,7 @@ test('Practical 4 : bride, moyeu, oreilles', async ({ page }) => {
     await shot(page, '316-practical4-oreille');
   });
   await step('extrusion 14 côté opposé', async () => {
-    await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+    await page.locator('#sketch-extrude').click();
     await expect(page.locator('#dialog')).toContainText('EXTRUSION');
     await page.locator('#dialog .drow', { hasText: 'Direction' }).locator('select').selectOption({ label: 'Côté opposé' });
     await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('14');

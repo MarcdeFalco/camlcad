@@ -23,7 +23,7 @@ test('cotes en expression de paramètres', async ({ page }) => {
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('largeur/2'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim.fx')).toHaveCount(2);
   await shot(page, '131-cotes-parametres');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => size(page)).toEqual([40, 20]);

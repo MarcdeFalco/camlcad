@@ -39,7 +39,7 @@ test('flasque sur la face avant', async ({ page }) => {
   }
   await expect(page.locator('#sketch-dims .dim', { hasText: 'Ø10' })).toHaveCount(2);
   await shot(page, '270-flasque-esquisse');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await expect(page.locator('#dialog')).toContainText('1 contour, 2 cercles');
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();

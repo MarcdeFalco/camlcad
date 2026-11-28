@@ -287,16 +287,16 @@ export class SketchEditor extends SketchMarks {
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
   finish(kind = 'extrude') {
-    if (['extrude', 'revolve'].includes(kind) && !this.error && splitIntoFaces(this)) { this.pendingFinish = kind; this.changed(); return true; } // régions du dessin, puis fin après résolution
-    const rib = (['rib', 'pipe', 'sweep'].includes(kind) && (this.openLines().length || (kind === 'pipe' && this.openArcSegments().length)) && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
-    if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length))) return false;
+    if (['extrude', 'revolve', 'keep'].includes(kind) && !this.error && splitIntoFaces(this)) { this.pendingFinish = kind; this.changed(); return true; } // régions du dessin, puis fin après résolution
+    const rib = (['rib', 'pipe', 'sweep'].includes(kind) && (this.openLines().length || (kind === 'pipe' && this.pipeSegments().length)) && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
+    if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length || (kind === 'keep' && (this.pts.length > 1 || this.circles.length))))) return false; // Terminer : toute esquisse dessinée
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
       kind, editing: this.editing, desc: descOf(this), loops: this.loops.map((l) => loopOutline(this, l)),
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })), ellipses: this.ellipses.map((e) => ellipseOutline(this, e)),
-      ribs: [...this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]), ...(kind === 'pipe' ? this.openArcSegments() : [])], points: this.freePoints().map((i) => ({ ...this.pts[i] })),
+      ribs: kind === 'pipe' ? this.pipeSegments() : this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]), points: this.freePoints().map((i) => ({ ...this.pts[i] })),
     };
     this.suspend();
     this.ctx.finish(data);
@@ -374,8 +374,9 @@ export class SketchEditor extends SketchMarks {
     $('sketch-project').disabled = !this.faceLoops;
     $('sketch-holes').disabled = !this.freePoints().length || !!this.error;
     $('sketch-rib').disabled = $('sketch-sweep').disabled = !(this.openLines().length && !this.error);
-    $('sketch-pipe').disabled = !((this.openLines().length || this.openArcSegments().length) && !this.error); // tuyau : coudes en arc aussi
-    $('sketch-finish').disabled = $('sketch-revolve').disabled = $('sketch-loft').disabled = $('sketch-keep').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
+    $('sketch-pipe').disabled = !(this.pipeSegments().length && !this.error); // tuyau : coudes en arc, contours fermés aussi
+    $('sketch-finish').disabled = !(this.code && !this.error && (this.pts.length > 1 || this.circles.length));
+    $('sketch-revolve').disabled = $('sketch-loft').disabled = $('sketch-extrude').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }
 }

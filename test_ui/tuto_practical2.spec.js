@@ -61,7 +61,7 @@ test('Practical 2 : plaque inclinée à oblong', async ({ page }) => {
   await clickSketch(page, 25, 10);
   await expect(page.locator('#sketch-status')).not.toContainText('⚠');
   await shot(page, '261-practical2-ajuste');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await expect(page.locator('#dialog')).toContainText('2 contours');
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('10');
   await page.getByRole('button', { name: 'OK' }).click();

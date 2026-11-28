@@ -21,7 +21,7 @@ test('réseau circulaire d’esquisse et menu du clic droit', async ({ page }) =
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('6'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-status')).not.toContainText('⚠');
   await shot(page, '116-reseau-circulaire');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('3');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(100);

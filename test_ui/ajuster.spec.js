@@ -16,7 +16,7 @@ test('ajuster deux rectangles en un contour', async ({ page }) => {
   for (const [x, y] of [[-10, 0], [-15, 5], [-20, 0], [-15, -5]]) await clickSketch(page, x, y);
   await expect(page.locator('#sketch-finish')).toBeEnabled();
   await shot(page, '165-ajuster-apres');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(12);

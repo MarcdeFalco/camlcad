@@ -11,7 +11,7 @@ test('oblong par le centre', async ({ page }) => {
   await clickSketch(page, -15, 0); await clickSketch(page, -5, 0);
   await expect(page.locator('#sketch-finish')).toBeEnabled();
   await shot(page, '197-oblong-centre');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(20);

@@ -34,7 +34,7 @@ test('cotes tapées au tracé', async ({ page }) => {
   await page.keyboard.type('20'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: 'Ø20' })).toBeVisible();
   await shot(page, '251-cotes-au-trace-cercle');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('10');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(0);

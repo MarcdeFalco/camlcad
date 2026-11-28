@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { TYPED } from './sketch_input.js';
 import { TWO_CLICK, rubberShape, faceVertex } from './sketch_tools.js';
-import { arcPoints, loopPoints } from './sketch_arcs.js';
+import { arcPoints, loopPoints, loopOutline } from './sketch_arcs.js';
 import { parseDim } from './expr.js';
 
 const fmt = (x) => Number((Math.round(x * 100) / 100).toFixed(2)).toString();
@@ -160,6 +160,12 @@ export class SketchMarks {
       const ps = arcPoints(this, k); ps[0] = { ...this.pts[a] }; ps[ps.length - 1] = { ...this.pts[b] };
       return ps.slice(1).map((p, i) => [ps[i], p]);
     });
+  }
+  // Chemin d'un tuyau : lignes et arcs ouverts ; à défaut, les contours fermés (maillon de chaîne).
+  pipeSegments() {
+    const open = [...this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]), ...this.openArcSegments()];
+    if (open.length) return open;
+    return this.loops.flatMap((l) => { const ps = loopOutline(this, l).filter((p, i, a) => i === 0 || Math.hypot(p.x - a[i - 1].x, p.y - a[i - 1].y) > 1e-9); return ps.map((p, i) => [p, ps[(i + 1) % ps.length]]).filter(([a, b]) => Math.hypot(b.x - a.x, b.y - a.y) > 1e-6); });
   }
   // Lignes hors de toute boucle (construction) : chemins d'une nervure.
   openLines() {

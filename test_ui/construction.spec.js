@@ -21,7 +21,7 @@ test('plan décalé puis esquisse dessus', async ({ page }) => {
   await expect(page.locator('#palette')).toBeVisible();
   await page.locator('[data-tool=rect]').click();
   await clickSketch(page, -10, -10); await clickSketch(page, 10, 5);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(page.locator('#timeline .feat')).toHaveCount(1);

@@ -26,7 +26,7 @@ test('Practical 3 : une esquisse, deux extrusions de régions', async ({ page })
   await page.keyboard.press('f');
   await expect(page.locator('#sketch-dims .dim')).toHaveText(['Ø100', 'Ø20', 'Ø8']);
   // Première extrusion : l'anneau entre Ø20 et Ø8 seul (région 2), symétrique, 15.
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await expect(regions(page)).toHaveCount(3);
   await expect(regions(page).nth(0)).toBeChecked(); await expect(regions(page).nth(2)).toBeChecked(); // profil par défaut
   await regions(page).nth(0).uncheck(); await regions(page).nth(2).uncheck(); await regions(page).nth(1).check();
