@@ -68,3 +68,14 @@ export async function cmd(page, name) {
   }
   await b.click();
 }
+
+// Clic « humain » : à quelques pixels du point visé (décalage pseudo-aléatoire reproductible),
+// pour que ce qui ne marche qu'au pixel près échoue comme pour un utilisateur.
+let seed = 1;
+const jitter = () => { seed = (seed * 16807) % 2147483647; return ((seed / 2147483647) * 2 - 1) * 3; };
+export async function humanClick(page, [x, y], opts = {}) {
+  const X = x + jitter(), Y = y + jitter();
+  await page.mouse.move(X, Y, { steps: 4 });
+  await page.mouse.click(X, Y, opts);
+}
+export async function humanSketch(page, x, y) { await humanClick(page, await sketchPoint(page, x, y)); }
