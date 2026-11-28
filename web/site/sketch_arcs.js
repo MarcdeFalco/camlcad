@@ -69,6 +69,9 @@ export function centerArc(ed, c, a, q) {
   const C = ed.pts[c], A = ed.pts[a], r = Math.hypot(A.x - C.x, A.y - C.y), t = Math.atan2(q.y - C.y, q.x - C.x);
   // Fin sur un sommet existant (extrémité d'une ligne) : ce sommet, pour fermer le contour.
   const n = ed.nearest(q), b = n && n.kind === 'p' && n.i !== c && n.i !== a ? n.i : add(ed, C.x + r * Math.cos(t), C.y + r * Math.sin(t));
+  // Fin cliquée sur une ligne ou un cercle (le congé qui vient toucher le Ø70) : elle y reste
+  // (sur la ligne, sur le cercle) ; le solveur déplace le centre, le rayon suit.
+  if (n && b !== n.i && (n.kind === 'l' || n.kind === 'c')) ed.cons.push({ kind: n.kind === 'l' ? 'on_line' : 'on_circle', refs: [b, n.i] });
   ed.openArcs = new Set([...(ed.openArcs ?? []), ed.arcs.push({ c, a, b }) - 1]); // arc de profil (contour à refermer)
   return true;
 }

@@ -1,7 +1,7 @@
 // Black Book, chapitre 2 (Sketching) : rectangle par le centre, polygone, point,
 // outil Cote (D), lignes de construction ; extrusion du résultat.
 import { test, expect } from './fixtures.js';
-import { open, shot, clickSketch, sketchPoint, worldPoint, clickAt, code, triangles } from './lib.js';
+import { open, shot, clickSketch, sketchPoint, worldPoint, clickAt, code, triangles, dblclickDim } from './lib.js';
 
 test('outils d’esquisse : rectangle par le centre, polygone, point, cote', async ({ page }) => {
   await open(page, 'nouveau');
@@ -37,7 +37,7 @@ test('outils d’esquisse : rectangle par le centre, polygone, point, cote', asy
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('30'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: '30' })).toBeVisible();
   // Rayon du polygone porté à 9 par double-clic sur sa cote.
-  await page.locator('#sketch-dims .dim', { hasText: /^7$/ }).dblclick();
+  await dblclickDim(page.locator('#sketch-dims .dim', { hasText: /^7$/ }));
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('9'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: /^9$/ })).toBeVisible();
   await shot(page, '41-outils-esquisse');

@@ -2,18 +2,34 @@
 // d'un rectangle, d'un rectangle par le centre, d'un cercle, d'un oblong ou d'un polygone, taper un chiffre ouvre les
 // champs de cote à côté du curseur (Tab : champ suivant, Entrée : tracer, Échap : annuler).
 // La forme est tracée à ces cotes, du côté du curseur, et cotée (contraintes de longueur,
-// de diamètre) : plus besoin de Sélection, élément, cote, valeur.
-import { TWO_CLICK } from './sketch_tools.js';
+// de diamètre) : plus besoin de Sélection, élément, cote, valeur. Ligne (Contour) : longueur et
+// angle, mesuré depuis la ligne qui part du point de départ (la plus proche du curseur), sinon
+// depuis l'horizontale.
+import { TWO_CLICK, polyClick } from './sketch_tools.js';
 import { parseDim } from './expr.js';
 
-export const TYPED = { rect: ['Largeur', 'Hauteur'], crect: ['Largeur', 'Hauteur'], circle: ['Ø'], slot: ['Entraxe', 'Largeur'], cslot: ['Entraxe', 'Largeur'], polygon: ['Ø'], cpolygon: ['Sur plats'] };
+export const TYPED = { rect: ['Largeur', 'Hauteur'], crect: ['Largeur', 'Hauteur'], circle: ['Ø'], slot: ['Entraxe', 'Largeur'], cslot: ['Entraxe', 'Largeur'], polygon: ['Ø'], cpolygon: ['Sur plats'], poly: ['Longueur', 'Angle'] };
+
+const deg = (r) => (r * 180) / Math.PI, norm = (a) => ((a % 360) + 540) % 360 - 180; // ]-180, 180]
+// Ligne de référence de l'angle au départ s : celle des lignes qui en partent dont la demi-droite
+// est la plus proche de la direction phi (degrés). Rend { l, dir } (dir : degrés, vers l'extérieur) ou null.
+export function lineRef(ed, s, phi) {
+  let best = null;
+  ed.lines.forEach(([a, b], l) => {
+    if (a !== s && b !== s) return;
+    const o = ed.pts[a === s ? b : a], S = ed.pts[s], dir = deg(Math.atan2(o.y - S.y, o.x - S.x)), d = Math.abs(norm(phi - dir));
+    if (!best || d < best.d) best = { l, dir, d };
+  });
+  return best;
+}
+
 
 // Touche pendant l'esquisse : rend vrai si elle ouvre la saisie.
 export function typedDims(ed, e) {
-  const f = TYPED[ed.tool];
-  if (!f || ed.pending == null || !/^[0-9.]$/.test(e.key) || document.getElementById('sketch-type')) return false;
+  const f = TYPED[ed.tool], poly = ed.tool === 'poly' && ed.chain;
+  if (!f || (ed.pending == null && !poly) || !/^[0-9.]$/.test(e.key) || document.getElementById('sketch-type')) return false;
   e.preventDefault();
-  const live = document.getElementById('sketch-live'), A = ed.pts[ed.pending], a = ed.pending;
+  const live = document.getElementById('sketch-live'), a = poly ? ed.chain[ed.chain.length - 1] : ed.pending, A = ed.pts[a];
   const box = Object.assign(document.createElement('form'), { id: 'sketch-type' });
   box.style.left = live?.style.left ?? '50%'; box.style.top = live?.style.top ?? '50%';
   const ins = f.map((label, i) => {
@@ -28,6 +44,7 @@ export function typedDims(ed, e) {
     ev.preventDefault();
     const params = ed.ctx.params?.() ?? [];
     const dims = ins.map((x) => parseDim(x.value, params)), val = dims.map((d) => d?.value ?? null);
+    if (poly) { if (val[0] > 0) { box.remove(); typedLine(ed, a, val[0], val[1], dims.map((d) => d?.expr ?? null)); } else ins[0].select(); return; }
     if (!(val[0] > 0) || (ins[1]?.value.trim() && !(val[1] > 0))) { ins[val[0] > 0 ? 1 : 0].select(); return; }
     const q = ed.hover ?? { x: A.x + 1, y: A.y + 1 }, sx = Math.sign(q.x - A.x) || 1, sy = Math.sign(q.y - A.y) || 1;
     const h = val[1] ?? (Math.abs(q.y - A.y) * (ed.tool === 'crect' ? 2 : 1) || val[0]);
@@ -54,4 +71,23 @@ export function typedDims(ed, e) {
   document.getElementById('sketch-live')?.after(box);
   ins[0].focus(); ins[0].setSelectionRange(1, 1);
   return true;
+}
+
+// Segment de longueur L depuis le point s, à l'angle ang (degrés, ou null : direction du curseur)
+// de la ligne de référence ; posé, puis coté (longueur, angle entre les deux lignes).
+function typedLine(ed, s, L, ang, [eL, eA]) {
+  const A = ed.pts[s], q = ed.hover ?? { x: A.x + 1, y: A.y }, phi = deg(Math.atan2(q.y - A.y, q.x - A.x));
+  const ref = ang != null ? lineRef(ed, s, phi) : null, base = ref ? ref.dir : 0;
+  const th = ang == null ? phi : [base + ang, base - ang].sort((u, v) => Math.abs(norm(u - phi)) - Math.abs(norm(v - phi)))[0];
+  const i = ed.pts.push({ x: A.x + L * Math.cos((th * Math.PI) / 180), y: A.y + L * Math.sin((th * Math.PI) / 180) }) - 1, l = ed.lines.length;
+  polyClick(ed, null, i);
+  if (ed.lines.length === l) { ed.redraw(); return; }
+  ed.cons.push({ kind: 'length', refs: [l], value: L, ...(eL ? { expr: eL } : {}) });
+  if (ref && ang > 0.5 && ang < 179.5) {
+    // Sketch.angle : de la direction de la première ligne à celle de la seconde, telles que stockées.
+    const dir = (k) => { const [a, b] = ed.lines[k]; return deg(Math.atan2(ed.pts[b].y - ed.pts[a].y, ed.pts[b].x - ed.pts[a].x)); };
+    const t = norm(dir(l) - dir(ref.l)), refs = t >= 0 ? [ref.l, l] : [l, ref.l], v = Math.abs(t), same = Math.abs(v - ang) < 1e-6;
+    ed.cons.push({ kind: 'angle', refs, value: v, ...(eA ? { expr: same ? eA : `180. -. (${eA})` } : {}) });
+  } // sans ligne au départ : angle depuis l'horizontale, tenu par la position seule
+  ed.changed();
 }

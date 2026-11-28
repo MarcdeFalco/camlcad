@@ -53,4 +53,7 @@ val to_code : ?indent:int -> t -> string
 (** Expression OCaml de type [Sketch.region Sketch.t] (sans [let%sketch]),
     lignes indentées de [indent] espaces (défaut 4) ; valeurs initiales
     arrondies au centième. Suppose [open Cad]. Lève [Invalid_argument] si
-    [build] échoue. *)
+    [build] échoue. Au-delà de 30 points (lignes, cercles, arcs, contraintes), les
+    déclarations sont écrites par paquets de 30 ([let* … in] successifs, [let* () =
+    Sketch.constrain …] puis [let+] pour le dernier) : le compilateur OCaml du navigateur
+    déborde de sa pile sur une liste littérale d'une centaine d'éléments. *)

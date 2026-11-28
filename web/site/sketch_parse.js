@@ -27,8 +27,8 @@ export function parseSketch(text, params = []) {
   for (const m of text.matchAll(/\b(c\d+) = Sketch\.circle (p\d+) (\(?-?[\d.]+\)?)/g)) circles[idx(m[1])] = { c: idx(m[2]), r: num(m[3]) };
   for (const m of text.matchAll(/\b(e\d+) = Sketch\.ellipse (p\d+) (p\d+) (\(?-?[\d.]+\)?)/g)) ellipses[idx(m[1])] = { c: idx(m[2]), a: idx(m[3]), ry: num(m[4]) };
   for (const m of text.matchAll(/\b(a\d+) = Sketch\.arc (p\d+) (p\d+) (p\d+)/g)) arcs[idx(m[1])] = { c: idx(m[2]), a: idx(m[3]), b: idx(m[4]) };
-  const cl = /Sketch\.\[([\s\S]*?)\]/.exec(text);
-  if (cl) for (const item of cl[1].split(';').map((s) => s.trim()).filter(Boolean)) {
+  // Contraintes : une liste « Sketch.[ … ] », ou plusieurs (paquets de 30, voir Sketch_desc.to_code).
+  for (const cl of text.matchAll(/Sketch\.\[([\s\S]*?)\]/g)) for (const item of cl[1].split(';').map((s) => s.trim()).filter(Boolean)) {
     const w = item.split(/\s+/), kind = w[0], refs = [];
     let k = 1; while (k < w.length && /^[plca]\d+$/.test(w[k])) refs.push(idx(w[k++]));
     const rest = w.slice(k).join(' ');

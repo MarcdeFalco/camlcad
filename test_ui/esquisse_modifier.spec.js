@@ -1,7 +1,7 @@
 // Black Book, chapitre 2 : « Edit Sketch ». Une esquisse déjà extrudée se rouvre à la souris
 // (double-clic dans le navigateur, ou menu de la frise), sa cote change, l'extrusion suit.
 import { test, expect } from './fixtures.js';
-import { open, shot, clickSketch, worldPoint, clickAt, code } from './lib.js';
+import { open, shot, clickSketch, worldPoint, clickAt, code, dblclickDim } from './lib.js';
 
 const bbox = (page) => page.evaluate(() => {
   const g = window.camlcadView.part.geometry; g.computeBoundingBox();
@@ -28,7 +28,7 @@ test('modifier une esquisse existante', async ({ page }) => {
   await expect(page.locator('#palette')).toBeVisible();
   await expect(page.locator('#sketch-dims .dim', { hasText: /^30$/ })).toBeVisible();
   await shot(page, '98-esquisse-rouverte');
-  await page.locator('#sketch-dims .dim', { hasText: /^30$/ }).dblclick();
+  await dblclickDim(page.locator('#sketch-dims .dim', { hasText: /^30$/ }));
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('40'); await page.keyboard.press('Enter');
   await page.locator('#sketch-extrude').click();
   // Pas de nouvelle extrusion : la même feature suit la nouvelle cote.

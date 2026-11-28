@@ -3,41 +3,61 @@ import * as THREE from 'three';
 import { el } from './timeline.js';
 import { num, choice, row, OPS } from './dialogs.js';
 import { sketchPlane } from './sketch_parse.js';
+import { section, sweptRegion, ribSide } from './rib_plane.js';
 
 const lit = (x) => { const s = Number(Number(x).toPrecision(10)).toString(); return /[.e]/.test(s) ? s : s + '.'; };
 const litp = (x) => (Number(x) < 0 ? `(${lit(x)})` : lit(x));
 
 // Nervure (ch. 4, Rib) : chaque ligne ouverte de l'esquisse, épaissie de t (centrée sur la
-// ligne) et extrudée de h le long de la normale du plan ; Joindre par défaut.
+// ligne) et extrudée de h le long de la normale du plan ; Joindre par défaut. Si le plan coupe
+// la pièce : d'office, la région entre la ligne et la pièce, épaissie de part et d'autre du plan.
 export function rib(d, sk, back) {
   const P = { t: 2, h: 5, flip: false, op: 'join' };
   const f = sk.frame;
+  // Dans le plan, jusqu'à la pièce (la nervure d'un modeleur, ligne tracée dans un plan qui
+  // coupe la pièce) : région entre la ligne et la coupe, épaissie de part et d'autre du plan.
+  const segs = section(d.ctx.part?.(), f);
+  const regions = (flip) => sk.ribs.map(([a, b]) => sweptRegion(segs, a, b, ribSide(segs, a, b) * (flip ? -1 : 1)));
+  const inPlane = () => P.mode === 'plane' && regions(P.flip).every(Boolean);
+  P.mode = segs.length && regions(false).every(Boolean) ? 'plane' : 'wall';
+  if (P.mode === 'plane') P.t = 5;
   const preview = () => {
     const g = new THREE.Group();
-    for (const [a, b] of sk.ribs) {
+    if (inPlane()) for (const poly of regions(P.flip)) {
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(poly.map((p) => new THREE.Vector2(p.x, p.y))), { depth: P.t, bevelEnabled: false }));
+      m.position.z = -P.t / 2; g.add(m);
+    }
+    else for (const [a, b] of sk.ribs) {
       const L = Math.hypot(b.x - a.x, b.y - a.y), m = new THREE.Mesh(new THREE.BoxGeometry(L, P.t, P.h));
       m.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, P.flip ? -P.h / 2 : P.h / 2); m.rotation.z = Math.atan2(b.y - a.y, b.x - a.x); g.add(m);
     }
     g.matrixAutoUpdate = false; g.matrix.makeBasis(f.x, f.y, f.z).setPosition(f.origin);
     d.setPreview(g, P.op === 'cut' ? 0xe74c3c : 0x2ecc71);
+    hRow.hidden = P.mode === 'plane';
   };
+  const tIn = num(P.t, (v) => { P.t = v; preview(); }, { min: 0 });
+  const hRow = row('Hauteur', num(P.h, (v) => { P.h = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' }));
   d.open('NERVURE', [
     row('Chemins', el('span', { className: 'hint', textContent: `${sk.ribs.length} ligne(s) ouverte(s)` })),
-    row('Épaisseur', num(P.t, (v) => { P.t = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
-    row('Hauteur', num(P.h, (v) => { P.h = v; preview(); }, { min: 0 }), el('span', { className: 'unit', textContent: 'mm' })),
+    ...(segs.length ? [row('Étendue', choice({ plane: 'Jusqu’à la pièce (dans le plan)', wall: 'Hauteur (mur sur le plan)' }, P.mode, (v) => { P.mode = v; preview(); }))] : []),
+    row('Épaisseur', tIn, el('span', { className: 'unit', textContent: 'mm' })),
+    hRow,
     row('Côté opposé', Object.assign(el('input', { type: 'checkbox' }), { onchange: (e) => { P.flip = e.target.checked; preview(); } })),
     row('Opération', d.ctx.isEmpty() ? el('span', { className: 'hint', textContent: 'Nouveau corps' }) : choice(OPS, P.op, (v) => { P.op = v; preview(); })),
   ], {
     key: 'rib', cancel: back,
     ok: () => {
-      if (!(P.t > 0 && P.h > 0)) return false;
+      if (!(P.t > 0 && (P.mode === 'plane' || P.h > 0))) return false;
+      if (P.mode === 'plane' && !inPlane()) { d.ctx.notify?.('Nervure : la ligne et la pièce ne ferment pas de région de ce côté.', true); return false; }
       const n = d.ctx.nextIndex(), name = `nervure${n}`, r = (x) => litp(Math.round(x * 100) / 100 + 0);
-      const segs = sk.ribs.map(([a, b]) => {
-        const L = Math.hypot(b.x - a.x, b.y - a.y), deg = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-        return `cube (Geom.V3.v ${r(L)} ${r(P.t)} ${r(P.h)}) |> translate (Geom.V3.v 0. ${r(-P.t / 2)} ${r(P.flip ? -P.h : 0)}) |> rotate ~axis:Geom.V3.ez ~deg:${r(deg)} |> translate (Geom.V3.v ${r(a.x)} ${r(a.y)} 0.)`;
-      });
+      const segs3 = P.mode === 'plane'
+        ? regions(P.flip).map((poly) => `extrude ~h:${lit(P.t)} (Profile.polygon [ ${poly.map((p) => `Geom.V2.v ${r(p.x)} ${r(p.y)}`).join('; ')} ]) |> translate (Geom.V3.v 0. 0. ${r(-P.t / 2)})`)
+        : sk.ribs.map(([a, b]) => {
+          const L = Math.hypot(b.x - a.x, b.y - a.y), deg = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+          return `cube (Geom.V3.v ${r(L)} ${r(P.t)} ${r(P.h)}) |> translate (Geom.V3.v 0. ${r(-P.t / 2)} ${r(P.flip ? -P.h : 0)}) |> rotate ~axis:Geom.V3.ez ~deg:${r(deg)} |> translate (Geom.V3.v ${r(a.x)} ${r(a.y)} 0.)`;
+        });
       const pl = /^[a-z_][\w']*$/.test(sk.planeCode) ? sk.planeCode : `(${sk.planeCode})`;
-      d.ctx.insert(`  let%feat ${name} =\n    Shape.(union [ ${segs.join(';\n      ')} ] |> place ${pl})\n  in\n`, name, P.op, n);
+      d.ctx.insert(`  let%feat ${name} =\n    Shape.(union [ ${segs3.join(';\n      ')} ] |> place ${pl})\n  in\n`, name, P.op, n);
     },
   });
   preview();

@@ -70,7 +70,7 @@ export class SketchEditor extends SketchMarks {
 
   // Retire l'esquisse de la vue ; ses données restent pour resume().
   suspend() {
-    const { scene, camera, controls } = this.ctx;
+    const { scene, camera, controls } = this.ctx; this.pendingFinish = null; // fin en attente : pas pour l'esquisse suivante
     if (this.group) { scene.remove(this.group); this.group = null; }
     if (this.onCam) controls.removeEventListener('change', this.onCam);
     this.labels().replaceChildren();
@@ -95,11 +95,13 @@ export class SketchEditor extends SketchMarks {
 
   tol() { const { camera, controls } = this.ctx; return camera.position.distanceTo(controls.target) * 0.015; }
 
-  nearest(q) {
+  // Élément sous le curseur. Tracé : un point proche l'emporte (accroche). Sélection (pick) : le
+  // plus proche, un point n'ayant l'avantage qu'à mi-tolérance (le milieu d'une ligne courte la choisit).
+  nearest(q, pick = false) {
     const t = this.tol(), d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     let best = null;
-    this.pts.forEach((p, i) => { const d = d2(p, q); if (d < t && (!best || d < best.d)) best = { kind: 'p', i, d }; });
-    if (best) return best;
+    this.pts.forEach((p, i) => { const d0 = d2(p, q), d = pick ? Math.max(0, d0 - t / 2) : d0; if (d0 < t && (!best || d < best.d)) best = { kind: 'p', i, d }; });
+    if (best && !pick) return best;
     this.lines.forEach(([a, b], i) => {
       const A = this.pts[a], B = this.pts[b], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1;
       const s = Math.max(0, Math.min(1, ((q.x - A.x) * dx + (q.y - A.y) * dy) / L2));
@@ -161,7 +163,7 @@ export class SketchEditor extends SketchMarks {
     } else if (this.tool === 'poly') {
       polyClick(this, q); this.changed();
     } else {
-      const n = this.nearest(q);
+      const n = this.nearest(q, true);
       if (!n) this.sel = [];
       else {
         const k = this.sel.findIndex((s) => s.kind === n.kind && s.i === n.i);
@@ -175,7 +177,8 @@ export class SketchEditor extends SketchMarks {
   key(e) {
     if (e.target.closest('input,select,.cm-editor') || typedDims(this, e)) return;
     if (e.key === 'Escape') {
-      if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else this.stop();
+      // Échap annule le tracé en cours, puis revient à Sélection ; il ne quitte jamais l'esquisse (le travail serait perdu).
+      if (this.chain || this.pending != null) { this.dropPending(); this.chain = null; this.redraw(); } else { this.sel = []; if (this.tool !== 'select') this.setTool('select'); else this.redraw(); }
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.sel.length) { e.preventDefault(); this.remove(); return; }
     const tools = { r: 'rect', l: 'poly', c: 'circle', a: 'arc', p: 'polygon', d: 'dim', s: 'select', t: 'trim' };
@@ -289,6 +292,7 @@ export class SketchEditor extends SketchMarks {
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
   finish(kind = 'extrude') {
+    if (this.pendingFinish) { this.pendingFinish = kind; return true; } // Terminer puis E aussitôt : la dernière demande l'emporte
     if (['extrude', 'revolve', 'keep'].includes(kind) && !this.error && splitIntoFaces(this)) { this.pendingFinish = kind; this.changed(); return true; } // régions du dessin, puis fin après résolution
     const rib = (['rib', 'pipe', 'sweep'].includes(kind) && (this.openLines().length || (kind === 'pipe' && this.pipeSegments().length)) && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length || (kind === 'keep' && (this.pts.length > 1 || this.circles.length))))) return false; // Terminer : toute esquisse dessinée
@@ -307,8 +311,6 @@ export class SketchEditor extends SketchMarks {
 
   redraw() {
     if (!this.group) return;
-    // Ajuster, prolonger, couper : une cote posée sur la courbe ne capte pas le clic (il va à la courbe).
-    document.getElementById('sketch-dims')?.classList.toggle('through', ['trim', 'extend', 'break'].includes(this.tool));
     const g = this.group;
     for (const o of [...g.children]) { g.remove(o); o.traverse((x) => { x.geometry?.dispose(); x.material?.dispose(); }); }
     const isSel = (k, i) => this.sel.some((s) => s.kind === k && s.i === i);
@@ -328,7 +330,7 @@ export class SketchEditor extends SketchMarks {
     for (const l of this.loops) for (const it of l) if (it.s) seg(splinePoints(this, it.s), 0x1f6feb, false);
     for (const e of this.ellipses) seg([...ellipseOutline(this, e), ellipseOutline(this, e)[0]], 0x1f6feb, false);
     if (this.spl?.length > 1) seg(splinePoints(this, this.spl), 0x1f6feb, true);
-    this.arcs.forEach((_, i) => seg(arcPoints(this, i), col('a', i), !seqs.some((l) => l.includes(this.arcs[i].a) && l.includes(this.arcs[i].b))));
+    this.arcs.forEach((_, i) => seg(arcPoints(this, i), col('a', i), !this.openArcs?.has(i) && !seqs.some((l) => l.includes(this.arcs[i].a) && l.includes(this.arcs[i].b)))); // arc tracé (profil) : plein
     this.circles.forEach((c, i) => {
       const C = this.pts[c.c];
       seg(Array.from({ length: 65 }, (_, k) => ({ x: C.x + c.r * Math.cos((k / 64) * 2 * Math.PI), y: C.y + c.r * Math.sin((k / 64) * 2 * Math.PI) })), col('c', i));
