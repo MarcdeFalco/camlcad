@@ -1,8 +1,10 @@
-// Tutoriel Black Book ch. 5, Practical 4 (support de palier) : Ø70, Ø40 et trois Ø20 tapés ;
+// Tutoriel Black Book ch. 5, Practical 4 (support de palier, puis ses oreilles) : Ø70, Ø40 et trois Ø20 tapés ;
 // arcs R20 par le centre autour des Ø20, lignes qui les relient, congés R8 qui viennent
 // toucher le Ø70, sans rien ajuster. À l'extrusion, le dessin est découpé en régions comme
 // dans un modeleur : la bride (bordée par le bas du Ø70) extrudée de 12, puis, l'esquisse
-// reprise du navigateur, l'anneau Ø70/Ø40 de 50.
+// reprise du navigateur, l'anneau Ø70/Ø40 de 50. Puis un plan décalé de 24,5 du plan YZ, une
+// oreille esquissée dessus (Ø30, Ø15, trois lignes tangentes : régions du dessin), extrudée
+// de 14 côté opposé, et sa symétrique par rapport au plan YZ.
 import { test, expect } from './fixtures.js';
 import { cmd, open, shot, clickSketch, sketchPoint, worldPoint, clickAt, code, triangles } from './lib.js';
 const volume = async (page) => {
@@ -12,7 +14,7 @@ const volume = async (page) => {
   return v;
 };
 const step = async (name, f) => f();
-test('Practical 4 : bride et moyeu, régions du dessin', async ({ page }) => {
+test('Practical 4 : bride, moyeu, oreilles', async ({ page }) => {
   await open(page, 'nouveau');
   await page.getByRole('button', { name: 'Esquisse' }).click();
   await clickAt(page, await worldPoint(page, [30, 30, 0]));
@@ -61,4 +63,46 @@ test('Practical 4 : bride et moyeu, régions du dessin', async ({ page }) => {
   // L'anneau Ø70/Ø40 de 50 s'ajoute sans recouvrement : π (35² − 20²) × 50 ≈ 129,6 cm³ (volume
   // affiché à trois chiffres, cercles en facettes).
   await expect.poll(async () => Math.abs((await volume(page)) - v1 - 129.6)).toBeLessThan(1.5);
+  await step('plan décalé YZ 24,5', async () => {
+    await page.getByRole('button', { name: 'Plan décalé' }).click();
+    await page.locator('#dialog .drow', { hasText: 'Référence' }).locator('select').selectOption('YZ');
+    await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('24.5');
+    await page.getByRole('button', { name: 'OK' }).click();
+    await expect.poll(() => code(page)).toContain('Geom.Plane.offset 24.5 Geom.Plane.yz');
+  });
+  await step('esquisse sur le plan', async () => {
+    await page.locator('#tree .row', { hasText: /plan\d/ }).last().click();
+    await expect(page.locator('#palette')).toBeVisible();
+    await shot(page, '315-practical4-plan');
+  });
+  await step('oreille', async () => {
+    for (const d of [30, 15]) { await page.getByRole('button', { name: 'Cercle' }).click(); await clickSketch(page, 55, 25); await page.mouse.move(...await sketchPoint(page, 55 + d / 4, 25), { steps: 2 }); await page.keyboard.type(String(d)); await page.keyboard.press('Enter'); }
+    await page.getByRole('button', { name: 'Contour' }).click();
+    await clickSketch(page, 55, 10); await clickSketch(page, 25, 10); await clickSketch(page, 25, 40); await clickSketch(page, 55, 40); await page.keyboard.press('Escape');
+    await shot(page, '316-practical4-oreille');
+  });
+  await step('extrusion 14 côté opposé', async () => {
+    await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+    await expect(page.locator('#dialog')).toContainText('EXTRUSION');
+    await page.locator('#dialog .drow', { hasText: 'Direction' }).locator('select').selectOption({ label: 'Côté opposé' });
+    await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('14');
+    await shot(page, '317-practical4-oreille-apercu');
+    await page.getByRole('button', { name: 'OK' }).click();
+    await expect(page.locator('#timeline .feat')).toHaveCount(3);
+  });
+  await step('symétrie', async () => {
+    await page.locator('#timeline .feat').last().click();
+    await cmd(page, 'Symétrie');
+    await page.locator('#dialog .drow', { hasText: 'Plan' }).locator('select').selectOption({ label: 'Plan YZ' }).catch(() => {});
+    await page.getByRole('button', { name: 'OK' }).click();
+    await expect(page.locator('#timeline .feat')).toHaveCount(4);
+  });
+  await page.locator('#home').click();
+  await shot(page, '318-practical4-oreilles');
+  // Deux oreilles de (30 × 30 + demi-disque Ø30 − trou Ø15) × 14 ≈ 15,1 cm³, moins ce qui entre dans le moyeu.
+  const v2 = await volume(page);
+  expect(v2 - v1 - 129.6).toBeGreaterThan(24); expect(v2 - v1 - 129.6).toBeLessThan(30.2);
+  const ymax = await page.evaluate(() => { const g = window.camlcadView.part.geometry; g.computeBoundingBox(); return Math.round(g.boundingBox.max.y); });
+  expect(ymax).toBe(70);
+  expect(await code(page)).toMatch(/mirror ~normal:Geom\.V3\.ex extrusion4/);
 });

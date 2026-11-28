@@ -234,6 +234,8 @@ function showTab(tab) {
   for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== t;
 }
 for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => { if (b.dataset.tab !== 'sketch' || sketch.active) showTab(sketch.active ? 'sketch' : b.dataset.tab); };
+// La feature est un outil retranché (poche, perçage, tuyau ou sphère coupés) : réseau et symétrie coupent aussi.
+const usedAsCut = (id) => journal.features.some((r) => r.op === 'difference' && r.deps.includes(id) && r.deps[0] !== id);
 const needSel = () => { if (selected == null) notify('Sélectionnez d’abord une feature (frise, navigateur ou pièce).', true); return selected != null; };
 const COMMANDS = {
   sketch: startPicking,
@@ -242,8 +244,8 @@ const COMMANDS = {
   revolve: () => (sketch.active ? sketch.finish('revolve') || notify('Fermez un contour ou tracez un cercle avant la révolution.', true) : (notify('Esquissez d’abord le profil, puis « Révolution ».'), startPicking())),
   ...faces.commands,
   torus: () => dialogs.primitive('torus'), coil: () => dialogs.primitive('coil'), thread: () => feats.threadRod(dialogs),
-  pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo()),
-  mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo()),
+  pattern: () => needSel() && feats.pattern(dialogs, journal.features[selected], selGeo(), usedAsCut(selected)),
+  mirror: () => needSel() && feats.mirror(dialogs, journal.features[selected], selGeo(), usedAsCut(selected)),
   measure: () => inspect.startMeasure(), zebra: () => notify(vp.toggleZebra() ? 'Analyse zébrée : bandes réfléchies.' : 'Analyse zébrée retirée.'), draft: () => notify(vp.toggleDraft() ? 'Dépouille (démoulage selon +z) : vert en dépouille, jaune vertical, rouge en contre-dépouille.' : 'Analyse de dépouille retirée.'), section: () => inspect.section(), props: () => inspect.properties(),
   help: () => shortcutsHelp(dialogs), shell: () => needSel() && paths.shell(dialogs, journal.features[selected], featureDef(journal.features[selected].name)), split: () => feats.split(dialogs, allPlanes()), combine: () => feats.combine(dialogs, journal), move: () => feats.move(dialogs), scale: () => feats.scale(dialogs),
   offsetplane: () => dialogs.offsetPlane((code) => { insertPlane(code); }), angleplane: () => dialogs.anglePlane((f) => insertPlane(`(* construction *) ${frameCode(f)}`)),
