@@ -103,3 +103,4 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `tuto_cendrier.spec.js` | Black Book ch. 5, Practice 1 (cendrier) : disques Ø60 × 3 et Ø50 × 15 (plan XY du navigateur), sphère R10 coupée, rainure (tuyau Ø4,5 coupé), réseau circulaire ×3 qui coupe aussi (volume) |
 | `tuto_coude.spec.js` | Black Book ch. 5, Practice 2 (coude) : sur le plan XZ, ligne, arc R20 par le centre, ligne ; Tuyau Ø40 paroi 2 qui suit l'arc (balayage lisse, volume) |
 | `tuto_axe.spec.js` | Black Book ch. 5, Practice 3 (axe tourné) : demi-profil de huit côtés sur le plan XZ, Révolution autour de l'axe y de l'esquisse (volume, hauteur 110) |
+| `tuto_rotule.spec.js` | Black Book ch. 5, Practice 4 (rotule) : tige Ø20 × 60, six pans 25,4 sur plats tapé au tracé, col Ø17 × 3, boule R18,75 (volume) |
