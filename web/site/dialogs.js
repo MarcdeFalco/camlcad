@@ -134,7 +134,10 @@ export class Dialogs {
     // défaut : profondeur paire (le profil de l'esquisse) ; on en choisit d'autres comme on
     // clique des régions dans un modeleur (l'anneau entre deux cercles, par exemple).
     const inside = (p, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) c = !c; } return c; };
-    const regs = [...sk.loops.map((l) => ({ l, probe: l[0], has: (p) => inside(p, l) })),
+    // Point témoin d'un contour : juste à l'intérieur, au milieu de son premier côté (deux faces
+    // voisines partagent des sommets ; un sommet ne dirait pas laquelle contient l'autre).
+    const probe = (l) => { const a = l[0], b = l.find((p) => Math.hypot(p.x - a.x, p.y - a.y) > 1e-6) ?? a, ar = l.reduce((s, p, i) => { const q = l[(i + 1) % l.length]; return s + p.x * q.y - q.x * p.y; }, 0), d = Math.hypot(b.x - a.x, b.y - a.y) || 1, e = Math.min(1e-3, d * 1e-3) * Math.sign(ar || 1); return { x: (a.x + b.x) / 2 - ((b.y - a.y) / d) * e, y: (a.y + b.y) / 2 + ((b.x - a.x) / d) * e }; };
+    const regs = [...sk.loops.map((l) => ({ l, probe: probe(l), has: (p) => inside(p, l) })),
       ...sk.circles.map((c) => ({ c, probe: { x: c.x + c.r, y: c.y }, has: (p) => Math.hypot(p.x - c.x, p.y - c.y) < c.r - 1e-6 }))];
     for (const g of regs) g.depth = regs.filter((m) => m !== g && m.has(g.probe)).length;
     regs.sort((u, v) => u.depth - v.depth); // tri stable, comme Profile.regions

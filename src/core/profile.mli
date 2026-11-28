@@ -21,7 +21,8 @@ val regions : t -> t list
 (** Régions d'un profil d'esquisse, comme celles qu'on clique dans un modeleur : chaque
     contour (polygone, ou disque placé par [translate]) moins les contours qu'il contient
     directement, rangées par profondeur d'imbrication (nombre de contours qui contiennent
-    le premier sommet, ou le point d'angle 0 d'un disque) puis par ordre d'apparition.
+    un point témoin : juste à l'intérieur, au milieu du premier côté d'un polygone, ce qui
+    départage deux faces voisines ; le point d'angle 0 d'un disque) puis par ordre d'apparition.
     Pour un profil de {!Sketch} (contours réunis et retranchés) : [Sketch.(a - b)], [b] dans
     [a], donne [[a - b; b]]. Contours égaux comptés une fois. Un profil qui n'est pas fait
     que de polygones et de disques réunis ou retranchés est une seule région : [[p]]. *)

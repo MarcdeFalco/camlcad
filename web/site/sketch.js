@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
 import { faceVertex, orientAngle, polyClick, TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
-import { parseDim } from './expr.js'; import { typedDims } from './sketch_input.js';
+import { parseDim } from './expr.js'; import { splitIntoFaces } from './sketch_faces.js'; import { typedDims } from './sketch_input.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
 import { trimAt, extendAt, breakAt, toggleConstruction } from './sketch_trim.js';
@@ -202,6 +202,7 @@ export class SketchEditor extends SketchMarks {
       this.dof = m.dof; this.redundant = m.redundant; this.code = m.code; this.error = null;
     } else this.error = m.error;
     this.redraw();
+    if (this.pendingFinish) { const k = this.pendingFinish; this.pendingFinish = null; if (m.ok) this.finish(k); }
   }
 
   // Contraintes applicables à la sélection courante.
@@ -286,6 +287,7 @@ export class SketchEditor extends SketchMarks {
 
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
   finish(kind = 'extrude') {
+    if (['extrude', 'revolve'].includes(kind) && !this.error && splitIntoFaces(this)) { this.pendingFinish = kind; this.changed(); return true; } // régions du dessin, puis fin après résolution
     const rib = (['rib', 'pipe', 'sweep'].includes(kind) && this.openLines().length && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length))) return false;
     const data = {
