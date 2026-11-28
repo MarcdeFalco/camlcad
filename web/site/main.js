@@ -156,6 +156,7 @@ canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; }
 canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); if (sketch.active) sketch.move(e); });
 canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
+  if (dialogs.canvasClick?.(e)) return; // région cliquée pendant l'extrusion
   if (sketch.active) { sketch.click(e); return; }
   if (print.active) { const h = vp.ray(e).intersectObject(print.preview)[0]; if (h) print.pickFace(planarFace(lastMesh, h.faceIndex)); return; }
   const onPart = extrudePick && vp.part && vp.ray(e).intersectObject(vp.part).length; // Extrusion : la face avant le plan d'origine qui la porte
