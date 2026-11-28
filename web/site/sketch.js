@@ -3,7 +3,8 @@
 // "sketch") ; « Terminer l'esquisse » passe la main à la boîte d'extrusion, qui écrit le code.
 import * as THREE from 'three';
 import { SketchMarks } from './sketch_marks.js';
-import { faceVertex, orientAngle, polyClick, TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
+import { snapPoint } from './sketch_snap.js';
+import { orientAngle, polyClick, TWO_CLICK, THREE_CLICK, inferPoint, splineClick, ellipseClick, ellipseOutline } from './sketch_tools.js';
 import { parseDim } from './expr.js'; import { splitIntoFaces } from './sketch_faces.js'; import { typedDims } from './sketch_input.js';
 import { mirror, patternX, patternCirc, offsetLoop, projectFace, scaleSketch } from './sketch_copy.js';
 import { deleteSelection } from './sketch_delete.js';
@@ -119,7 +120,8 @@ export class SketchEditor extends SketchMarks {
   pointAt(q) {
     const n = this.nearest(q);
     if (n && n.kind === 'p') return n.i;
-    const v = !n && faceVertex(this, q); if (v) return this.pts.push({ ...v, fixed: true }) - 1; // sommet de la face d'appui
+    const v = snapPoint(this, q); // origine, intersection de courbes, sommet de la face ou de la pièce
+    if (v) { const i = this.pts.push({ x: v.x, y: v.y, fixed: v.kind === 'origin' || v.kind === 'face' }) - 1; for (const [k, r] of v.cons) this.cons.push({ kind: k, refs: [i, r] }); return i; }
     return inferPoint(this, q, n); // accroche sur une ligne (milieu) ou un cercle : contrainte implicite
   }
 
