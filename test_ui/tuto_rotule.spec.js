@@ -7,7 +7,7 @@ const row = (page, l) => page.locator('#dialog .drow', { hasText: l });
 test('Practice 4 : rotule', async ({ page }) => {
   await open(page, 'nouveau');
   const typed = async (tool, v, more) => { if (more) await cmd(page, tool); else await page.locator(`[data-tool=${tool}]`).click(); await clickSketch(page, 0, 0); await page.mouse.move(...await sketchPoint(page, 4, 1), { steps: 2 }); await page.keyboard.type(String(v)); await page.keyboard.press('Enter'); };
-  const extrude = async (h) => { await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click(); await row(page, 'Distance').locator('input').fill(String(h)); await page.getByRole('button', { name: 'OK' }).click(); };
+  const extrude = async (h) => { await page.locator('#sketch-extrude').click(); await row(page, 'Distance').locator('input').fill(String(h)); await page.getByRole('button', { name: 'OK' }).click(); };
   await step('tige Ø20 × 60', async () => { await page.locator('#tree .row', { hasText: 'Plan XY' }).click(); await typed('circle', 20); await extrude(60); await expect(page.locator('#timeline .feat')).toHaveCount(1); });
   await step('six pans 25,4 × 15 sur le dessus', async () => {
     await page.getByRole('button', { name: 'Ajuster' }).click();

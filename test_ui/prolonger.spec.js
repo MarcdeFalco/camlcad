@@ -26,7 +26,7 @@ test('prolonger et couper des lignes d’esquisse', async ({ page }) => {
   await page.keyboard.press('t');
   await clickSketch(page, -12, -16);
   await shot(page, '168-prolonger-couper');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('4');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(0);

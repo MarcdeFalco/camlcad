@@ -19,7 +19,7 @@ test('rectangle, cercles et arc par points', async ({ page }) => {
   await clickSketch(page, -30, -10); await clickSketch(page, -10, -5); await clickSketch(page, -12, 5);
   await expect(page.locator('#sketch-finish')).toBeEnabled();
   await shot(page, '179-rect3');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBe(12);
@@ -34,7 +34,7 @@ test('rectangle, cercles et arc par points', async ({ page }) => {
   await cmd(page, 'Arc 3 points');
   await clickSketch(page, -30, 15); await clickSketch(page, -10, 15); await clickSketch(page, -20, 20);
   await shot(page, '180-cercles-arc');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => volume(page)).toBeCloseTo(1.05 + (Math.PI * (25 + 36) * 5) / 1000, 1);

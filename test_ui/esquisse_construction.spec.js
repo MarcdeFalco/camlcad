@@ -25,7 +25,7 @@ test('polygone circonscrit et construction', async ({ page }) => {
   await clickSketch(page, -30, -20);
   await page.keyboard.press('x');
   await expect.poll(loops).toBe(1);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => code(page)).toContain('point_line_distance');

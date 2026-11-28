@@ -105,3 +105,4 @@ sur macOS, Chromium ne démarre pas : lancer hors bac à sable.
 | `tuto_axe.spec.js` | Black Book ch. 5, Practice 3 (axe tourné) : demi-profil de huit côtés sur le plan XZ, Révolution autour de l'axe y de l'esquisse (volume, hauteur 110) |
 | `tuto_rotule.spec.js` | Black Book ch. 5, Practice 4 (rotule) : tige Ø20 × 60, six pans 25,4 sur plats tapé au tracé, col Ø17 × 3, boule R18,75 (volume) |
 | `tuto_chaine.spec.js` | Black Book ch. 5, Practice 5 (chaîne) : maillon = tuyau Ø5 le long d'un oblong (contour fermé balayé en deux moitiés), copie tournée de 90° et décalée (Déplacer, Copie), réseau ×2 du premier maillon (volume) |
+| `tuto_terminer.spec.js` | Retour de Marc : « Terminer l'esquisse » enregistre sans extruder (retour au solide) ; E extrude ensuite la dernière esquisse libre ; « Extruder » de l'onglet Esquisse fait les deux |

@@ -16,7 +16,7 @@ test('échelle d’une pièce', async ({ page }) => {
   await clickAt(page, await worldPoint(page, [30, 30, 0]));
   await page.locator('[data-tool=rect]').click();
   await clickSketch(page, -25, -10); await clickSketch(page, 5, 10);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('10');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBe(12);

@@ -42,7 +42,7 @@ test('outils d’esquisse : rectangle par le centre, polygone, point, cote', asy
   await expect(page.locator('#sketch-dims .dim', { hasText: /^9$/ })).toBeVisible();
   await shot(page, '41-outils-esquisse');
 
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(page.locator('#timeline .feat')).toHaveCount(1);

@@ -19,7 +19,7 @@ test('trou de serrure par ajustement', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.camlcadSketch.loops.length)).toBe(1);
   await expect(page.locator('#sketch-finish')).toBeEnabled();
   await shot(page, '187-trou-serrure');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(20);

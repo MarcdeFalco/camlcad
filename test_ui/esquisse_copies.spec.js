@@ -40,7 +40,7 @@ test('symétrie et réseau d’esquisse', async ({ page }) => {
   await expect(page.locator('#sketch-status')).not.toContainText('⚠');
   await shot(page, '96-reseau-esquisse');
 
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('4');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => bbox(page)).toEqual([[-30, -8, 0], [30, 8, 4]]);

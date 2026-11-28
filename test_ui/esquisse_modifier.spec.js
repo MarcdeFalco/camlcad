@@ -18,7 +18,7 @@ test('modifier une esquisse existante', async ({ page }) => {
   await page.locator('[data-tool=dim]').click();
   await clickSketch(page, -5, -10);
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('30'); await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => bbox(page)).toEqual([[-20, -10, 0], [10, 10, 5]]);
@@ -30,7 +30,7 @@ test('modifier une esquisse existante', async ({ page }) => {
   await shot(page, '98-esquisse-rouverte');
   await page.locator('#sketch-dims .dim', { hasText: /^30$/ }).dblclick();
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('40'); await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   // Pas de nouvelle extrusion : la même feature suit la nouvelle cote.
   await expect(page.locator('#dialog')).toBeHidden();
   await expect.poll(() => bbox(page)).toEqual([[-20, -10, 0], [20, 10, 5]]);

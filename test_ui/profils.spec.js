@@ -10,7 +10,7 @@ test('choisir les profils à extruder', async ({ page }) => {
   await page.locator('[data-tool=rect]').click();
   await clickSketch(page, -30, -10); await clickSketch(page, -15, 5);
   await clickSketch(page, -5, -10); await clickSketch(page, 8, 0);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   const boxes = page.locator('#dialog .profiles input[type=checkbox]');
   await expect(boxes).toHaveCount(2);
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');

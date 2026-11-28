@@ -44,7 +44,7 @@ test('paramètres d’un débutant', async ({ page }) => {
   await clickSketch(page, -10, -10);
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('largeur'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim.fx')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => size(page)).toEqual([40, 20, 5]);

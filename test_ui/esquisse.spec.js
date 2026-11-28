@@ -48,7 +48,7 @@ test('esquisse, contraintes, extrusion Joindre puis Couper', async ({ page }) =>
   await shot(page, '04-contraintes');
 
   // Terminer : dialogue d'extrusion avec aperçu.
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await expect(page.locator('#dialog')).toContainText('EXTRUSION');
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('8');
   await shot(page, '05-extrusion-apercu');
@@ -66,7 +66,7 @@ test('esquisse, contraintes, extrusion Joindre puis Couper', async ({ page }) =>
   await expect(page.locator('#palette')).toBeVisible();
   await page.getByRole('button', { name: 'Cercle' }).click();
   await clickSketch(page, 0, 0); await clickSketch(page, 3, 0);
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Opération' }).locator('select').selectOption({ label: 'Couper' });
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('8');
   await shot(page, '07-couper-apercu');

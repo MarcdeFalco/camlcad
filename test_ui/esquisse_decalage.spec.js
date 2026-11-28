@@ -16,7 +16,7 @@ test('décalage de contour : paroi', async ({ page }) => {
   await expect(page.locator('#sketch-status')).not.toContainText('⚠');
   await expect(page.locator('#sketch-status')).not.toContainText('redondante');
   await shot(page, '100-decalage');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('10');
   await shot(page, '101-decalage-apercu');
   await page.getByRole('button', { name: 'OK' }).click();

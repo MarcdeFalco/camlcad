@@ -64,8 +64,10 @@ export function parseSketch(text, params = []) {
 // défini par « let X = … in » (plan d'origine, plan décalé, ou repère littéral d'une face).
 export function sketchPlane(code, name, planes) {
   const use = new RegExp(`\\b${name}\\b[^\\n]*\\|> place ([a-z_][\\w']*)\\)`).exec(code) ?? new RegExp(`\\b${name}\\b[\\s\\S]{0,400}?\\|> place ([a-z_][\\w']*)\\)`).exec(code);
-  if (!use) return null;
-  const pl = use[1];
+  // Esquisse terminée que rien n'utilise encore : son plan est déclaré juste avant elle.
+  const before = !use && new RegExp(`let ([a-z_][\\w']*) = [^\\n]* in\\n\\s*let%sketch ${name} =`).exec(code);
+  if (!use && !before) return null;
+  const pl = (use ?? before)[1];
   if (planes[pl]) return { frame: planes[pl].frame, code: pl };
   const def = new RegExp(`let ${pl} = (.*) in\\n`).exec(code);
   if (!def) return null;

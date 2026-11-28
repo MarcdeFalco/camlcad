@@ -23,7 +23,7 @@ test('nervure dans un plan milieu', async ({ page }) => {
   await page.getByRole('button', { name: 'Rectangle' }).click();
   await clickSketch(page, 0.4, 0.3); await page.mouse.move(...await sketchPoint(page, 10, 10), { steps: 3 });
   await page.keyboard.type('50'); await page.keyboard.press('Tab'); await page.keyboard.type('35'); await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(page.locator('#timeline .feat')).toHaveCount(2);
@@ -54,7 +54,7 @@ test('nervure dans un plan milieu', async ({ page }) => {
     await shot(page, '293-nervure-triangle');
   });
   await step('extrusion symétrique 5', async () => {
-    await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+    await page.locator('#sketch-extrude').click();
     await page.locator('#dialog .drow', { hasText: 'Direction' }).locator('select').selectOption({ label: 'Symétrique' });
     await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('5');
     await page.getByRole('button', { name: 'OK' }).click();

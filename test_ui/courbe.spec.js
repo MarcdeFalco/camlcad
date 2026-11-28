@@ -11,7 +11,7 @@ test('courbe lisse fermée', async ({ page }) => {
   for (const [x, y] of [[-25, 0], [-10, -12], [5, -2], [0, 12], [-18, 14], [-25, 0]]) await clickSketch(page, x, y);
   await expect(page.locator('#sketch-finish')).toBeEnabled();
   await shot(page, '134-courbe');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('4');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(60);

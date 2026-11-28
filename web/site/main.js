@@ -222,8 +222,8 @@ const selGeo = () => vp.highlight?.geometry;
 function stopPicking() { picking = extrudePick = false; vp.hidePlanes(); hint(null); }
 function hint(t) { $('hint').hidden = !t; $('hint').textContent = t ?? ''; }
 for (const b of document.querySelectorAll('[data-tool]')) b.onclick = () => sketch.setTool(b.dataset.tool);
-$('sketch-finish').onclick = () => sketch.finish();
-$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-loft').onclick = () => sketch.finish('loft'); $('sketch-sweep').onclick = () => sketch.finish('sweep'); $('sketch-keep').onclick = () => sketch.finish('keep'); $('sketch-construct').onclick = () => { if (toggleConstruction(sketch)) sketch.changed(); }; $('sketch-holes').onclick = () => sketch.finish('holes'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
+$('sketch-finish').onclick = () => sketch.finish('keep') || notify('Esquisse vide ou en erreur : rien à enregistrer.', true); $('sketch-extrude').onclick = () => sketch.finish();
+$('sketch-revolve').onclick = () => sketch.finish('revolve'); $('sketch-rib').onclick = () => sketch.finish('rib'); $('sketch-pipe').onclick = () => sketch.finish('pipe'); $('sketch-loft').onclick = () => sketch.finish('loft'); $('sketch-sweep').onclick = () => sketch.finish('sweep'); $('sketch-construct').onclick = () => { if (toggleConstruction(sketch)) sketch.changed(); }; $('sketch-holes').onclick = () => sketch.finish('holes'); $('sketch-delete').onclick = () => sketch.remove(); $('sketch-project').onclick = () => sketch.project(); $('sketch-scale').onclick = () => { sketch.asking = { kind: 'scale', label: 'Facteur d’échelle', refs: [], value: 2 }; sketch.redraw(); };
 $('sketch-cancel').onclick = () => sketch.stop();
 // ---------- Barre d'outils ----------
 function showTab(tab) {
@@ -236,11 +236,13 @@ function showTab(tab) {
 for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => { if (b.dataset.tab !== 'sketch' || sketch.active) showTab(sketch.active ? 'sketch' : b.dataset.tab); };
 // La feature est un outil retranché (poche, perçage, tuyau ou sphère coupés) : réseau et symétrie coupent aussi.
 const usedAsCut = (id) => journal.features.some((r) => r.op === 'difference' && r.deps.includes(id) && r.deps[0] !== id);
+// Dernière esquisse terminée qu'aucune feature n'utilise encore : Extrusion la prend d'office.
+const freeSketch = () => { const c = view.state.doc.toString(); return [...c.matchAll(/let%sketch ([a-z_][\w']*)/g)].map((m) => m[1]).reverse().find((n) => (c.match(new RegExp(`\\b${n}\\b`, 'g')) ?? []).length === 1); };
 const needSel = () => { if (selected == null) notify('Sélectionnez d’abord une feature (frise, navigateur ou pièce).', true); return selected != null; };
 const COMMANDS = {
   sketch: startPicking,
   // Extrusion : l'esquisse en cours, la face déjà cliquée, ou une face (ou un plan) à cliquer.
-  extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : face ? faces.extrude(face) : startPicking(true)),
+  extrude: () => (sketch.active ? sketch.finish() || notify('Fermez un contour ou tracez un cercle avant d’extruder.', true) : face ? faces.extrude(face) : freeSketch() ? editSketch(freeSketch(), true) : startPicking(true)),
   revolve: () => (sketch.active ? sketch.finish('revolve') || notify('Fermez un contour ou tracez un cercle avant la révolution.', true) : (notify('Esquissez d’abord le profil, puis « Révolution ».'), startPicking())),
   ...faces.commands,
   torus: () => dialogs.primitive('torus'), coil: () => dialogs.primitive('coil'), thread: () => feats.threadRod(dialogs),
@@ -276,7 +278,7 @@ window.addEventListener('keydown', (e) => {
   if (e.target.closest('input,select,textarea,.cm-editor')) return;
   // Annuler / rétablir : l'historique du code (toute action de l'éditeur est une réécriture).
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !sketch.active) { e.preventDefault(); (e.shiftKey ? redo : undo)(view); return; }
-  if (sketch.active) { if (e.key === 'f' && !document.getElementById('sketch-type')) COMMANDS.fit(); else sketch.key(e); return; }
+  if (sketch.active) { if (document.getElementById('sketch-type')) sketch.key(e); else if (e.key === 'f') COMMANDS.fit(); else if (e.key === 'e') sketch.finish(); else if (e.key === 'Enter') $('sketch-finish').click(); else sketch.key(e); return; }
   if (e.key === 'Escape' && picking) { stopPicking(); return; }
   if (e.key === 'Escape' && faces.active) { faces.cancel(); return; }
   const keys = { s: 'sketch', e: 'extrude', f: 'fit', q: 'presspull', h: 'hole', m: 'measure', j: 'joint', Delete: 'delete', '?': 'help' };

@@ -11,7 +11,7 @@ test('ellipse', async ({ page }) => {
   await clickSketch(page, -10, 0); await clickSketch(page, 5, 0); await clickSketch(page, -10, 6);
   await expect(page.locator('#sketch-finish')).toBeEnabled();
   await shot(page, '136-ellipse');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('3');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(100);

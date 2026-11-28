@@ -44,7 +44,7 @@ test('arcs : congé, oblong, arc par le centre', async ({ page }) => {
   await expect(page.locator('#sketch-status')).not.toContainText('redondante');
   await shot(page, '44-arcs');
 
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('6');
   await shot(page, '45-arcs-apercu');
   await page.getByRole('button', { name: 'OK' }).click();

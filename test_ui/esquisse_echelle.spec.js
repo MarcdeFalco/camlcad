@@ -24,7 +24,7 @@ test('chanfrein et échelle d’esquisse', async ({ page }) => {
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('1.5'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: /^30$/ })).toBeVisible();
   await shot(page, '126-chanfrein-echelle');
-  await page.getByRole('button', { name: 'Terminer l\'esquisse' }).click();
+  await page.locator('#sketch-extrude').click();
   await page.locator('#dialog .drow', { hasText: 'Distance' }).locator('input').fill('2');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect.poll(() => triangles(page)).toBeGreaterThan(12);
