@@ -19,7 +19,7 @@ test('supprimer et projeter', async ({ page }) => {
   // Un côté supprimé : le contour s'ouvre, plus rien à extruder.
   await clickSketch(page, -15, -10);
   await page.keyboard.press('Delete');
-  await expect(page.locator('#sketch-finish')).toBeDisabled();
+  await expect(page.locator('#sketch-extrude')).toBeDisabled(); // contour ouvert : rien à extruder (Terminer reste possible)
   await shot(page, '109-supprimer');
   // On redessine un rectangle et on extrude.
   await page.locator('[data-tool=rect]').click();

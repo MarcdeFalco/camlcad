@@ -73,7 +73,7 @@ export function sketchPlane(code, name, planes) {
   if (!def) return null;
   const e = def[1].trim();
   const base = /^Geom\.Plane\.(xy|xz|yz)$/.exec(e);
-  if (base) return { frame: planes[base[1].toUpperCase()].frame, code: e };
+  if (base) return { frame: planes[base[1].toUpperCase()].frame, code: before ? pl : e }; // esquisse libre : son plan par son nom
   const fm = /^Geom\.Frame\.make ~origin:\(Geom\.V3\.v (\S+) (\S+) (\S+)\) ~x:\(Geom\.V3\.v (\S+) (\S+) (\S+)\) ~z:\(Geom\.V3\.v (\S+) (\S+) (\S+)\)$/.exec(e.replace(/\(\-/g, '(-').replace(/\((-?[\d.]+)\)/g, '$1'));
   if (fm) return { literal: fm.slice(1).map(num), code: e };
   return null;
