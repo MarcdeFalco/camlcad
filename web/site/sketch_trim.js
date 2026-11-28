@@ -15,7 +15,7 @@ import { loopPoints } from './sketch_arcs.js';
 const EPS = 1e-6;
 const KEEP_DUP = new Set(['horizontal', 'vertical']); // recopiées sur le nouveau morceau
 const DROP = new Set(['length', 'equal_length', 'midpoint']); // n'ont plus de sens sur un morceau
-const key = (a, b) => (a < b ? `${a},${b}` : `${b},${a}`);
+export const key = (a, b) => (a < b ? `${a},${b}` : `${b},${a}`);
 // La contrainte c porte-t-elle sur la ligne j ?
 const onLine = (c, j) => c.refs.some((r, k) => r === j && SketchMarks.REFS[c.kind]?.[k] === 'l');
 
@@ -30,7 +30,7 @@ function cross(P, Q, A, B) {
 }
 
 // La ligne j devient [a, n] et une nouvelle ligne [n, b] ; contraintes réparties.
-function split(ed, j, n) {
+export function split(ed, j, n) {
   const [a, b] = ed.lines[j], j2 = ed.lines.length;
   ed.lines[j] = [a, n]; ed.lines.push([n, b]);
   let oriented = false;
@@ -52,13 +52,13 @@ function nearestLine(ed, q) {
   return { li, tc, d: dd };
 }
 // Arcs (CCW de a à b) : centre, rayon, angle de départ, ouverture.
-const TAU = 2 * Math.PI, ccwd = (x) => ((x % TAU) + TAU) % TAU;
-function arcGeo(ed, k) {
+export const TAU = 2 * Math.PI, ccwd = (x) => ((x % TAU) + TAU) % TAU;
+export function arcGeo(ed, k) {
   const { c, a, b } = ed.arcs[k], C = ed.pts[c], A = ed.pts[a], B = ed.pts[b], ta = Math.atan2(A.y - C.y, A.x - C.x);
   return { C, r: Math.hypot(A.x - C.x, A.y - C.y), ta, span: ccwd(Math.atan2(B.y - C.y, B.x - C.x) - ta) || TAU };
 }
 // Paramètres t ∈ [lo, hi] où le segment [P, Q] coupe le cercle (C, r).
-function circleTs(P, Q, C, r, lo = EPS, hi = 1 - EPS) {
+export function circleTs(P, Q, C, r, lo = EPS, hi = 1 - EPS) {
   const dx = Q.x - P.x, dy = Q.y - P.y, fx = P.x - C.x, fy = P.y - C.y, qa = dx * dx + dy * dy, qb = 2 * (fx * dx + fy * dy), disc = qb * qb - 4 * qa * (fx * fx + fy * fy - r * r);
   if (qa < 1e-12 || disc <= 0) return [];
   return [(-qb - Math.sqrt(disc)) / (2 * qa), (-qb + Math.sqrt(disc)) / (2 * qa)].filter((t) => t > lo && t < hi);
@@ -105,7 +105,7 @@ function dissolve(ed, k, profile) {
   });
 }
 // L'arc k est scindé au point n (sur l'arc) : [a, n] et [n, b], rayon recopié.
-function splitArc(ed, k, n, profile) {
+export function splitArc(ed, k, n, profile) {
   dissolve(ed, k, profile);
   const { c, b } = ed.arcs[k], k2 = ed.arcs.push({ c, a: n, b }) - 1;
   ed.arcs[k] = { ...ed.arcs[k], b: n };

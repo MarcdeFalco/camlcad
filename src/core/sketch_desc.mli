@@ -4,8 +4,9 @@
     l'éditeur insère dans le source sous un [let%sketch].
 
     Région produite : les boucles et les cercles, dans l'ordre de leur profondeur
-    d'imbrication (nombre d'autres boucles ou cercles qui contiennent leur premier point, ou
-    le point d'angle 0 d'un cercle, d'après les positions initiales, arcs compris) ;
+    d'imbrication (nombre d'autres boucles ou cercles qui contiennent un point témoin : juste
+    à l'intérieur, au milieu du premier côté d'une boucle, ce qui départage deux faces voisines ;
+    le point d'angle 0 d'un cercle ; d'après les positions initiales, arcs compris) ;
     profondeur paire ajoutée, impaire retirée, comme les régions d'un modeleur : un cercle
     dans un contour est un perçage, deux cercles concentriques une bague, un contour dans un
     cercle un trou. Puis les ellipses retirées s'il y a une boucle ou un cercle, sinon

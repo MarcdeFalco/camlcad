@@ -79,9 +79,18 @@ let regions p =
   | ls ->
       let ls = List.fold_left (fun acc q -> if List.exists (equal q) acc then acc else acc @ [ q ]) [] ls in
       let disk q = match q.v with Circle r -> Some (0., 0., r) | Translate (c, { v = Circle r; _ }) -> Some (c.Geom.V2.x, c.Geom.V2.y, r) | _ -> None in
+      (* Témoin d'un polygone : juste à l'intérieur, au milieu de son premier côté (deux faces
+         voisines d'une esquisse partagent des sommets). *)
       let probe q =
         match (q.v, disk q) with
-        | Polygon (a :: _), _ -> (a.Geom.V2.x, a.Geom.V2.y)
+        | Polygon (a :: rest as ps), _ ->
+            let b = match List.find_opt (fun (p : Geom.V2.t) -> Float.hypot (p.x -. a.x) (p.y -. a.y) > 1e-6) rest with Some b -> b | None -> a in
+            let arr = Array.of_list ps and area = ref 0. in
+            let n = Array.length arr in
+            Array.iteri (fun i (p : Geom.V2.t) -> let p' = arr.((i + 1) mod n) in area := !area +. (p.x *. p'.Geom.V2.y) -. (p'.x *. p.y)) arr;
+            let d = Float.max 1e-12 (Float.hypot (b.x -. a.x) (b.y -. a.y)) in
+            let e = Float.min 1e-3 (d *. 1e-3) *. (if !area < 0. then -1. else 1.) in
+            (((a.x +. b.x) /. 2.) -. ((b.y -. a.y) /. d *. e), ((a.y +. b.y) /. 2.) +. ((b.x -. a.x) /. d *. e))
         | _, Some (x, y, r) -> (x +. r, y)
         | _ -> (0., 0.)
       in

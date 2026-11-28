@@ -82,8 +82,21 @@ let nested d =
     !c
   in
   let regs = List.map (fun l -> Loop l) d.loops @ List.init (Array.length d.circles) (fun i -> Disk i) in
+  (* Point témoin d'un contour : juste à l'intérieur, au milieu de son premier côté (deux
+     faces voisines partagent des sommets). *)
+  let inner = function
+    | [] -> None
+    | ((ax, ay) as a) :: rest as ps ->
+        let bx, by = match List.find_opt (fun (x, y) -> Float.hypot (x -. ax) (y -. ay) > 1e-6) rest with Some b -> b | None -> a in
+        let arr = Array.of_list ps and area = ref 0. in
+        let n = Array.length arr in
+        Array.iteri (fun i (x, y) -> let x', y' = arr.((i + 1) mod n) in area := !area +. (x *. y') -. (x' *. y)) arr;
+        let d = Float.max 1e-12 (Float.hypot (bx -. ax) (by -. ay)) in
+        let e = Float.min 1e-3 (d *. 1e-3) *. (if !area < 0. then -1. else 1.) in
+        Some (((ax +. bx) /. 2.) -. ((by -. ay) /. d *. e), ((ay +. by) /. 2.) +. ((bx -. ax) /. d *. e))
+  in
   let probe = function
-    | Loop l -> (match corners l with [] -> None | p :: _ -> Some p)
+    | Loop l -> inner (corners l)
     | Disk i -> let c, r = d.circles.(i) in let x, y = pt c in Some (x +. r, y)
   in
   let contains reg p =

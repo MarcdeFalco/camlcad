@@ -264,3 +264,14 @@ let%expect_test "régions d'un profil d'esquisse (Profile.regions)" =
     Profile.region 3 : le profil a 3 région(s)
     1
     |}]
+
+let%expect_test "régions voisines (faces d'un dessin découpé) : aucune n'est un trou de l'autre" =
+  let p xs = Profile.polygon (List.map (fun (x, y) -> Geom.V2.v x y) xs) in
+  let a = p [ (0., 0.); (10., 0.); (10., 10.); (0., 10.) ] and b = p [ (10., 0.); (20., 0.); (20., 10.); (10., 10.) ] in
+  Printf.printf "%d régions\n" (List.length (Profile.regions (Profile.union a b)));
+  List.iter (fun r -> print_endline (match Profile.view r with Polygon _ -> "polygone" | _ -> "autre")) (Profile.regions (Profile.union a b));
+  [%expect {|
+    2 régions
+    polygone
+    polygone
+    |}]
