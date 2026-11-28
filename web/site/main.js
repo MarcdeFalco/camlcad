@@ -14,7 +14,7 @@ import { faceLoops, modelPoints } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
-import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { openParams as paramsDialog } from './params.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
+import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { openParams as paramsDialog } from './params.js'; import { showSketch, refreshSketches } from './sketch_overlay.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
 import { jointDialog, linkDialog } from './mech_joint.js'; import { motionStudy } from './mech_study.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -141,7 +141,7 @@ const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
 const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertLets, pickFace: (t, cb) => faces.start(t, cb), codeText: () => view.state.doc.toString(), allPlanes, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
+  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertLets, showSketch: (n, sk) => showSketch(vp.scene, n, sk), pickFace: (t, cb) => faces.start(t, cb), codeText: () => view.state.doc.toString(), allPlanes, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });
@@ -156,6 +156,7 @@ canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; }
 canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); if (sketch.active) sketch.move(e); });
 canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
+  if (dialogs.canvasClick?.(e)) return; // région cliquée pendant l'extrusion
   if (sketch.active) { sketch.click(e); return; }
   if (print.active) { const h = vp.ray(e).intersectObject(print.preview)[0]; if (h) print.pickFace(planarFace(lastMesh, h.faceIndex)); return; }
   const onPart = extrudePick && vp.part && vp.ray(e).intersectObject(vp.part).length; // Extrusion : la face avant le plan d'origine qui la porte
@@ -320,6 +321,7 @@ function selectFeature(fid, moveCursor) {
   featureMesh(fid, 0);
 }
 function renderTimeline() {
+  refreshSketches(vp.scene, view.state.doc.toString());
   docs.showEmpty(!journal?.features?.length && !/let%(feat|sketch)/.test(view.state.doc.toString()) && !sketch.active && $('dialog').hidden && $('hint').hidden); // pas sur un document en erreur
   timeline.update(journal, selected, { doc: docName(), sketches: sketchesInCode(), planes: Object.keys(constructionPlanes()), mech: mech.active ? mech.state.parts : null });
 }

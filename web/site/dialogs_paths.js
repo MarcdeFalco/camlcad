@@ -188,7 +188,7 @@ function sketchTargets(d) {
 }
 // Esquisse posée seule dans le code (plan compris), sans feature.
 const sketchDecl = (sk, n) => `  let plan${n} = ${sk.planeCode} in\n  let%sketch esquisse${n} =\n${sk.code}  in\n`;
-export function keep(d, sk) { d.ctx.insertLets(sketchDecl(sk, d.ctx.nextIndex())); d.close(); }
+export function keep(d, sk) { const n = d.ctx.nextIndex(); d.ctx.insertLets(sketchDecl(sk, n)); d.ctx.showSketch?.(`esquisse${n}`, sk); d.close(); }
 
 // Lissage (ch. 3, Loft) : solide réglé entre le contour de l'esquisse qu'on termine et celui
 // d'une esquisse déjà dans le code (Shape.loft), ou esquisse gardée seule pour un lissage à

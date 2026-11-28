@@ -298,8 +298,12 @@ export class Viewport {
   pickPlane(e) {
     if (!this.planes) return null;
     this.planes.updateMatrixWorld(true);
-    const hit = this.ray(e).intersectObjects(this.planes.children)[0];
-    return hit ? hit.object.userData.plane : null;
+    // Plans qui se recouvrent à l'écran : celui dont on vise le plus le milieu (on vise le centre
+    // du carré du plan voulu, pas le bord d'un autre qui passe devant).
+    const r = this.ray(e), hits = r.intersectObjects(this.planes.children);
+    const inner = (h) => { const u = h.uv ?? { x: 0.5, y: 0.5 }; return Math.min(u.x, 1 - u.x, u.y, 1 - u.y); };
+    hits.sort((a, b) => inner(b) - inner(a));
+    return hits.length ? hits[0].object.userData.plane : null;
   }
   hoverPlane(name) {
     if (!this.planes) return;

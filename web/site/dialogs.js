@@ -61,6 +61,7 @@ export class Dialogs {
   close(silent) {
     this.setPreview(null);
     if (this.gizmo) { this.gizmo.dispose(); this.gizmo = null; }
+    this.canvasClick = null;
     if (!this.box.hidden) {
       this.box.hidden = true; this.box.replaceChildren(); this.current = null;
       const x = this.ctx.onCloseExtra; this.ctx.onCloseExtra = null; x?.(); // nettoyage propre au dialogue (mesure, coupe…)
@@ -142,6 +143,20 @@ export class Dialogs {
     for (const g of regs) g.depth = regs.filter((m) => m !== g && m.has(g.probe)).length;
     regs.sort((u, v) => u.depth - v.depth); // tri stable, comme Profile.regions
     const sel = regs.map((g) => g.depth % 2 === 0), dflt = sel.slice(), choosable = regs.length > 1 && !(sk.ellipses?.length);
+    const boxes = regs.map((g, i) => Object.assign(el('input', { type: 'checkbox', checked: sel[i] }), { onchange: (e) => { sel[i] = e.target.checked; preview(); } }));
+    // Comme dans Fusion : un clic dans la vue choisit la région sous le curseur (le premier clic
+    // remplace le choix d'office, les suivants ajoutent ou retirent).
+    let picked = false;
+    const regionClick = choosable && this.ctx.viewport ? (e) => {
+      const r = this.ctx.viewport.ray(e).ray, f = sk.frame, den = r.direction.dot(f.z);
+      if (Math.abs(den) < 1e-9) return false;
+      const P = r.origin.clone().addScaledVector(r.direction, f.origin.clone().sub(r.origin).dot(f.z) / den).sub(f.origin), q = { x: P.dot(f.x), y: P.dot(f.y) };
+      let k = -1; regs.forEach((g, i) => { if (g.has(q) && (k < 0 || g.depth > regs[k].depth)) k = i; });
+      if (k < 0) return false;
+      if (!picked) { sel.fill(false); picked = true; }
+      sel[k] = !sel[k]; boxes.forEach((b, i) => { b.checked = sel[i]; }); preview();
+      return true;
+    } : null;
     const shapes = () => {
       const path = (g, P) => { const s = new P(); if (g.c) s.absarc(g.c.x, g.c.y, g.c.r, 0, 2 * Math.PI, P === THREE.Path); else { s.moveTo(g.l[0].x, g.l[0].y); for (const p of g.l.slice(1)) s.lineTo(p.x, p.y); } return s; };
       const out = [];
@@ -178,7 +193,7 @@ export class Dialogs {
     const hIn = num(P.h, (v) => { P.h = v; preview(); this.gizmo?.set(P.dir === 'flip' ? -v : v); }, { min: 0 });
     this.open('EXTRUSION', [
       row('Profil', el('span', { className: 'hint', textContent: `esquisse (${sk.loops.length} contour${sk.loops.length > 1 ? 's' : ''}, ${sk.circles.length} cercle${sk.circles.length > 1 ? 's' : ''})` })),
-      ...(choosable ? [row('Régions', el('span', { className: 'profiles', title: 'Régions de l’esquisse à extruder (1 : la plus extérieure)' }, ...regs.map((g, i) => el('label', {}, Object.assign(el('input', { type: 'checkbox', checked: sel[i] }), { onchange: (e) => { sel[i] = e.target.checked; preview(); } }), ` ${i + 1} `))))] : []),
+      ...(choosable ? [row('Régions', el('span', { className: 'profiles', title: 'Régions à extruder : cliquez-les dans la vue, ou cochez-les (1 : la plus extérieure)' }, ...boxes.map((b, i) => el('label', {}, b, ` ${i + 1} `))))] : []),
       row('Direction', dirSel),
       row('Distance', hIn, el('span', { className: 'unit', textContent: 'mm' }),
         // Jusqu'à une face (ch. 3, Extent « To ») : la distance au plan d'une face plane parallèle.
@@ -216,6 +231,7 @@ export class Dialogs {
       },
     });
     preview();
+    this.canvasClick = regionClick;
     // Flèche de distance au centre du profil, à tirer dans la vue (négatif : côté opposé).
     if (this.ctx.viewport) {
       const pts = sk.loops.length ? sk.loops.flat() : sk.circles, f = sk.frame;
@@ -224,7 +240,7 @@ export class Dialogs {
       this.gizmo = distanceHandle(this.ctx.viewport, { origin, dir: f.z, value: P.h, onChange: (v) => {
         if (v < 0 && P.dir === 'one') { P.dir = 'flip'; dirSel.value = 'flip'; } else if (v > 0 && P.dir === 'flip') { P.dir = 'one'; dirSel.value = 'one'; }
         P.h = Math.abs(v); hIn.value = String(P.h); preview();
-      } });
+      }, onType: (x) => { P.h = Math.abs(x); hIn.value = String(P.h); this.gizmo?.set(P.dir === 'flip' ? -P.h : P.h); preview(); } });
       window.camlcadGizmo = this.gizmo; // inspection (tests)
     }
   }

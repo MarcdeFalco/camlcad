@@ -224,3 +224,4 @@ button { font:inherit; color:inherit; }
 #sketch-type input { width:64px; padding:1px 4px; border:0; border-radius:3px; font:inherit; }
 /* Palette d'esquisse sous le navigateur : elle ne couvre plus la zone de dessin. */
 #browser #palette { position:static; width:auto; max-height:none; margin:10px 8px; box-shadow:none; }
+#gizmo-field { position:absolute; z-index:6; width:72px; padding:2px 6px; border:1px solid #1f6feb; border-radius:4px; background:#fff; color:#1f6feb; font:12px system-ui, sans-serif; }
