@@ -63,8 +63,8 @@ export function hole(d, p, frame, through) {
 }
 
 // Réseau (rectangulaire ou circulaire) de la feature `f` ; `geo` : son maillage (aperçu).
-export function pattern(d, f, geo) {
-  const P = { type: 'rect', dir1: 'X', n1: 3, s1: 10, dir2: 'Y', n2: 1, s2: 10, axis: 'Z', n: 6, angle: 360, sym: false, op: /^(poche|percage)/.test(f.name) ? 'cut' : 'join' };
+export function pattern(d, f, geo, cut = false) {
+  const P = { type: 'rect', dir1: 'X', n1: 3, s1: 10, dir2: 'Y', n2: 1, s2: 10, axis: 'Z', n: 6, angle: 360, sym: false, op: cut || /^(poche|percage)/.test(f.name) ? 'cut' : 'join' };
   const copies = () => {
     const out = [];
     if (P.type === 'rect') {
@@ -122,8 +122,8 @@ export function pattern(d, f, geo) {
 }
 
 // Symétrie de la feature `f` par rapport à un plan d'origine.
-export function mirror(d, f, geo) {
-  const P = { plane: 'YZ', op: 'join' };
+export function mirror(d, f, geo, cut = false) {
+  const P = { plane: 'YZ', op: cut ? 'cut' : 'join' };
   const N = { XY: 'Z', XZ: 'Y', YZ: 'X' };
   const preview = () => {
     const g = new THREE.Group();
