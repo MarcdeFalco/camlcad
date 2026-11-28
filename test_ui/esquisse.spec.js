@@ -1,7 +1,7 @@
 // Scénario 1 : esquisse sur le plan XY, rectangle et cercle, contraintes et cotes,
 // extrusion Joindre ; puis esquisse sur la face du dessus et extrusion Couper.
 import { test, expect } from './fixtures.js';
-import { open, shot, clickSketch, sketchPoint, worldPoint, clickAt, code, triangles } from './lib.js';
+import { open, shot, clickSketch, sketchPoint, worldPoint, clickAt, code, triangles, dblclickDim } from './lib.js';
 
 test('esquisse, contraintes, extrusion Joindre puis Couper', async ({ page }) => {
   await open(page, 'nouveau');
@@ -41,7 +41,7 @@ test('esquisse, contraintes, extrusion Joindre puis Couper', async ({ page }) =>
   await expect(page.locator('#sketch-dims .dim', { hasText: 'Ø10' })).toBeVisible();
   await expect(page.locator('#sketch-dims .dim')).toHaveCount(2);
   // Cote modifiée sur le dessin : double-clic, nouvelle valeur.
-  await page.locator('#sketch-dims .dim', { hasText: '40' }).dblclick();
+  await dblclickDim(page.locator('#sketch-dims .dim', { hasText: '40' }));
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('45'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: '45' })).toBeVisible();
   await expect(page.locator('#sketch-list li')).toHaveCount(6);

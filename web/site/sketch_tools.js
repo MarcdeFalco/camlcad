@@ -211,8 +211,8 @@ export function ellipseOutline(ed, e) {
 
 // Contour (L) : ligne par ligne ; cliquer le premier point ferme le contour. Chaque ligne est
 // du profil (pleine, pas de construction) ; des lignes qui se referment font un contour.
-export function polyClick(ed, q) {
-  const first = ed.chain ? ed.chain[0] : null, i = ed.pointAt(q);
+export function polyClick(ed, q, at = null) {
+  const first = ed.chain ? ed.chain[0] : null, i = at ?? ed.pointAt(q);
   if (!ed.chain) { ed.chain = [i]; return; }
   const prev = ed.chain[ed.chain.length - 1];
   if (i !== prev) {

@@ -164,7 +164,7 @@ button { font:inherit; color:inherit; }
 #palette { width:240px; }
 #sketch-dims { position:absolute; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
 #sketch-dims .dim, #sketch-dims .glyph, .dim-edit { position:absolute; transform:translate(-50%,-50%); pointer-events:auto; font:12px/1.2 system-ui, sans-serif; }
-#sketch-dims .dim { background:#fff; border:1px solid #1f6feb; color:#1f6feb; padding:1px 5px; border-radius:3px; cursor:text; white-space:nowrap; }
+#sketch-dims .dim { background:#fff; border:1px solid #1f6feb; color:#1f6feb; padding:1px 5px; border-radius:3px; white-space:nowrap; pointer-events:none; } /* clics vers la vue ; double-clic : sketch_marks.js */
 #sketch-dims .glyph { transform:none; background:#fff8; color:#555; border:1px solid #bbb; border-radius:2px; padding:0 3px; font-size:10px; }
 .dim-edit { width:64px; }
 #sketch-live { position:absolute; z-index:3; pointer-events:none; background:#1f6feb; color:#fff; font:12px system-ui, sans-serif; padding:1px 6px; border-radius:3px; }
@@ -219,7 +219,6 @@ button { font:inherit; color:inherit; }
 .punused { color:#9a6b00; }
 #appbar button { white-space:nowrap; flex-shrink:0; }
 #status { min-width:0; flex:0 1 auto; }
-#sketch-dims.through .dim { pointer-events:none; }
 #sketch-type { position:absolute; z-index:20; display:flex; gap:4px; align-items:center; padding:3px 6px; border-radius:4px; background:#1f6feb; color:#fff; font:12px system-ui, sans-serif; }
 #sketch-type input { width:64px; padding:1px 4px; border:0; border-radius:3px; font:inherit; }
 /* Palette d'esquisse sous le navigateur : elle ne couvre plus la zone de dessin. */

@@ -43,9 +43,10 @@ export function planarFace(mesh, tri) {
     }
   }
   centroid.multiplyScalar(1 / area);
-  // Repère : z = normale, x = projection de l'axe x du monde (ou y si parallèle).
+  // Repère : z = normale ; face couchée : x = projection de l'axe x du monde ; face debout :
+  // y = verticale du monde (l'esquisse n'est pas à l'envers, comme dans un modeleur), x = y ∧ z.
   let x = new THREE.Vector3(1, 0, 0);
-  if (Math.abs(x.dot(n0)) > 0.9) x = new THREE.Vector3(0, 1, 0);
+  if (Math.abs(n0.z) < 0.9) x = new THREE.Vector3(0, 0, 1).addScaledVector(n0, -n0.z).normalize().cross(n0);
   x.addScaledVector(n0, -x.dot(n0)).normalize();
   const round = (v, k) => v.set(...v.toArray().map((c) => Math.round(c * k) / k + 0));
   // Origine : projection de l'origine du monde sur la face (cotes de l'esquisse dans le repère

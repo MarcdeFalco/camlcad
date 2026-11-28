@@ -1,7 +1,7 @@
 // Black Book, chapitre 2 (Sketching) : arcs. Congé d'esquisse sur un coin de rectangle,
 // oblong centre à centre, arc par le centre, cote d'un arc ; extrusion du profil.
 import { test, expect } from './fixtures.js';
-import { open, shot, clickSketch, sketchPoint, worldPoint, clickAt, code, triangles } from './lib.js';
+import { open, shot, clickSketch, sketchPoint, worldPoint, clickAt, code, triangles, dblclickDim } from './lib.js';
 
 test('arcs : congé, oblong, arc par le centre', async ({ page }) => {
   await open(page, 'nouveau');
@@ -37,7 +37,7 @@ test('arcs : congé, oblong, arc par le centre', async ({ page }) => {
   await expect(page.locator('#sketch-ask input')).toBeFocused();
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('5'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: 'R5' })).toBeVisible();
-  await page.locator('#sketch-dims .dim', { hasText: 'R3.33' }).dblclick();
+  await dblclickDim(page.locator('#sketch-dims .dim', { hasText: 'R3.33' }));
   await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('4'); await page.keyboard.press('Enter');
   await expect(page.locator('#sketch-dims .dim', { hasText: 'R4' })).toBeVisible();
   await expect(page.locator('#sketch-status')).not.toContainText('⚠');

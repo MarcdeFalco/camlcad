@@ -275,3 +275,24 @@ let%expect_test "régions voisines (faces d'un dessin découpé) : aucune n'est 
     polygone
     polygone
     |}]
+
+(* Grande esquisse (roue à 10 dents cotée) : déclarations et contraintes par paquets de 30,
+   sinon le compilateur OCaml du navigateur déborde de sa pile. *)
+let%expect_test "longues listes écrites par paquets" =
+  let n = 70 in
+  let d : Sketch_desc.t =
+    { points = Array.init n (fun i -> (Float.of_int i, 0., i = 0));
+      lines = Array.init (n - 1) (fun i -> (i, i + 1)); circles = [||]; arcs = [||]; ellipses = [||];
+      constraints = List.init (n - 1) (fun i -> { Sketch_desc.kind = "horizontal"; refs = [ i ]; value = None; expr = None });
+      loops = [] }
+  in
+  let code = String.split_on_char '\n' (Sketch_desc.to_code ~indent:0 d) in
+  let count p = List.length (List.filter p code) in
+  let starts s l = String.length l >= String.length s && String.sub l 0 (String.length s) = s in
+  Printf.printf "let* %d, constrain %d, let+ %d, and* %d\n" (count (starts "let* ")) (count (starts "  Sketch.constrain"))
+    (count (starts "let+ ")) (count (starts "and* "));
+  (match Sketch_desc.solve d with Ok s -> Printf.printf "dof %d\n" s.dof | Error e -> print_endline e);
+  [%expect {|
+    let* 8, constrain 3, let+ 1, and* 133
+    dof 69
+    |}]

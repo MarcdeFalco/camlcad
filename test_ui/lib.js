@@ -15,6 +15,7 @@ export async function shot(page, name) {
 
 // Ouvre l'éditeur, attend le toplevel OCaml, puis choisit le document dans la liste.
 export async function open(page, doc) {
+  seed = Number(process.env.CAMLCAD_SEED ?? 1); // clics humains : même décalage à chaque scénario, quel que soit l'ordre
   page.on('pageerror', (e) => console.log('pageerror', e.message));
   await page.goto('/');
   await expect(page.locator('#status')).toContainText('triangles', { timeout: 90_000 });
@@ -51,7 +52,7 @@ export async function clickAt(page, [x, y], opts = {}) {
 }
 export async function clickSketch(page, x, y, opts) { await clickAt(page, await sketchPoint(page, x, y), opts); }
 
-export const code = (page) => page.evaluate(() => document.querySelector('.cm-content').cmView?.view?.state.doc.toString()
+export const code = (page) => page.evaluate(() => window.camlcadCode?.() ?? document.querySelector('.cm-content').cmView?.view?.state.doc.toString()
   ?? [...document.querySelectorAll('.cm-line')].map((l) => l.textContent).join('\n'));
 export const triangles = async (page) => Number((await page.locator('#status').textContent()).match(/(\d+) triangles/)?.[1] ?? NaN);
 export async function waitEval(page, prev) {
@@ -79,3 +80,11 @@ export async function humanClick(page, [x, y], opts = {}) {
   await page.mouse.click(X, Y, opts);
 }
 export async function humanSketch(page, x, y) { await humanClick(page, await sketchPoint(page, x, y)); }
+
+// Double-clic sur une cote d'esquisse, là où on la voit : les cotes laissent passer les clics
+// simples vers la vue, qui reçoit aussi le double-clic.
+export async function dblclickDim(locator) {
+  let b = null; // les cotes sont redessinées à chaque résolution : boîte relue jusqu'à ce qu'elle tienne
+  for (let k = 0; k < 50 && !b; k++) { await locator.waitFor(); b = await locator.boundingBox(); }
+  await locator.page().mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2);
+}

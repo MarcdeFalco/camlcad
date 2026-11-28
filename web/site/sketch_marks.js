@@ -2,7 +2,7 @@
 // pour modifier), symboles de contraintes, élastique du tracé en cours, noms affichés.
 // Classe de base de SketchEditor (sketch.js), qui fournit plane, pts, lines, circles, cons…
 import * as THREE from 'three';
-import { TYPED } from './sketch_input.js';
+import { TYPED, lineRef } from './sketch_input.js';
 import { TWO_CLICK, rubberShape } from './sketch_tools.js';
 import { snapPoint } from './sketch_snap.js';
 import { arcPoints, loopPoints, loopOutline } from './sketch_arcs.js';
@@ -37,17 +37,35 @@ export class SketchMarks {
     const lineMid = (l) => { const [a, b] = this.lines[l]; return mid(P(a), P(b)); };
     const kinds = SketchMarks.REFS[c.kind] ?? '';
     const first = kinds[0], r0 = c.refs[0];
-    if (first === 'a') { const ps = arcPoints(this, r0); return ps[Math.floor(ps.length / 2)]; }
+    if (first === 'a') { const ps = arcPoints(this, r0); return ps[Math.floor(ps.length * (c.kind === 'arc_radius' ? 0.25 : 0.5))]; } // rayon : au quart de l'arc, le milieu reste libre au clic
     if (c.kind === 'radius') { const C = this.circles[r0], O = P(C.c); return { x: O.x + C.r * 0.71, y: O.y + C.r * 0.71 }; }
     if (kinds === 'pp') return mid(P(c.refs[0]), P(c.refs[1]));
+    if (c.kind === 'angle') { const s = this.angleVertex(c); if (s) return s.at; }
     if (first === 'l') return lineMid(r0);
     if (first === 'c') { const C = this.circles[r0], O = P(C.c); return { x: O.x, y: O.y + C.r }; }
     if (first === 'p') return P(r0);
     return null;
   }
+  // Angle entre deux lignes d'un sommet commun : le sommet et la bissectrice des deux demi-droites
+  // (l'étiquette s'y place, hors des lignes, comme l'arc de cote d'un modeleur).
+  angleVertex(c) {
+    const [l1, l2] = c.refs.map((l) => this.lines[l]), s = l1.find((p) => l2.includes(p));
+    if (s == null) return null;
+    const S = this.pts[s], ray = ([a, b]) => { const o = this.pts[a === s ? b : a], L = Math.hypot(o.x - S.x, o.y - S.y) || 1; return { x: (o.x - S.x) / L, y: (o.y - S.y) / L }; };
+    const u = ray(l1), v = ray(l2), b = { x: u.x + v.x, y: u.y + v.y }, L = Math.hypot(b.x, b.y);
+    return { at: S, n: L > 1e-9 ? { x: b.x / L, y: b.y / L } : { x: -u.y, y: u.x } };
+  }
   labels() {
     let d = document.getElementById('sketch-dims');
-    if (!d) { d = document.createElement('div'); d.id = 'sketch-dims'; this.ctx.renderer.domElement.after(d); }
+    if (!d) {
+      d = document.createElement('div'); d.id = 'sketch-dims'; this.ctx.renderer.domElement.after(d);
+      // Les cotes laissent passer les clics (une cote posée sur une courbe ne la cache pas) ;
+      // le double-clic sur une cote, reçu par la vue, la modifie.
+      this.ctx.renderer.domElement.addEventListener('dblclick', (e) => {
+        const el = [...d.querySelectorAll('.dim')].find((x) => { const r = x.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
+        el?.ondblclick?.(e);
+      });
+    }
     return d;
   }
   // Cotes (valeur, double-clic pour modifier) et symboles de contraintes posés sur l'esquisse.
@@ -73,6 +91,19 @@ export class SketchMarks {
         if (nx * (at.x - g.x) + ny * (at.y - g.y) < 0) { nx = -nx; ny = -ny; }
         el.dataset.nx = nx; el.dataset.ny = ny;
       }
+      if (c.value != null && c.kind === 'radius') { el.dataset.nx = Math.SQRT1_2; el.dataset.ny = Math.SQRT1_2; el.dataset.off = 4; } // diamètre : hors du cercle (un petit cercle garde son centre cliquable)
+      if (c.value != null && c.kind === 'arc_radius') { // rayon d'arc : hors de l'arc, côté convexe
+        const C = this.pts[this.arcs[c.refs[0]].c], L = Math.hypot(at.x - C.x, at.y - C.y) || 1;
+        el.dataset.nx = (at.x - C.x) / L; el.dataset.ny = (at.y - C.y) / L;
+      }
+      if (c.value != null && ['distance', 'hdistance', 'vdistance'].includes(c.kind)) { // entre deux points : à côté du segment
+        const A = this.pts[c.refs[0]], B = this.pts[c.refs[1]], L = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+        let nx = -(B.y - A.y) / L, ny = (B.x - A.x) / L;
+        const g = this.pts.reduce((m, p) => ({ x: m.x + p.x / this.pts.length, y: m.y + p.y / this.pts.length }), { x: 0, y: 0 });
+        if (nx * (at.x - g.x) + ny * (at.y - g.y) < 0) { nx = -nx; ny = -ny; }
+        el.dataset.nx = nx; el.dataset.ny = ny; el.dataset.off = 22; // comme une ligne de cote, à l'écart de ce qui passe entre les points
+      }
+      if (c.value != null && c.kind === 'angle') { const s = this.angleVertex(c); if (s) { el.dataset.nx = s.n.x; el.dataset.ny = s.n.y; el.dataset.off = 18; } }
       box.append(el);
     });
     this.placeLabels();
@@ -84,9 +115,10 @@ export class SketchMarks {
     for (const el of box.children) {
       const w = f.origin.clone().addScaledVector(f.x, Number(el.dataset.x)).addScaledVector(f.y, Number(el.dataset.y)), v = w.clone().project(camera);
       let ox = 0, oy = 0;
-      if (el.dataset.nx != null) { // 16 px le long de la normale à l'écran
+      if (el.dataset.nx != null) { // le long de la normale à l'écran, l'étiquette à 6 px de la courbe (angle : 18)
         const u = w.addScaledVector(f.x, Number(el.dataset.nx)).addScaledVector(f.y, Number(el.dataset.ny)).project(camera), dx = (u.x - v.x) * r.width, dy = (v.y - u.y) * r.height, d = Math.hypot(dx, dy) || 1;
-        ox = (16 * dx) / d; oy = (16 * dy) / d;
+        const ux = dx / d, uy = dy / d, k = Number(el.dataset.off ?? 6) + (Math.abs(ux) * el.offsetWidth + Math.abs(uy) * el.offsetHeight) / 2; // l'étiquette entière à l'écart de la courbe
+        ox = k * ux; oy = k * uy;
       }
       el.style.left = `${((v.x + 1) / 2) * r.width + (el.className === 'glyph' ? 8 + 14 * el.dataset.n : ox)}px`;
       el.style.top = `${((1 - v.y) / 2) * r.height + (el.className === 'glyph' ? 8 : oy)}px`;
@@ -127,7 +159,11 @@ export class SketchMarks {
     const live = document.getElementById('sketch-live') ?? Object.assign(document.createElement('div'), { id: 'sketch-live' });
     if (!live.isConnected) this.labels().after(live);
     let txt = '';
-    if (this.tool === 'poly' && this.chain) { const A = this.pts[this.chain[this.chain.length - 1]]; txt = fmt(Math.hypot(at.x - A.x, at.y - A.y)) + ' mm'; }
+    if (this.tool === 'poly' && this.chain) {
+      const s = this.chain[this.chain.length - 1], A = this.pts[s], phi = (Math.atan2(at.y - A.y, at.x - A.x) * 180) / Math.PI, ref = lineRef(this, s, phi);
+      const ang = Math.abs((((phi - (ref ? ref.dir : 0)) % 360) + 540) % 360 - 180); // angle à la ligne de départ, ou à l'horizontale
+      txt = `${fmt(Math.hypot(at.x - A.x, at.y - A.y))} mm · ${fmt(ang)}° · tapez la cote`;
+    }
     if (TWO_CLICK[this.tool] && this.pending != null) txt = TWO_CLICK[this.tool][1](this.pts[this.pending], at);
     if (txt && TYPED[this.tool] && this.pending != null) txt += ' · tapez la cote';
     live.hidden = !txt; live.textContent = txt;
@@ -141,7 +177,7 @@ export class SketchMarks {
 
   // Outil Cote (D) : ligne → longueur, cercle → rayon, deux points → distance, deux lignes → angle.
   dimClick(q) {
-    const n = this.nearest(q);
+    const n = this.nearest(q, true);
     if (!n) { this.sel = []; this.redraw(); return; }
     this.sel = [...this.sel.filter((x) => !(x.kind === n.kind && x.i === n.i)), { kind: n.kind, i: n.i }].slice(-2);
     const kinds = this.sel.map((x) => x.kind).join('');

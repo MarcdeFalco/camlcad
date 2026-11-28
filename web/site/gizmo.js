@@ -31,7 +31,7 @@ export function distanceHandle(vp, { origin, dir, value, onChange, onType }) {
   const move = (e) => {
     if (!drag) return;
     const t = along(e); if (t == null || drag.t0 == null) return;
-    v = Math.round((drag.v0 + (t - drag.t0)) * 2) / 2; place(); onChange(v); if (field) field.value = String(Math.abs(v));
+    v = Math.round((drag.v0 + (t - drag.t0)) * 2) / 2; place(); onChange(v); if (field) field.value = String(v);
   };
   const up = () => { if (drag) { drag = null; vp.controls.enabled = true; } };
   canvas.addEventListener('pointerdown', down, true); canvas.addEventListener('pointermove', move, true); addEventListener('pointerup', up, true);
@@ -39,7 +39,7 @@ export function distanceHandle(vp, { origin, dir, value, onChange, onType }) {
   // Champ flottant près de la pointe (comme dans un modeleur) : la distance s'y tape ; il suit la vue.
   let field = null, raf = 0;
   if (onType) {
-    field = Object.assign(document.createElement('input'), { id: 'gizmo-field', type: 'number', step: 'any', value: String(Math.abs(v)), title: 'Distance (Entrée pour valider le dialogue)' });
+    field = Object.assign(document.createElement('input'), { id: 'gizmo-field', type: 'number', step: 'any', value: String(v), title: 'Distance (négative : de l’autre côté ; Entrée pour valider le dialogue)' });
     field.oninput = () => { const x = Number(field.value); if (field.value !== '' && Number.isFinite(x)) onType(x); };
     field.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') document.querySelector('#dialog button.primary')?.click(); };
     canvas.parentElement.append(field); setTimeout(() => { field.focus(); field.select(); }); // on tape la distance tout de suite
@@ -52,7 +52,8 @@ export function distanceHandle(vp, { origin, dir, value, onChange, onType }) {
     follow();
   }
   return {
-    set(x) { v = x; place(); if (field && document.activeElement !== field) field.value = String(Math.abs(x)); },
+    set(x) { v = x; place(); if (field && document.activeElement !== field) field.value = String(x); },
+    focus() { field?.focus(); field?.select(); }, // après un clic dans la vue (choix d'une région), la frappe va encore au champ
     // Position de la pointe à l'écran (aide aux scénarios et à l'aide contextuelle).
     tip() { group.updateMatrixWorld(true); return head.getWorldPosition(new THREE.Vector3()); },
     dispose() {

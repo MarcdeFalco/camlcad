@@ -61,7 +61,7 @@ export class Dialogs {
   close(silent) {
     this.setPreview(null);
     if (this.gizmo) { this.gizmo.dispose(); this.gizmo = null; }
-    this.canvasClick = null;
+    this.canvasClick = null; this.planePick = null;
     if (!this.box.hidden) {
       this.box.hidden = true; this.box.replaceChildren(); this.current = null;
       const x = this.ctx.onCloseExtra; this.ctx.onCloseExtra = null; x?.(); // nettoyage propre au dialogue (mesure, coupe…)
@@ -155,7 +155,7 @@ export class Dialogs {
       if (k < 0) return false;
       if (!picked) { sel.fill(false); picked = true; }
       sel[k] = !sel[k]; boxes.forEach((b, i) => { b.checked = sel[i]; }); preview();
-      return true;
+      this.gizmo?.focus(); return true;
     } : null;
     const shapes = () => {
       const path = (g, P) => { const s = new P(); if (g.c) s.absarc(g.c.x, g.c.y, g.c.r, 0, 2 * Math.PI, P === THREE.Path); else { s.moveTo(g.l[0].x, g.l[0].y); for (const p of g.l.slice(1)) s.lineTo(p.x, p.y); } return s; };
@@ -232,6 +232,9 @@ export class Dialogs {
     });
     preview();
     this.canvasClick = regionClick;
+    // Esquisse déjà utilisée (reprise depuis le navigateur) : dessinée pendant le dialogue, pour
+    // y voir et cliquer ses régions (Fusion : œil de l'esquisse, puis Répéter l'extrusion).
+    if (sk.existing && this.ctx.showSketch) { this.ctx.showSketch(sk.existing, sk); this.ctx.onCloseExtra = () => this.ctx.hideSketch?.(sk.existing); }
     // Flèche de distance au centre du profil, à tirer dans la vue (négatif : côté opposé).
     if (this.ctx.viewport) {
       const pts = sk.loops.length ? sk.loops.flat() : sk.circles, f = sk.frame;
@@ -240,7 +243,9 @@ export class Dialogs {
       this.gizmo = distanceHandle(this.ctx.viewport, { origin, dir: f.z, value: P.h, onChange: (v) => {
         if (v < 0 && P.dir === 'one') { P.dir = 'flip'; dirSel.value = 'flip'; } else if (v > 0 && P.dir === 'flip') { P.dir = 'one'; dirSel.value = 'one'; }
         P.h = Math.abs(v); hIn.value = String(P.h); preview();
-      }, onType: (x) => { P.h = Math.abs(x); hIn.value = String(P.h); this.gizmo?.set(P.dir === 'flip' ? -P.h : P.h); preview(); } });
+      }, onType: (x) => {
+        if (x < 0 && P.dir === 'one') { P.dir = 'flip'; dirSel.value = 'flip'; } else if (x > 0 && P.dir === 'flip') { P.dir = 'one'; dirSel.value = 'one'; } // négatif : de l'autre côté
+        P.h = Math.abs(x); hIn.value = String(P.h); this.gizmo?.set(P.dir === 'flip' ? -P.h : P.h); preview(); } });
       window.camlcadGizmo = this.gizmo; // inspection (tests)
     }
   }
@@ -310,10 +315,13 @@ export class Dialogs {
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n); m.position.copy(n.multiplyScalar(P.d));
       this.setPreview(m, 0xe0a030);
     };
+    const refSel = choice({ XY: 'Plan XY', XZ: 'Plan XZ', YZ: 'Plan YZ' }, P.ref, (v) => { P.ref = v; preview(); });
     this.open('PLAN DÉCALÉ', [
-      row('Référence', choice({ XY: 'Plan XY', XZ: 'Plan XZ', YZ: 'Plan YZ' }, P.ref, (v) => { P.ref = v; preview(); })),
+      row('Référence', refSel),
       row('Distance', num(P.d, (v) => { P.d = v; preview(); }), el('span', { className: 'unit', textContent: 'mm' })),
     ], { key: 'offsetplane', ok: () => done(`Geom.Plane.offset ${litp(P.d)} Geom.Plane.${P.ref.toLowerCase()}`) });
+    // Plan d'origine cliqué dans le navigateur pendant le dialogue : la référence (comme Fusion).
+    this.planePick = (k) => { if (!N[k]) return false; P.ref = k; refSel.value = k; preview(); return true; };
     preview();
   }
 

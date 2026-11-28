@@ -14,7 +14,7 @@ import { faceLoops, modelPoints } from './planes.js';
 import { FaceCommands } from './face_commands.js';
 import { groupMenus, shortcutsHelp, foldablePalette } from './toolbar.js';
 import { markingMenu } from './marking.js';
-import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { openParams as paramsDialog } from './params.js'; import { showSketch, refreshSketches } from './sketch_overlay.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
+import { initFiles, saveBlob } from './files.js'; import { initDocuments } from './documents.js'; import { openParams as paramsDialog } from './params.js'; import { showSketch, hideSketch, refreshSketches } from './sketch_overlay.js'; import { importStl, sendImports } from './imports.js'; import { appearanceDialog, applyLook } from './appearance.js'; import { thicknessDialog } from './thickness.js';
 import { jointDialog, linkDialog } from './mech_joint.js'; import { motionStudy } from './mech_study.js';
 import { Timeline, replaceCode, notify, stlBlob, fmt } from './timeline.js';
 import { Viewport } from './viewport.js';
@@ -141,7 +141,7 @@ const vp = new Viewport($('view'));
 window.camlcadView = vp; // inspection (tests)
 const bodies = new Bodies({ viewport: vp, featureMesh: (fid, id) => featureMesh(fid, id) });
 const dialogs = new Dialogs({
-  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertLets, showSketch: (n, sk) => showSketch(vp.scene, n, sk), pickFace: (t, cb) => faces.start(t, cb), codeText: () => view.state.doc.toString(), allPlanes, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
+  scene: vp.scene, viewport: vp, resolveSketch: (desc) => new Promise((ok) => { waiter = ok; worker.postMessage({ kind: 'sketch', id: 0, sketch: desc, overrides: [] }); }), insert: insertFeature, insertLets, showSketch: (n, sk) => showSketch(vp.scene, n, sk), hideSketch: (n) => hideSketch(vp.scene, n), pickFace: (t, cb) => faces.start(t, cb), codeText: () => view.state.doc.toString(), allPlanes, insertResult, addParam: insertParam, nextIndex, part: () => vp.part, edit, notify, journal: () => journal,
   run: (msg, done) => timeline.run(msg, done), isEmpty: () => !journal || journal.features.length === 0,
   onClose: () => { if (picking) stopPicking(); },
 });
@@ -152,7 +152,7 @@ const mech = new Mech({ viewport: vp, dialogs, pose: (d) => worker.postMessage({
 // Clic (sans glisser) : plan d'esquisse, face plane, ou feature sous la souris.
 let down = null, face = null, faceMesh = null, picking = false, extrudePick = false;
 const canvas = vp.renderer.domElement;
-canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; }); canvas.addEventListener('mousedown', (e) => { if (e.shiftKey) e.preventDefault(); }); // Maj-clic : sélection d'esquisse, pas du texte de la page
 canvas.addEventListener('pointermove', (e) => { if (picking) vp.hoverPlane(vp.pickPlane(e)); if (sketch.active) sketch.move(e); });
 canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4 || e.button !== 0) return;
@@ -192,7 +192,7 @@ const sketch = new SketchEditor({
     if (data.editing) { const b = findSketch(view.state.doc.toString(), data.editing.name); if (b) { view.dispatch({ changes: { from: b.from, to: b.to, insert: data.code } }); clearTimeout(debounce); evalCode(); } return; } (['rib', 'pipe', 'holes', 'loft', 'sweep', 'keep'].includes(data.kind) ? (d, b) => paths[data.kind](dialogs, d, b) : (d, b) => dialogs[data.kind === 'revolve' ? 'revolve' : 'extrude'](d, b))(data, () => sketch.resume()); },
   done: () => showFace(null),
 });
-window.camlcadSketch = sketch; // inspection (tests)
+window.camlcadSketch = sketch; window.camlcadCode = () => view.state.doc.toString(); // inspection (tests)
 function startSketch(frame, code, data, editing, loops) { dialogs.close(true); showFace(null); if (selected != null) selectFeature(null, false); sketch.modelPts = modelPoints(lastMesh, frame); sketch.start(frame, code, data, editing, loops); }
 // « Modifier l'esquisse » : relue du code, vérifiée (le solveur doit réécrire exactement le même texte).
 let verify = null, waiter = null; // réouverture vérifiée ; réécriture d'une esquisse (profils choisis)
@@ -290,7 +290,7 @@ const timeline = new Timeline({
   edit, notify, select: (fid, move) => selectFeature(fid, move),
   apply: (code) => { replaceCode(view, code); clearTimeout(debounce); evalCode(); },
   openEdit: (fid, rename) => dialogs.feature(fid, rename), openParams,
-  sketchOn: (k) => { const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
+  sketchOn: (k) => { if (dialogs.planePick?.(k)) return; const P = allPlanes()[k]; stopPicking(); startSketch(P.frame, P.code); },
   gotoLine, editSketch, sketchOf: (f) => sketchOf(view.state.doc.toString(), f.name), sketchClick: (s) => (extrudePick ? (stopPicking(), editSketch(s.name, true)) : gotoLine(s.line)), toggleOrigin: () => vp.toggleGrid(), originVisible: () => vp.grid.visible, togglePart: () => vp.togglePart(), partVisible: () => !vp.partHidden,
   rollback: (k) => {
     rollbackAt = k; bodies.cancel();

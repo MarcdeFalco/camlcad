@@ -177,6 +177,8 @@ let num x =
   let s = if String.contains s '.' || String.contains s 'e' then s else s ^ "." in
   if x < 0. then "(" ^ s ^ ")" else s
 
+let chunk = 30
+
 let to_code ?(indent = 4) d =
   (match check d with Ok () -> () | Error e -> invalid_arg ("Sketch_desc.to_code : " ^ e));
   let pad = String.make indent ' ' in
@@ -185,13 +187,24 @@ let to_code ?(indent = 4) d =
   let p i = Printf.sprintf "p%d" i and l i = Printf.sprintf "l%d" i and c i = Printf.sprintf "c%d" i in
   let a i = Printf.sprintf "a%d" i in
   line "let open Sketch.Syntax in";
+  (* Listes longues découpées par paquets : le compilateur OCaml du navigateur (js_of_ocaml)
+     déborde de sa pile sur une liste littérale ou une chaîne de and* d'une centaine d'éléments. *)
+  let rec chunks n = function
+    | [] -> []
+    | l ->
+        let rec take k acc = function x :: r when k > 0 -> take (k - 1) (x :: acc) r | r -> (List.rev acc, r) in
+        let c, r = take n [] l in
+        c :: chunks n r
+  in
   let group items =
-    match items with
-    | [] -> ()
-    | first :: rest ->
-        line "let* %s" first;
-        List.iter (fun s -> line "and* %s" s) rest;
-        line "in"
+    List.iter
+      (function
+        | [] -> ()
+        | first :: rest ->
+            line "let* %s" first;
+            List.iter (fun s -> line "and* %s" s) rest;
+            line "in")
+      (chunks chunk items)
   in
   group
     (Array.to_list
@@ -213,13 +226,17 @@ let to_code ?(indent = 4) d =
       ((k.kind :: List.mapi (ref_name k.kind) k.refs)
       @ match (k.expr, k.value) with Some e, _ -> [ "(" ^ e ^ ")" ] | None, Some v -> [ num v ] | None, None -> [])
   in
-  (match d.constraints with
+  (match chunks chunk d.constraints with
   | [] -> line "let+ () = Sketch.constrain [] in"
-  | cs ->
-      line "let+ () =";
-      line "  Sketch.constrain";
-      line "    Sketch.[ %s ]" (String.concat (";\n" ^ pad ^ "             ") (List.map constr cs));
-      line "in");
+  | parts ->
+      let n = List.length parts in
+      List.iteri
+        (fun i cs ->
+          line "let%s () =" (if i = n - 1 then "+" else "*");
+          line "  Sketch.constrain";
+          line "    Sketch.[ %s ]" (String.concat (";\n" ^ pad ^ "             ") (List.map constr cs));
+          line "in")
+        parts);
   let loop ls =
     let pts = List.filter_map (function P i -> Some i | _ -> None) ls in
     if List.length pts = List.length ls then Printf.sprintf "loop [ %s ]" (String.concat "; " (List.map p pts))
