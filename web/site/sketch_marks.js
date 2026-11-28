@@ -3,7 +3,8 @@
 // Classe de base de SketchEditor (sketch.js), qui fournit plane, pts, lines, circles, cons…
 import * as THREE from 'three';
 import { TYPED } from './sketch_input.js';
-import { TWO_CLICK, rubberShape, faceVertex } from './sketch_tools.js';
+import { TWO_CLICK, rubberShape } from './sketch_tools.js';
+import { snapPoint } from './sketch_snap.js';
 import { arcPoints, loopPoints, loopOutline } from './sketch_arcs.js';
 import { parseDim } from './expr.js';
 
@@ -115,7 +116,7 @@ export class SketchMarks {
       l.computeLineDistances(); l.renderOrder = 5; g.add(l);
     };
     const snap = this.tool !== 'select' ? this.nearest(q) : null;
-    const fv = !snap && faceVertex(this, q), at = snap && snap.kind === 'p' ? this.pts[snap.i] : fv || q;
+    const fv = !(snap && snap.kind === 'p') && this.tool !== 'select' && snapPoint(this, q), at = snap && snap.kind === 'p' ? this.pts[snap.i] : fv || q;
     if (this.tool === 'poly' && this.chain) line([this.pts[this.chain[this.chain.length - 1]], at]);
     if (TWO_CLICK[this.tool] && this.pending != null) line(rubberShape(this.tool, this.pts[this.pending], at, this.sides()));
     if ((snap && snap.kind === 'p') || fv) {
