@@ -288,7 +288,7 @@ export class SketchEditor extends SketchMarks {
   // Profil pour l'extrusion : points résolus, boucles et cercles, code let%sketch.
   finish(kind = 'extrude') {
     if (['extrude', 'revolve'].includes(kind) && !this.error && splitIntoFaces(this)) { this.pendingFinish = kind; this.changed(); return true; } // régions du dessin, puis fin après résolution
-    const rib = (['rib', 'pipe', 'sweep'].includes(kind) && this.openLines().length && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
+    const rib = (['rib', 'pipe', 'sweep'].includes(kind) && (this.openLines().length || (kind === 'pipe' && this.openArcSegments().length)) && !this.error) || (kind === 'holes' && this.freePoints().length && !this.error);
     if (!rib && !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length))) return false;
     const data = {
       frame: this.plane, planeCode: this.planeCode, code: this.code,
@@ -296,7 +296,7 @@ export class SketchEditor extends SketchMarks {
       // Lignes (axes possibles d'une révolution), nommées comme dans la palette.
       lines: this.lines.map(([a, b], i) => ({ name: `L${i + 1}`, a: { ...this.pts[a] }, b: { ...this.pts[b] } })),
       circles: this.circles.map((c) => ({ x: this.pts[c.c].x, y: this.pts[c.c].y, r: c.r })), ellipses: this.ellipses.map((e) => ellipseOutline(this, e)),
-      ribs: this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]), points: this.freePoints().map((i) => ({ ...this.pts[i] })),
+      ribs: [...this.openLines().map(([a, b]) => [{ ...this.pts[a] }, { ...this.pts[b] }]), ...(kind === 'pipe' ? this.openArcSegments() : [])], points: this.freePoints().map((i) => ({ ...this.pts[i] })),
     };
     this.suspend();
     this.ctx.finish(data);
@@ -373,7 +373,8 @@ export class SketchEditor extends SketchMarks {
     for (const b of document.querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === this.tool);
     $('sketch-project').disabled = !this.faceLoops;
     $('sketch-holes').disabled = !this.freePoints().length || !!this.error;
-    $('sketch-rib').disabled = $('sketch-pipe').disabled = $('sketch-sweep').disabled = !(this.openLines().length && !this.error);
+    $('sketch-rib').disabled = $('sketch-sweep').disabled = !(this.openLines().length && !this.error);
+    $('sketch-pipe').disabled = !((this.openLines().length || this.openArcSegments().length) && !this.error); // tuyau : coudes en arc aussi
     $('sketch-finish').disabled = $('sketch-revolve').disabled = $('sketch-loft').disabled = $('sketch-keep').disabled = !(this.code && !this.error && (this.loops.length || this.circles.length || this.ellipses.length));
     this.rubber = null; this.drawRubber(); this.drawLabels();
   }

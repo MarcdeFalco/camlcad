@@ -152,6 +152,15 @@ export class SketchMarks {
 
   // Points isolés (outil Point) : centres de perçages.
   freePoints() { return this.pts.map((_, i) => i).filter((i) => !this.lines.some((l) => l.includes(i)) && !this.circles.some((c) => c.c === i) && !this.arcs.some((a) => [a.c, a.a, a.b].includes(i))); }
+  // Arcs hors de toute boucle, en segments de 5° au plus (bouts exacts) : coude arrondi d'un tuyau.
+  openArcSegments() {
+    const inLoop = new Set(this.loops.flatMap((l) => l.filter((it) => typeof it !== 'number' && !it.s).map((it) => it.a ?? it.r)));
+    return this.arcs.flatMap(({ a, b }, k) => {
+      if (inLoop.has(k)) return [];
+      const ps = arcPoints(this, k); ps[0] = { ...this.pts[a] }; ps[ps.length - 1] = { ...this.pts[b] };
+      return ps.slice(1).map((p, i) => [ps[i], p]);
+    });
+  }
   // Lignes hors de toute boucle (construction) : chemins d'une nervure.
   openLines() {
     const seqs = this.loops.map((l) => loopPoints(this, l));
